@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/madeinplutofabio/neural-computation-protocol/schemas/graph-manifest.schema.json",
+  "title": "NCP Graph Manifest",
+  "description": "JSON Schema for an NCP Graph Manifest (v0.2.3). Covers spec sections 7.0–7.5. Some cross-field semantic invariants require the validator CLI.",
+  "type": "object",
+  "required": [
+    "graph_id",
+    "graph_version",
+    "synaptic_state_version",
+    "nodes",
+    "edges"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "graph_id": {
+      "type": "string",
+      "description": "Globally unique, namespaced graph identifier. §7.1",
+      "minLength": 1
+    },
+    "graph_version": {
+      "type": "string",
+      "description": "Immutable graph version identifier (hash or monotonically increasing version). §7.1",
+      "minLength": 1
+    },
+    "synaptic_state_version": {
+      "type": "string",
+      "description": "Version pin for the synaptic state. §7.1",
+      "minLength": 1
+    },
+    "nodes": {
+      "type": "array",
+      "description": "Nodes composing the graph. §7.2",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["node_id", "brick", "bindings"],
+        "additionalProperties": false,
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "description": "Unique node identifier within this graph. §7.2",
+            "minLength": 1
+          },
+          "brick": {
+            "type": "object",
+            "description": "Brick reference for this node. §7.2",
+            "required": ["brick_id", "version_or_range"],
+            "additionalProperties": false,
+            "properties": {
+              "brick_id": {
+                "type": "string",
+                "description": "The Brick's globally unique identifier. §7.2",
+                "minLength": 1
+              },
+              "version_or_range": {
+                "type": "string",
+                "description": "Exact version or SemVer range (e.g., =1.4.2, ^1.0.0). §7.2",
+                "minLength": 1
+              }
+            }
+          },
+          "activation": {
+            "type": "object",
+            "description": "Node activation policy for fan-in semantics. §7.0",
+            "required": ["mode"],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "description": "Activation mode. §7.0",
+                "enum": ["all_required", "any", "quorum"]
+              },
+              "timeout_ms": {
+                "type": "integer",
+                "description": "Timeout in ms before activation condition is forced. §7.0",
+                "minimum": 0
+              },
+              "allow_partial": {
+                "type": "boolean",
+                "description": "If true, missing fields filled from defaults on timeout. §7.0",
+                "default": false
+              },
+              "required_fields": {
+                "type": "array",
+                "description": "Fully-qualified input paths required for all_required mode. §7.0",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "defaults": {
+                "type": "object",
+                "description": "Default values for input fields (field path → value). §7.0",
+                "additionalProperties": true
+              },
+              "conflict_resolution": {
+                "type": "string",
+                "description": "How to resolve conflicting inbound edge values. §7.0",
+                "enum": ["reject", "priority", "deterministic"],
+                "default": "reject"
+              },
+              "quorum_n": {
+                "type": "integer",
+                "description": "Number of required deliveries for quorum mode. §7.0",
+                "minimum": 1
+              },
+              "quorum_m": {
+                "type": "integer",
+                "description": "Total expected deliveries for quorum mode. §7.0",
+                "minimum": 1
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "mode": { "const": "quorum" } },
+                  "required": ["mode"]
+                },
+                "then": {
+                  "required": ["quorum_n", "quorum_m"]
+                },
+                "else": {
+                  "not": {
+                    "anyOf": [
+                      { "required": ["quorum_n"] },
+                      { "required": ["quorum_m"] }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "bindings": {
+            "type": "object",
+            "description": "Slot bindings mapping symbolic slots to concrete ref sources. §7.2",
+            "required": ["graph_ref_slot_values"],
+            "additionalProperties": false,
+            "properties": {
+              "graph_ref_slot_values": {
+                "type": "object",
+                "description": "Mapping of slot name → concrete ref source. §7.2",
+                "additionalProperties": true
+              }
+            }
+          },
+          "carry_state_lifecycle": {
+            "type": "object",
+            "description": "Per-node carry state lifecycle policy. §10.5",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+              "init": {
+                "type": "string",
+                "description": "Initialization strategy for carry state. §10.5",
+                "enum": ["zero", "from_graph_defaults", "from_first_input"]
+              },
+              "ttl_seconds": {
+                "type": "integer",
+                "description": "Seconds since last access before carry state expires. §10.5",
+                "minimum": 1
+              },
+              "on_graph_version_change": {
+                "type": "string",
+                "description": "Behavior when graph_version changes. §10.5",
+                "enum": ["reset", "migrate_if_compatible", "reject_session"],
+                "default": "reset"
+              }
+            }
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Typed edges connecting nodes. §7.3",
+      "items": {
+        "type": "object",
+        "required": ["edge_id", "source_node", "target_node", "mapping"],
+        "additionalProperties": false,
+        "properties": {
+          "edge_id": {
+            "type": "string",
+            "description": "Stable edge identifier within this graph. §7.3",
+            "minLength": 1
+          },
+          "source_node": {
+            "type": "string",
+            "description": "Source node_id. §7.3",
+            "minLength": 1
+          },
+          "target_node": {
+            "type": "string",
+            "description": "Target node_id. §7.3",
+            "minLength": 1
+          },
+          "mapping": {
+            "type": "array",
+            "description": "Typed field mapping from source output to target input. §7.3",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["from", "to"],
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string",
+                  "description": "Source output field path. §7.3",
+                  "minLength": 1
+                },
+                "to": {
+                  "type": "string",
+                  "description": "Target input field path. §7.3",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Edge priority for conflict_resolution=priority. §7.3"
+          },
+          "on_success": {
+            "type": "object",
+            "description": "Routing weight/threshold rules on success. §7.4",
+            "additionalProperties": true
+          },
+          "on_error": {
+            "type": "object",
+            "description": "Mapping from error_class to next node(s). §7.4",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "description": "Graph-level budgets and limits. §7.5",
+      "additionalProperties": false,
+      "properties": {
+        "max_nodes_per_tick": {
+          "type": "integer",
+          "description": "Maximum nodes executed per tick. §7.5",
+          "minimum": 1
+        },
+        "max_total_ms_per_tick": {
+          "type": "integer",
+          "description": "Maximum total milliseconds per tick. §7.5",
+          "minimum": 1
+        },
+        "max_fan_out": {
+          "type": "integer",
+          "description": "Maximum fan-out per node. §7.5",
+          "minimum": 1
+        },
+        "max_trace_bytes": {
+          "type": "integer",
+          "description": "Maximum trace bytes per tick. §7.5",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

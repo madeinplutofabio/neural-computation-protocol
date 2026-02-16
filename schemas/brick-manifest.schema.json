@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/madeinplutofabio/neural-computation-protocol/schemas/brick-manifest.schema.json",
+  "title": "NCP Brick Manifest",
+  "description": "JSON Schema for an NCP Brick Manifest (v0.2.3). Covers spec sections 6.1–6.10. Some cross-field semantic invariants require the validator CLI.",
+  "type": "object",
+  "required": [
+    "brick_id",
+    "version",
+    "ncp_protocol_range",
+    "required_runtime_features",
+    "status",
+    "artifact",
+    "schemas",
+    "limits",
+    "capabilities",
+    "determinism",
+    "time_model",
+    "carry_state_class",
+    "carry_state_transport",
+    "carry_state_max_bytes",
+    "graph_ref_slots"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "brick_id": {
+      "type": "string",
+      "description": "Globally unique, namespaced identifier (e.g., org.ncp-commons.sentiment-gate). §4",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "SemVer version string (e.g., 1.4.2). §6.1",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$"
+    },
+    "ncp_protocol_range": {
+      "type": "string",
+      "description": "Protocol compatibility range (e.g., >=0.2.0 <0.3.0). §6.1",
+      "minLength": 1
+    },
+    "required_runtime_features": {
+      "type": "array",
+      "description": "Runtime features required by this Brick (may be empty). §6.1",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "status": {
+      "type": "string",
+      "description": "Lifecycle status. §6.1",
+      "enum": ["active", "deprecated", "sunset"]
+    },
+    "successor": {
+      "type": "string",
+      "description": "Brick ID of the successor (optional, used when status is deprecated/sunset). §6.1"
+    },
+    "artifact": {
+      "type": "object",
+      "description": "Artifact packaging details. §6.2",
+      "required": ["format", "entrypoint", "digest", "size_bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "type": "string",
+          "description": "Artifact format. v0.2 REQUIRES wasm. §6.2",
+          "enum": ["wasm"]
+        },
+        "entrypoint": {
+          "type": "string",
+          "description": "Entrypoint function name (e.g., invoke). §6.2",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "description": "Content-addressable hash of the artifact bytes. §6.2",
+          "minLength": 1
+        },
+        "size_bytes": {
+          "type": "integer",
+          "description": "Size of the artifact in bytes. §6.2",
+          "minimum": 1
+        }
+      }
+    },
+    "schemas": {
+      "type": "object",
+      "description": "Schema references for input, output, carry state, and metadata. §6.3",
+      "required": ["input", "output", "carry_state"],
+      "additionalProperties": false,
+      "properties": {
+        "input": {
+          "type": "string",
+          "description": "Path or URI to the input JSON Schema. §6.3",
+          "minLength": 1
+        },
+        "output": {
+          "type": "string",
+          "description": "Path or URI to the output JSON Schema. §6.3",
+          "minLength": 1
+        },
+        "carry_state": {
+          "description": "Path or URI to the carry state JSON Schema, or null if no carry state. §6.3",
+          "type": ["string", "null"]
+        },
+        "metadata": {
+          "description": "Path or URI to the metadata JSON Schema (optional). §6.3",
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "description": "Resource limits declared by the Brick. §6.4",
+      "required": ["max_ms", "max_mem_mb", "max_output_bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "max_ms": {
+          "type": "integer",
+          "description": "Maximum execution time in milliseconds. §6.4",
+          "minimum": 1
+        },
+        "max_mem_mb": {
+          "type": "integer",
+          "description": "Maximum memory usage in megabytes. §6.4",
+          "minimum": 1
+        },
+        "max_output_bytes": {
+          "type": "integer",
+          "description": "Maximum output size in bytes. §6.4",
+          "minimum": 1
+        },
+        "max_input_bytes": {
+          "type": "integer",
+          "description": "Maximum input size in bytes (recommended). §6.4",
+          "minimum": 1
+        },
+        "estimated_cost_per_invoke_usd": {
+          "type": "number",
+          "description": "Estimated cost per invocation in USD (informational). §6.4",
+          "minimum": 0
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "Declared capabilities. v0.2 MUST be empty. §6.5",
+      "items": { "type": "string" },
+      "maxItems": 0,
+      "default": []
+    },
+    "determinism": {
+      "type": "object",
+      "description": "Determinism declaration. §6.6",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Determinism mode. §6.6",
+          "enum": ["bit_exact", "bounded_drift", "stochastic"]
+        },
+        "epsilon": {
+          "type": "number",
+          "description": "Maximum allowed drift. Required when mode is bounded_drift. §6.6",
+          "exclusiveMinimum": 0
+        },
+        "seed_source": {
+          "type": "string",
+          "description": "Source of randomness seed. Required when mode is stochastic; must be ctx.seed in v0.2. §6.6",
+          "enum": ["ctx.seed"]
+        },
+        "model_pin": {
+          "type": "string",
+          "description": "External model dependency identifier. §6.6.1",
+          "minLength": 1
+        },
+        "reproducibility_level": {
+          "type": "string",
+          "description": "Reproducibility guarantee for external model Bricks. §6.6.1",
+          "enum": ["seed_deterministic", "seed_approximate"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "mode": { "const": "bounded_drift" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "required": ["epsilon"]
+          },
+          "else": {
+            "not": { "required": ["epsilon"] }
+          }
+        },
+        {
+          "if": {
+            "properties": { "mode": { "const": "stochastic" } },
+            "required": ["mode"]
+          },
+          "then": {
+            "required": ["seed_source"]
+          },
+          "else": {
+            "not": { "required": ["seed_source"] }
+          }
+        },
+        {
+          "if": {
+            "required": ["model_pin"]
+          },
+          "then": {
+            "required": ["reproducibility_level"]
+          }
+        },
+        {
+          "if": {
+            "required": ["reproducibility_level"]
+          },
+          "then": {
+            "required": ["model_pin"]
+          }
+        }
+      ]
+    },
+    "time_model": {
+      "type": "string",
+      "description": "Time model declaration. §6.7",
+      "enum": ["pure", "logical", "wall_bounded"]
+    },
+    "carry_state_class": {
+      "type": "string",
+      "description": "Carry state size class. §6.8",
+      "enum": ["none", "tiny", "medium", "large"]
+    },
+    "carry_state_transport": {
+      "type": "string",
+      "description": "Carry state delivery mechanism. §6.8",
+      "enum": ["inline", "handle"]
+    },
+    "carry_state_max_bytes": {
+      "type": "integer",
+      "description": "Maximum carry state size in bytes. §6.8",
+      "minimum": 0
+    },
+    "carry_state_side_effects_schema": {
+      "description": "Path or URI to the side-effects schema, or null. §6.9",
+      "type": ["string", "null"]
+    },
+    "confidence_threshold": {
+      "type": "number",
+      "description": "Default confidence threshold for graph policies. §9.5",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "graph_ref_slots": {
+      "type": "array",
+      "description": "Declared graph ref slots (capabilities). §6.10",
+      "items": {
+        "type": "object",
+        "required": ["slot", "type", "access", "ref_consistency"],
+        "additionalProperties": false,
+        "properties": {
+          "slot": {
+            "type": "string",
+            "description": "Stable symbolic name for the slot. §6.10",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "description": "Scalar or structured type (e.g., float, int, tensor/f16[16]). §6.10",
+            "minLength": 1
+          },
+          "access": {
+            "type": "string",
+            "description": "Access mode. §6.10",
+            "enum": ["read"]
+          },
+          "ref_consistency": {
+            "type": "string",
+            "description": "Consistency model for the ref. §6.10",
+            "enum": ["PINNED", "LIVE_OPS"]
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "time_model": { "const": "wall_bounded" } },
+        "required": ["time_model"]
+      },
+      "then": {
+        "properties": {
+          "determinism": {
+            "properties": { "mode": { "not": { "const": "bit_exact" } } },
+            "required": ["mode"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemas": {
+            "properties": { "carry_state": { "type": "null" } },
+            "required": ["carry_state"]
+          }
+        },
+        "required": ["schemas"]
+      },
+      "then": {
+        "properties": { "carry_state_class": { "const": "none" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "carry_state_class": { "const": "none" } },
+        "required": ["carry_state_class"]
+      },
+      "then": {
+        "properties": {
+          "schemas": {
+            "properties": { "carry_state": { "type": "null" } },
+            "required": ["carry_state"]
+          },
+          "carry_state_max_bytes": { "const": 0 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "determinism": {
+            "required": ["reproducibility_level"]
+          }
+        },
+        "required": ["determinism"]
+      },
+      "then": {
+        "properties": {
+          "determinism": {
+            "properties": { "mode": { "const": "stochastic" } },
+            "required": ["mode"]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/madeinplutofabio/neural-computation-protocol/schemas/invocation-envelope.schema.json",
+  "title": "NCP Invocation Envelope",
+  "description": "JSON Schema for an NCP Invocation Envelope (v0.2.3). Covers spec section 8.",
+  "type": "object",
+  "required": ["ctx", "input"],
+  "additionalProperties": false,
+  "properties": {
+    "ctx": {
+      "type": "object",
+      "description": "Invocation context provided by the runtime. §8.1",
+      "required": [
+        "trace_id",
+        "session_id",
+        "step",
+        "graph_id",
+        "graph_version",
+        "trigger"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "description": "Unique identifier for the end-to-end request. §8.1",
+          "minLength": 1
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Unique identifier for the session/trajectory. §8.1",
+          "minLength": 1
+        },
+        "step": {
+          "type": "integer",
+          "description": "Step counter within the session. §8.1",
+          "minimum": 0
+        },
+        "graph_id": {
+          "type": "string",
+          "description": "Graph identifier. §8.1",
+          "minLength": 1
+        },
+        "graph_version": {
+          "type": "string",
+          "description": "Graph version identifier. §8.1",
+          "minLength": 1
+        },
+        "trigger": {
+          "type": "object",
+          "description": "Trigger provenance describing the causal edge (PIC-aligned). §8.1",
+          "required": [
+            "source_node_id",
+            "source_step",
+            "edge_id",
+            "routing_reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "source_node_id": {
+              "type": "string",
+              "description": "Node that triggered this invocation, or __root__ for external input. §8.1",
+              "minLength": 1
+            },
+            "source_step": {
+              "type": "integer",
+              "description": "Step of the source invocation. §8.1",
+              "minimum": 0
+            },
+            "edge_id": {
+              "type": "string",
+              "description": "Edge that carried the signal, or __root__ for external input. §8.1",
+              "minLength": 1
+            },
+            "routing_reason": {
+              "type": "string",
+              "description": "Routing reason: on_success or on_error:<ERROR_CLASS>. §8.1",
+              "pattern": "^(on_success|on_error:[A-Z_]+)$"
+            }
+          }
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Randomness seed for stochastic Bricks. §8.1",
+          "minimum": 0
+        },
+        "logical_time": {
+          "type": "integer",
+          "description": "Logical time value for logical time model. §8.1",
+          "minimum": 0
+        },
+        "wall_time": {
+          "type": "string",
+          "description": "Wall clock time (ISO 8601 / RFC 3339) for wall_bounded time model. §8.1",
+          "format": "date-time"
+        }
+      }
+    },
+    "input": {
+      "description": "The Brick's input payload, validated against the Brick's input schema. §8"
+    },
+    "carry_state": {
+      "description": "Carry state value for inline transport. §8.2"
+    },
+    "carry_state_handle": {
+      "type": "string",
+      "description": "Opaque handle for handle-based carry state transport. §8.2",
+      "minLength": 1
+    },
+    "carry_state_working_set": {
+      "description": "Optional working set for handle-based transport. §8.2"
+    },
+    "graph_refs": {
+      "type": "object",
+      "description": "Resolved graph ref slot values (slot name → value). §8.3",
+      "additionalProperties": true,
+      "default": {}
+    }
+  },
+  "allOf": [
+    {
+      "not": {
+        "required": ["carry_state", "carry_state_handle"]
+      }
+    },
+    {
+      "if": { "required": ["carry_state_working_set"] },
+      "then": { "required": ["carry_state_handle"] }
+    },
+    {
+      "if": {
+        "properties": {
+          "ctx": {
+            "properties": {
+              "trigger": {
+                "properties": { "source_node_id": { "const": "__root__" } },
+                "required": ["source_node_id"]
+              }
+            },
+            "required": ["trigger"]
+          }
+        },
+        "required": ["ctx"]
+      },
+      "then": {
+        "properties": {
+          "ctx": {
+            "properties": {
+              "trigger": {
+                "properties": { "edge_id": { "const": "__root__" } },
+                "required": ["edge_id"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ctx": {
+            "properties": {
+              "trigger": {
+                "properties": { "edge_id": { "const": "__root__" } },
+                "required": ["edge_id"]
+              }
+            },
+            "required": ["trigger"]
+          }
+        },
+        "required": ["ctx"]
+      },
+      "then": {
+        "properties": {
+          "ctx": {
+            "properties": {
+              "trigger": {
+                "properties": { "source_node_id": { "const": "__root__" } },
+                "required": ["source_node_id"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

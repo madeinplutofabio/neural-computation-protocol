@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/madeinplutofabio/neural-computation-protocol/schemas/result.schema.json",
+  "title": "NCP Result",
+  "description": "JSON Schema for an NCP Result (v0.2.3). Three-variant discriminated union: Success, LowConfidence, Failure. Covers spec sections 9.1–9.5. The structural boundary rule (§9.2) is enforced by schema shape.",
+  "type": "object",
+  "required": ["type"],
+  "oneOf": [
+    {
+      "title": "Success",
+      "description": "Output produced, no error. §9.1",
+      "required": ["type", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "Success"
+        },
+        "output": {
+          "description": "The Brick's output payload. §9.1"
+        },
+        "carry_state_next": {
+          "description": "Updated carry state (applied on Success). §9.1/§10"
+        },
+        "obs_events": {
+          "type": "array",
+          "description": "Append-only observability events. §11.2",
+          "items": {}
+        },
+        "metadata": {
+          "description": "Optional metadata conforming to the Brick's metadata schema. §9.1"
+        }
+      }
+    },
+    {
+      "title": "LowConfidence",
+      "description": "Output produced but flagged below confidence threshold. §9.1/§9.5",
+      "required": ["type", "output", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "LowConfidence"
+        },
+        "output": {
+          "type": "object",
+          "description": "The Brick's output payload (must include confidence field). §9.1/§9.5",
+          "required": ["confidence"],
+          "properties": {
+            "confidence": {
+              "type": "number",
+              "description": "Confidence scalar in [0,1]. §9.5",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        "error": {
+          "description": "Error object with error_class = LOW_CONFIDENCE. §9.3",
+          "allOf": [
+            { "$ref": "#/$defs/error_object" },
+            { "properties": { "error_class": { "const": "LOW_CONFIDENCE" } } }
+          ]
+        },
+        "carry_state_next": {
+          "description": "Updated carry state (applied on LowConfidence). §9.1/§10"
+        },
+        "obs_events": {
+          "type": "array",
+          "description": "Append-only observability events. §11.2",
+          "items": {}
+        },
+        "metadata": {
+          "description": "Optional metadata conforming to the Brick's metadata schema. §9.1"
+        }
+      }
+    },
+    {
+      "title": "Failure",
+      "description": "No output produced. §9.1",
+      "required": ["type", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "Failure"
+        },
+        "error": {
+          "description": "Error object with error_class != LOW_CONFIDENCE. §9.3",
+          "allOf": [
+            { "$ref": "#/$defs/error_object" },
+            { "properties": { "error_class": { "not": { "const": "LOW_CONFIDENCE" } } } }
+          ]
+        },
+        "carry_state_side_effects": {
+          "description": "Side-effects applied on Failure if declared. §6.9/§9.1"
+        },
+        "obs_events": {
+          "type": "array",
+          "description": "Append-only observability events. §11.2",
+          "items": {}
+        },
+        "metadata": {
+          "description": "Optional metadata conforming to the Brick's metadata schema. §9.1"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "error_object": {
+      "type": "object",
+      "description": "Error object. §9.3",
+      "required": ["error_class", "message", "retry_advice", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "error_class": {
+          "type": "string",
+          "description": "Error classification. §9.4",
+          "enum": [
+            "INVALID_INPUT",
+            "COMPUTATION_ERROR",
+            "RESOURCE_EXCEEDED",
+            "RUNTIME_REJECTED",
+            "LOW_CONFIDENCE"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "Short, redaction-safe error message. §9.3",
+          "minLength": 1
+        },
+        "retry_advice": {
+          "type": "string",
+          "description": "Retry recommendation. §9.3",
+          "enum": ["NEVER", "IMMEDIATE", "BACKOFF"]
+        },
+        "severity": {
+          "type": "string",
+          "description": "Error severity. §9.3",
+          "enum": ["WARN", "ERROR", "FATAL"]
+        }
+      }
+    }
+  }
+}
