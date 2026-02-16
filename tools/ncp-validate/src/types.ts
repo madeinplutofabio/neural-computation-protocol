@@ -311,5 +311,6 @@ export interface ValidationSummary {
     total: number;
     passed: number;
     failed: number;
+    warnings: number;
   };
 }

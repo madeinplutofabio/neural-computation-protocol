@@ -11,7 +11,7 @@ import _Ajv2020 from "ajv/dist/2020.js";
 import _addFormats from "ajv-formats";
 import type { ValidateFunction, ErrorObject } from "ajv/dist/2020.js";
 import { loadSchema } from "../loader.js";
-import type { ValidationResult } from "../types.js";
+import type { ValidationResult, ValidationSummary } from "../types.js";
 
 // CJS default-export interop for NodeNext module resolution
 const Ajv2020 = _Ajv2020 as unknown as typeof _Ajv2020.default;
@@ -88,4 +88,33 @@ export function ajvErrorsToResults(
  */
 export function isValid(results: ValidationResult[]): boolean {
   return !results.some((r) => r.status === "fail" && r.severity === "error");
+}
+
+/**
+ * Build a ValidationSummary from the two-phase validation results.
+ * Separates error-failures from warning-failures in the summary counts.
+ */
+export function buildSummary(
+  filePath: string,
+  schemaValid: boolean,
+  schemaResults: ValidationResult[],
+  invariantResults: ValidationResult[],
+): ValidationSummary {
+  const results = [...schemaResults, ...invariantResults];
+  return {
+    file: filePath,
+    valid: schemaValid && isValid(invariantResults),
+    schema_valid: schemaValid,
+    results,
+    summary: {
+      total: results.length,
+      passed: results.filter((r) => r.status === "pass").length,
+      failed: results.filter(
+        (r) => r.status === "fail" && r.severity === "error",
+      ).length,
+      warnings: results.filter(
+        (r) => r.status === "fail" && r.severity === "warning",
+      ).length,
+    },
+  };
 }

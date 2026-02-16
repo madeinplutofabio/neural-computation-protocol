@@ -2,19 +2,22 @@
 // Copyright 2026 Fabio Marcello Salvadori
 
 /**
- * Graph Manifest structural validator (§7).
- * Validates against schemas/graph-manifest.schema.json using AJV 2020-12.
+ * Graph Manifest structural + invariant validator (§7).
+ * Validates against schemas/graph-manifest.schema.json using AJV 2020-12,
+ * then runs cross-field invariant rules if schema passes.
  */
 
 import type { GraphManifest, ValidationSummary } from "../types.js";
 import {
   getAjvValidator,
   ajvErrorsToResults,
-  isValid,
+  buildSummary,
 } from "./schema-helpers.js";
+import { runRules } from "../rules.js";
+import { graphInvariants } from "../invariants/graph-invariants.js";
 
 const SCHEMA_FILE = "graph-manifest.schema.json";
-const SECTION = "§7 Graph Manifest";
+const SECTION = "§7";
 
 export function validateGraphManifest(
   manifest: GraphManifest,
@@ -23,19 +26,14 @@ export function validateGraphManifest(
   const validate = getAjvValidator(SCHEMA_FILE);
   const schemaValid = validate(manifest) as boolean;
 
-  const results = schemaValid
+  const schemaResults = schemaValid
     ? []
     : ajvErrorsToResults(validate.errors, SECTION);
 
-  return {
-    file: filePath,
-    valid: schemaValid && isValid(results),
-    schema_valid: schemaValid,
-    results,
-    summary: {
-      total: results.length,
-      passed: results.filter((r) => r.status === "pass").length,
-      failed: results.filter((r) => r.status === "fail").length,
-    },
-  };
+  // Only run invariants if schema passes
+  const invariantResults = schemaValid
+    ? runRules(graphInvariants, manifest)
+    : [];
+
+  return buildSummary(filePath, schemaValid, schemaResults, invariantResults);
 }

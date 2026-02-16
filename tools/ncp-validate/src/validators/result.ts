@@ -4,17 +4,18 @@
 /**
  * Result Model structural validator (§9).
  * Validates against schemas/result.schema.json using AJV 2020-12.
+ * No cross-field invariant rules for results.
  */
 
 import type { Result, ValidationSummary } from "../types.js";
 import {
   getAjvValidator,
   ajvErrorsToResults,
-  isValid,
+  buildSummary,
 } from "./schema-helpers.js";
 
 const SCHEMA_FILE = "result.schema.json";
-const SECTION = "§9 Result Model";
+const SECTION = "§9";
 
 export function validateResult(
   result: Result,
@@ -23,19 +24,9 @@ export function validateResult(
   const validate = getAjvValidator(SCHEMA_FILE);
   const schemaValid = validate(result) as boolean;
 
-  const results = schemaValid
+  const schemaResults = schemaValid
     ? []
     : ajvErrorsToResults(validate.errors, SECTION);
 
-  return {
-    file: filePath,
-    valid: schemaValid && isValid(results),
-    schema_valid: schemaValid,
-    results,
-    summary: {
-      total: results.length,
-      passed: results.filter((r) => r.status === "pass").length,
-      failed: results.filter((r) => r.status === "fail").length,
-    },
-  };
+  return buildSummary(filePath, schemaValid, schemaResults, []);
 }

@@ -4,17 +4,18 @@
 /**
  * Invocation Envelope structural validator (§8).
  * Validates against schemas/invocation-envelope.schema.json using AJV 2020-12.
+ * No cross-field invariant rules for envelopes.
  */
 
 import type { InvocationEnvelope, ValidationSummary } from "../types.js";
 import {
   getAjvValidator,
   ajvErrorsToResults,
-  isValid,
+  buildSummary,
 } from "./schema-helpers.js";
 
 const SCHEMA_FILE = "invocation-envelope.schema.json";
-const SECTION = "§8 Invocation Envelope";
+const SECTION = "§8";
 
 export function validateEnvelope(
   envelope: InvocationEnvelope,
@@ -23,19 +24,9 @@ export function validateEnvelope(
   const validate = getAjvValidator(SCHEMA_FILE);
   const schemaValid = validate(envelope) as boolean;
 
-  const results = schemaValid
+  const schemaResults = schemaValid
     ? []
     : ajvErrorsToResults(validate.errors, SECTION);
 
-  return {
-    file: filePath,
-    valid: schemaValid && isValid(results),
-    schema_valid: schemaValid,
-    results,
-    summary: {
-      total: results.length,
-      passed: results.filter((r) => r.status === "pass").length,
-      failed: results.filter((r) => r.status === "fail").length,
-    },
-  };
+  return buildSummary(filePath, schemaValid, schemaResults, []);
 }
