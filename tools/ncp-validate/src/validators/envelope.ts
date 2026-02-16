@@ -17,7 +17,7 @@ import {
 const SCHEMA_FILE = "invocation-envelope.schema.json";
 const SECTION = "§8";
 
-export function validateEnvelope(
+export function validateInvocationEnvelope(
   envelope: InvocationEnvelope,
   filePath: string,
 ): ValidationSummary {
