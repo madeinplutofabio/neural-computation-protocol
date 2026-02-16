@@ -7,6 +7,6 @@
 
 The canonical protocol specification is maintained at:
 
-**[spec/ncp-v0.2.2.md](spec/ncp-v0.2.2.md)**
+**[spec/ncp-v0.2.3.md](spec/ncp-v0.2.3.md)**
 
 For PDF snapshots of released versions, see [spec/releases/](spec/releases/).

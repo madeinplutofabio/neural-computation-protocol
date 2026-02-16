@@ -6,7 +6,7 @@
 # NCP — Neural Computation Protocol
 
 > **Status: Under Construction** — Spec, schemas, and validator are being finalized.
-> In the meantime you can [read the spec](spec/ncp-v0.2.2.md), [open an issue](../../issues/new/choose) against any section, or watch the repo for updates.
+> In the meantime you can [read the spec](spec/ncp-v0.2.3.md), [open an issue](../../issues/new/choose) against any section, or watch the repo for updates.
 
 NCP standardizes composable, auditable micro-agent primitives for agentic systems. The protocol defines:
 
@@ -30,8 +30,8 @@ Bricks are commodity: open-source, reusable, deterministic. Graphs are product: 
 
 ## Specification
 
-- **Current version:** v0.2.2
-- **Canonical spec:** [spec/ncp-v0.2.2.md](spec/ncp-v0.2.2.md)
+- **Current version:** v0.2.3
+- **Canonical spec:** [spec/ncp-v0.2.3.md](spec/ncp-v0.2.3.md)
 - **PDF releases:** [spec/releases/](spec/releases/)
 
 ## Quick Start
