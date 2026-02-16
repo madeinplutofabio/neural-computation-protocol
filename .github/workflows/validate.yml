@@ -44,8 +44,14 @@ jobs:
         if: steps.check.outcome == 'success'
         working-directory: tools/ncp-validate
 
-      - run: npm run validate-examples
+      - name: Check if CLI is built
+        id: cli_check
         if: steps.check.outcome == 'success'
+        run: test -f tools/ncp-validate/dist/cli.js
+        continue-on-error: true
+
+      - run: npm run validate-examples
+        if: steps.check.outcome == 'success' && steps.cli_check.outcome == 'success'
         working-directory: tools/ncp-validate
 
       - name: Validator not yet initialized
