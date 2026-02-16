@@ -16,16 +16,13 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-    defaults:
-      run:
-        working-directory: tools/ncp-validate
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Check if validator project exists
         id: check
-        run: test -f package.json
+        run: test -f tools/ncp-validate/package.json
         continue-on-error: true
 
       - uses: actions/setup-node@v4
@@ -37,15 +34,19 @@ jobs:
 
       - run: npm ci
         if: steps.check.outcome == 'success'
+        working-directory: tools/ncp-validate
 
       - run: npm run build
         if: steps.check.outcome == 'success'
+        working-directory: tools/ncp-validate
 
       - run: npm test
         if: steps.check.outcome == 'success'
+        working-directory: tools/ncp-validate
 
       - run: npm run validate-examples
         if: steps.check.outcome == 'success'
+        working-directory: tools/ncp-validate
 
       - name: Validator not yet initialized
         if: steps.check.outcome != 'success'
