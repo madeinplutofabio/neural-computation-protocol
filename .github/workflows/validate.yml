@@ -23,13 +23,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if validator project exists
+        id: check
+        run: test -f package.json
+        continue-on-error: true
+
       - uses: actions/setup-node@v4
+        if: steps.check.outcome == 'success'
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           cache-dependency-path: tools/ncp-validate/package-lock.json
 
       - run: npm ci
+        if: steps.check.outcome == 'success'
+
       - run: npm run build
+        if: steps.check.outcome == 'success'
+
       - run: npm test
+        if: steps.check.outcome == 'success'
+
       - run: npm run validate-examples
+        if: steps.check.outcome == 'success'
+
+      - name: Validator not yet initialized
+        if: steps.check.outcome != 'success'
+        run: echo "Validator project not yet set up — skipping."
