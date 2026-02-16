@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SentimentGateOutput",
+  "description": "Output schema for the Sentiment Gate Brick. Produces a sentiment label and confidence score.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "confidence"],
+  "properties": {
+    "label": {
+      "type": "string",
+      "description": "Sentiment classification label.",
+      "enum": ["positive", "negative", "neutral"]
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score in [0,1].",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

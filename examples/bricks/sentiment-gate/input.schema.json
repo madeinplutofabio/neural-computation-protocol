@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SentimentGateInput",
+  "description": "Input schema for the Sentiment Gate Brick. Accepts a text string for sentiment analysis.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text"],
+  "properties": {
+    "text": {
+      "type": "string",
+      "description": "Text to analyze for sentiment.",
+      "minLength": 1
+    }
+  }
+}

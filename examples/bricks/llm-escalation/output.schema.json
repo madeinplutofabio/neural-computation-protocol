@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LlmEscalationOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["respond", "escalate_human", "request_more_info"],
+      "description": "High-level decision produced by the LLM Brick."
+    },
+    "draft_reply": {
+      "type": "string",
+      "description": "Optional draft reply for downstream review or user response."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Optional routing tags (e.g., billing, refund, bug)."
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Optional explanation. Typically gated by policy.allow_rationale."
+    }
+  }
+}

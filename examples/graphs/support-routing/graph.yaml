@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Example Graph Manifest: Support Routing
+# Source: NCP v0.2.3 Spec, Appendix B (adapted for full validation)
+#
+# This is a self-contained two-node graph using the sentiment-gate
+# and llm-escalation example Bricks. The spec's Appendix B shows
+# additional error-routing targets (fallback_classifier, queue_for_review,
+# etc.) that would exist in a production graph; this example focuses on
+# the core LOW_CONFIDENCE escalation path to remain fully validatable.
+#
+# Success at sentiment_gate terminates the graph (no outbound success edge).
+# LOW_CONFIDENCE routes to llm_escalation for LLM-based handling.
+
+graph_id: org.acme.support-routing
+graph_version: "sha256:c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+synaptic_state_version: "sha256:d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5"
+
+nodes:
+  - node_id: sentiment_gate
+    brick: { brick_id: org.ncp-commons.sentiment-gate, version_or_range: "=1.4.2" }
+    activation:
+      mode: all_required
+      timeout_ms: 50
+      allow_partial: false
+      conflict_resolution: reject
+    bindings:
+      graph_ref_slot_values:
+        SENTIMENT_ROUTE_PRIOR: { ref: "synaptic.sentiment_route_prior", consistency: PINNED }
+
+  - node_id: llm_escalation
+    brick: { brick_id: org.acme.llm-escalation, version_or_range: "=0.3.0" }
+    activation:
+      mode: all_required
+      timeout_ms: 5000
+      allow_partial: true
+      required_fields: ["input.query"]
+      defaults:
+        "input.policy.mode": "draft_reply"
+        "input.policy.max_output_tokens": 256
+        "input.policy.allow_rationale": false
+      conflict_resolution: reject
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: sentiment_to_escalation
+    source_node: sentiment_gate
+    target_node: llm_escalation
+    mapping:
+      - from: output.label
+        to: input.query
+    on_error:
+      LOW_CONFIDENCE: [llm_escalation]

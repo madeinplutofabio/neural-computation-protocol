@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LlmEscalationInput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query", "policy"],
+  "properties": {
+    "query": {
+      "type": "string",
+      "description": "End-user request or message to escalate.",
+      "minLength": 1
+    },
+    "context": {
+      "type": "object",
+      "description": "Optional structured context produced by upstream Bricks.",
+      "additionalProperties": true,
+      "properties": {
+        "sentiment": { "type": "number", "minimum": -1, "maximum": 1 },
+        "urgency": { "type": "number", "minimum": 0, "maximum": 1 },
+        "customer_tier": { "type": "string" },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["draft_reply", "classify_only", "route_only"],
+          "description": "Controls what the Brick is allowed to output."
+        },
+        "max_output_tokens": { "type": "integer", "minimum": 1 },
+        "allow_rationale": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}
