@@ -6,6 +6,7 @@
 # NCP — Neural Computation Protocol
 
 [![Validate](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg)](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 NCP standardizes composable, auditable micro-agent primitives for agentic systems. The protocol defines:
 
