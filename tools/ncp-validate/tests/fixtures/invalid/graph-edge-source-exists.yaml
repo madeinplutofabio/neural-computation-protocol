@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_EDGE_SOURCE_EXISTS
+# Edge references a source_node that does not exist
+# Expected: schema_valid=true, invariant_fail=GRAPH_EDGE_SOURCE_EXISTS
+
+graph_id: org.test.edge-source-exists
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: dangling_source
+    source_node: ghost_node           # ← does not exist
+    target_node: node_a
+    mapping:
+      - { from: output.x, to: input.x }

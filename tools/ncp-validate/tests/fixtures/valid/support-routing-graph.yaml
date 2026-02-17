@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Valid fixture: Support Routing Graph Manifest
+# Copied from examples/graphs/support-routing/graph.yaml
+
+graph_id: org.acme.support-routing
+graph_version: "sha256:c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+synaptic_state_version: "sha256:d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5"
+
+nodes:
+  - node_id: sentiment_gate
+    brick: { brick_id: org.ncp-commons.sentiment-gate, version_or_range: "=1.4.2" }
+    activation:
+      mode: all_required
+      timeout_ms: 50
+      allow_partial: false
+      conflict_resolution: reject
+    bindings:
+      graph_ref_slot_values:
+        SENTIMENT_ROUTE_PRIOR: { ref: "synaptic.sentiment_route_prior", consistency: PINNED }
+
+  - node_id: llm_escalation
+    brick: { brick_id: org.acme.llm-escalation, version_or_range: "=0.3.0" }
+    activation:
+      mode: all_required
+      timeout_ms: 5000
+      allow_partial: true
+      required_fields: ["input.query"]
+      defaults:
+        "input.policy.mode": "draft_reply"
+        "input.policy.max_output_tokens": 256
+        "input.policy.allow_rationale": false
+      conflict_resolution: reject
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: sentiment_to_escalation
+    source_node: sentiment_gate
+    target_node: llm_escalation
+    mapping:
+      - from: output.label
+        to: input.query
+    on_error:
+      LOW_CONFIDENCE: [llm_escalation]

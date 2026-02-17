@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: BRICK_DRIFT_NEEDS_EPSILON
+# determinism.mode=bounded_drift but epsilon is missing
+# Expected: schema_valid=false (schema-enforced invariant)
+
+brick_id: org.test.drift-needs-epsilon
+version: "1.0.0"
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: []
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  size_bytes: 1024
+
+schemas:
+  input: schemas/input.json
+  output: schemas/output.json
+  carry_state: null
+
+limits:
+  max_ms: 10
+  max_mem_mb: 32
+  max_output_bytes: 4096
+  max_input_bytes: 4096
+
+capabilities: []
+
+determinism:
+  mode: bounded_drift                # ← requires epsilon
+  # epsilon intentionally omitted
+
+time_model: logical
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+
+carry_state_side_effects_schema: null
+confidence_threshold: 0.50
+
+graph_ref_slots: []

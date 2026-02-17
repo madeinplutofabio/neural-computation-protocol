@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: CROSS_BRICK_MANIFEST_AVAILABLE
+# Graph references a brick_id for which no manifest is provided
+# Expected: schema_valid=true, valid=true (warning only),
+#   warning=CROSS_BRICK_MANIFEST_AVAILABLE
+
+graph_id: org.test.brick-manifest-available
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.missing-brick, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

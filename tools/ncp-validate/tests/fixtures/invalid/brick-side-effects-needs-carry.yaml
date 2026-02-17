@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: BRICK_SIDE_EFFECTS_NEEDS_CARRY
+# carry_state_side_effects_schema is set but carry_state_class=none
+# Expected: schema_valid=true, invariant_fail=BRICK_SIDE_EFFECTS_NEEDS_CARRY
+
+brick_id: org.test.side-effects-needs-carry
+version: "1.0.0"
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: []
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  size_bytes: 1024
+
+schemas:
+  input: schemas/input.json
+  output: schemas/output.json
+  carry_state: null
+
+limits:
+  max_ms: 10
+  max_mem_mb: 32
+  max_output_bytes: 4096
+  max_input_bytes: 4096
+
+capabilities: []
+
+determinism:
+  mode: bit_exact
+
+time_model: pure
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+
+carry_state_side_effects_schema: schemas/side-effects.json  # ← set, but no carry state
+confidence_threshold: 0.50
+
+graph_ref_slots: []

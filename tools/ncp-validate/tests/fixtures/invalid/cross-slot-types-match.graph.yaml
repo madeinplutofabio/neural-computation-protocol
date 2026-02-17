@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture (graph side): CROSS_SLOT_TYPES_MATCH
+# Binding consistency is LIVE_OPS but brick declares PINNED
+# Expected: schema_valid=true, invariant_fail=CROSS_SLOT_TYPES_MATCH
+
+graph_id: org.test.slot-types-match
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-with-slot, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values:
+        SENTIMENT_ROUTE_PRIOR: { ref: "synaptic.prior", consistency: LIVE_OPS }  # ← brick declares PINNED
+
+edges: []

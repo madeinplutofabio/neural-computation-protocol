@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Valid fixture: LLM Escalation Brick Manifest
+# Copied from examples/bricks/llm-escalation/manifest.yaml
+
+brick_id: org.acme.llm-escalation
+version: "0.3.0"
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: ["wall_clock"]
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: "sha256:b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+  size_bytes: 152004
+
+schemas:
+  input: schemas/input.json
+  output: schemas/output.json
+  carry_state: null
+
+limits:
+  max_ms: 3000
+  max_mem_mb: 256
+  max_output_bytes: 16384
+  max_input_bytes: 32768
+  estimated_cost_per_invoke_usd: 0.003
+
+capabilities: []
+
+determinism:
+  mode: stochastic
+  seed_source: ctx.seed
+  model_pin: "provider:example-llm;model:sonnet-like;version:2025-05-14"
+  reproducibility_level: seed_approximate
+
+time_model: wall_bounded
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+
+carry_state_side_effects_schema: null
+
+graph_ref_slots: []

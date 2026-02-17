@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Valid fixture: Sentiment Gate Brick Manifest
+# Copied from examples/bricks/sentiment-gate/manifest.yaml
+
+brick_id: org.ncp-commons.sentiment-gate
+version: "1.4.2"
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: ["logical_clock"]
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+  size_bytes: 47832
+
+schemas:
+  input: schemas/input.json
+  output: schemas/output.json
+  carry_state: null
+
+limits:
+  max_ms: 2
+  max_mem_mb: 32
+  max_output_bytes: 4096
+  max_input_bytes: 4096
+  estimated_cost_per_invoke_usd: 0.000003
+
+capabilities: []
+
+determinism:
+  mode: bounded_drift
+  epsilon: 1.0e-5
+
+time_model: logical
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+
+carry_state_side_effects_schema: null
+
+confidence_threshold: 0.70
+
+graph_ref_slots:
+  - slot: SENTIMENT_ROUTE_PRIOR
+    type: float
+    access: read
+    ref_consistency: PINNED

@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_EDGE_IDS_UNIQUE
+# Two edges share the same edge_id
+# Expected: schema_valid=true, invariant_fail=GRAPH_EDGE_IDS_UNIQUE
+
+graph_id: org.test.edge-ids-unique
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: node_b
+    brick: { brick_id: org.test.brick-b, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: node_c
+    brick: { brick_id: org.test.brick-c, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: duplicate_edge          # ← duplicate
+    source_node: node_a
+    target_node: node_b
+    mapping:
+      - { from: output.x, to: input.x }
+
+  - edge_id: duplicate_edge          # ← duplicate
+    source_node: node_a
+    target_node: node_c
+    mapping:
+      - { from: output.y, to: input.y }

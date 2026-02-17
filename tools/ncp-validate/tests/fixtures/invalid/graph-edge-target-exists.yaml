@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_EDGE_TARGET_EXISTS
+# Edge references a target_node that does not exist
+# Expected: schema_valid=true, invariant_fail=GRAPH_EDGE_TARGET_EXISTS
+
+graph_id: org.test.edge-target-exists
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: dangling_target
+    source_node: node_a
+    target_node: ghost_node           # ← does not exist
+    mapping:
+      - { from: output.x, to: input.x }

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_NO_SELF_EDGES
+# Edge has source_node === target_node (self-loop)
+# Expected: schema_valid=true, invariant_fail=GRAPH_NO_SELF_EDGES
+
+graph_id: org.test.no-self-edges
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: self_loop
+    source_node: node_a
+    target_node: node_a               # ← self-loop
+    mapping:
+      - { from: output.x, to: input.x }

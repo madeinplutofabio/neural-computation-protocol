@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture (graph side): CROSS_SLOTS_FULLY_BOUND
+# Node does not bind the SENTIMENT_ROUTE_PRIOR slot declared by the brick
+# Expected: schema_valid=true, invariant_fail=CROSS_SLOTS_FULLY_BOUND
+
+graph_id: org.test.slots-fully-bound
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-with-slot, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}       # ← missing binding for SENTIMENT_ROUTE_PRIOR
+
+edges: []

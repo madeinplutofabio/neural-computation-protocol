@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture (graph side): CROSS_VERSION_SATISFIES
+# Graph requires =2.0.0 but brick is version 1.0.0
+# Expected: schema_valid=true, invariant_fail=CROSS_VERSION_SATISFIES
+
+graph_id: org.test.version-satisfies
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-versioned, version_or_range: "=2.0.0" }  # ← brick is 1.0.0
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

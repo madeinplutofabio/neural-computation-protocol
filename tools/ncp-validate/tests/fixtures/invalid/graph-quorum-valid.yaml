@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_QUORUM_VALID
+# mode=quorum but quorum_n > quorum_m
+# Expected: schema_valid=true, invariant_fail=GRAPH_QUORUM_VALID
+
+graph_id: org.test.quorum-valid
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    activation:
+      mode: quorum
+      quorum_n: 5                     # ← n > m is invalid
+      quorum_m: 3
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

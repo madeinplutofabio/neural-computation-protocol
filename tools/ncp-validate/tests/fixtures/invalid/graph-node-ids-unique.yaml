@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_NODE_IDS_UNIQUE
+# Two nodes share the same node_id
+# Expected: schema_valid=true, invariant_fail=GRAPH_NODE_IDS_UNIQUE
+
+graph_id: org.test.node-ids-unique
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: duplicate_node          # ← duplicate
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: duplicate_node          # ← duplicate
+    brick: { brick_id: org.test.brick-b, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

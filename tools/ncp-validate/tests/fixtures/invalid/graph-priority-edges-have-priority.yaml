@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Invalid fixture: GRAPH_PRIORITY_EDGES_HAVE_PRIORITY
+# Node uses conflict_resolution=priority but inbound edge has no priority field
+# Expected: schema_valid=true, invariant_fail=GRAPH_PRIORITY_EDGES_HAVE_PRIORITY
+
+graph_id: org.test.priority-edges-have-priority
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: node_a
+    brick: { brick_id: org.test.brick-a, version_or_range: "=1.0.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: node_b
+    brick: { brick_id: org.test.brick-b, version_or_range: "=1.0.0" }
+    activation:
+      mode: all_required
+      conflict_resolution: priority   # ← requires priority on all inbound edges
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: edge_ab
+    source_node: node_a
+    target_node: node_b
+    mapping:
+      - { from: output.x, to: input.x }
+    # priority intentionally omitted
