@@ -1,0 +1,7 @@
+{
+  "input": {
+    "text": "I've been waiting three weeks for a refund and nobody is responding to my emails. This is unacceptable.",
+    "customer_tier": "premium",
+    "channel": "email"
+  }
+}
