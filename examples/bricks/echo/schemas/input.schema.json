@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EchoInput",
+  "description": "Accepts any valid JSON value and echoes it back.",
+  "type": ["null", "boolean", "number", "string", "array", "object"]
+}

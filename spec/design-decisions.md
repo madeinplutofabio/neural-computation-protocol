@@ -75,7 +75,7 @@ The fix (applied in the canonical spec [`ncp-v0.2.3.md`](ncp-v0.2.3.md#91-result
 ## Why CBOR over Protobuf
 
 - **Self-describing** — CBOR payloads carry their own type information; no external `.proto` file needed.
-- **Canonical form** — RFC 8742 defines deterministic encoding, which NCP requires for digest/signature computation.
+- **Canonical form** — Deterministic encoding per RFC 8949 §4.2 is required for digest/signature computation.
 - **IETF standard** — RFC 8949, widely supported across languages.
 - **Binary efficiency** — compact representation without the complexity of Protobuf's schema evolution model.
 

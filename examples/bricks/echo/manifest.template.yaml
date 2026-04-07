@@ -1,0 +1,37 @@
+"brick_id": "org.ncp-examples.echo"
+"version": "0.1.0"
+"ncp_protocol_range": ">=0.2.0 <0.3.0"
+"required_runtime_features": []
+"status": "active"
+
+"artifact":
+  "format": "wasm"
+  "entrypoint": "invoke"
+  "digest": "sha256:PLACEHOLDER"
+  "size_bytes": 0
+
+"schemas":
+  "input": "schemas/input.schema.json"
+  "output": "schemas/output.schema.json"
+  "carry_state": null
+
+"limits":
+  "max_ms": 10
+  "max_mem_mb": 1
+  "max_output_bytes": 65536
+  "max_input_bytes": 65536
+
+"capabilities": []
+
+"determinism":
+  "mode": "bit_exact"
+
+"time_model": "pure"
+
+"carry_state_class": "none"
+"carry_state_transport": "inline"
+"carry_state_max_bytes": 0
+
+"carry_state_side_effects_schema": null
+
+"graph_ref_slots": []

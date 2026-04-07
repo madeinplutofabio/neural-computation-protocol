@@ -57,3 +57,82 @@ jobs:
       - name: Validator not yet initialized
         if: steps.check.outcome != 'success'
         run: echo "Validator project not yet set up — skipping."
+
+  # Rebuild echo.wasm from source and verify digest matches committed artifact + manifest
+  wasm-digest-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check if brick source exists
+        id: brick_check
+        run: test -f bricks/echo/Cargo.toml
+        continue-on-error: true
+
+      - name: Install Rust toolchain
+        if: steps.brick_check.outcome == 'success'
+        uses: dtolnay/rust-toolchain@1.94.0
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Build echo.wasm from source
+        if: steps.brick_check.outcome == 'success'
+        working-directory: bricks/echo
+        run: |
+          cargo build --target wasm32-unknown-unknown --release
+          cp target/wasm32-unknown-unknown/release/ncp_echo.wasm echo-rebuilt.wasm
+
+      - name: Verify digest matches committed artifact
+        if: steps.brick_check.outcome == 'success'
+        run: |
+          test -f bricks/echo/echo.wasm || { echo "::error::Missing committed bricks/echo/echo.wasm"; exit 1; }
+          COMMITTED=$(sha256sum bricks/echo/echo.wasm | awk '{print $1}')
+          REBUILT=$(sha256sum bricks/echo/echo-rebuilt.wasm | awk '{print $1}')
+          echo "Committed: sha256:${COMMITTED}"
+          echo "Rebuilt:   sha256:${REBUILT}"
+          if [ "$COMMITTED" != "$REBUILT" ]; then
+            echo "::error::echo.wasm digest mismatch! Committed artifact does not match source rebuild."
+            exit 1
+          fi
+          echo "Digest match confirmed."
+
+      - name: Check if validator project exists
+        id: validator_check
+        if: steps.brick_check.outcome == 'success'
+        run: test -f tools/ncp-validate/package-lock.json
+        continue-on-error: true
+
+      - uses: actions/setup-node@v4
+        if: steps.brick_check.outcome == 'success' && steps.validator_check.outcome == 'success'
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: tools/ncp-validate/package-lock.json
+
+      - run: npm ci
+        if: steps.brick_check.outcome == 'success' && steps.validator_check.outcome == 'success'
+        working-directory: tools/ncp-validate
+
+      - name: Verify manifest digest matches rebuilt artifact
+        if: steps.brick_check.outcome == 'success' && steps.validator_check.outcome == 'success'
+        working-directory: tools/ncp-validate
+        run: |
+          test -f ../../examples/bricks/echo/manifest.yaml || { echo "::error::Missing examples/bricks/echo/manifest.yaml"; exit 1; }
+          REBUILT_DIGEST="sha256:$(sha256sum ../../bricks/echo/echo-rebuilt.wasm | awk '{print $1}')"
+          MANIFEST_DIGEST=$(node -e "
+            const YAML = require('yaml');
+            const fs = require('fs');
+            const m = YAML.parse(fs.readFileSync('../../examples/bricks/echo/manifest.yaml','utf8'));
+            console.log(m.artifact.digest);
+          ")
+          echo "Rebuilt:   ${REBUILT_DIGEST}"
+          echo "Manifest:  ${MANIFEST_DIGEST}"
+          if [ "$REBUILT_DIGEST" != "$MANIFEST_DIGEST" ]; then
+            echo "::error::Manifest digest does not match rebuilt artifact. Run ncp-validate pack to update."
+            exit 1
+          fi
+          echo "Manifest digest match confirmed."
+
+      - name: Brick source not yet present
+        if: steps.brick_check.outcome != 'success'
+        run: echo "Brick source not yet set up — skipping."

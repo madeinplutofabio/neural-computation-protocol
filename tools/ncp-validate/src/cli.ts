@@ -268,6 +268,118 @@ program
     },
   );
 
+// ── pack command ────────────────────────────────────────────────────────────
+
+program
+  .command("pack")
+  .description(
+    "Stamp a Brick manifest template with real artifact digest and size.\n" +
+    "Reads WASM file, computes sha256, and writes completed manifest.",
+  )
+  .requiredOption("--wasm <path>", "Path to WASM artifact")
+  .requiredOption("--template <path>", "Path to manifest YAML template")
+  .requiredOption("--output <path>", "Output path for stamped manifest")
+  .action(
+    async (opts: { wasm: string; template: string; output: string }) => {
+      try {
+        const crypto = await import("node:crypto");
+        const YAML = await import("yaml");
+        const wasmPath = path.resolve(opts.wasm);
+        const templatePath = path.resolve(opts.template);
+        const outputPath = path.resolve(opts.output);
+
+        if (!fs.existsSync(wasmPath)) {
+          console.error(chalk.red(`WASM file not found: ${wasmPath}`));
+          process.exit(EXIT_ERROR);
+        }
+        if (!fs.existsSync(templatePath)) {
+          console.error(chalk.red(`Template not found: ${templatePath}`));
+          process.exit(EXIT_ERROR);
+        }
+
+        // Read WASM and compute digest
+        const wasmBytes = fs.readFileSync(wasmPath);
+        const hash = crypto.createHash("sha256").update(wasmBytes).digest("hex");
+        const digest = `sha256:${hash}`;
+        const sizeBytes = wasmBytes.length;
+
+        // Load template — enforce JSON data model per Section 5.2
+        const templateContent = fs.readFileSync(templatePath, "utf-8");
+
+        // AST check: reject anchors, aliases, and non-JSON tags
+        const doc = YAML.parseDocument(templateContent);
+        YAML.visit(doc, {
+          Pair(_key: unknown, pair: unknown) {
+            const p = pair as { key?: unknown; value?: unknown };
+            for (const node of [p.key, p.value]) {
+              if (node && typeof node === "object") {
+                const n = node as Record<string, unknown>;
+                if (n.anchor) {
+                  console.error(chalk.red(
+                    `Template contains YAML anchor "&${n.anchor}", rejected per Section 5.2 data model constraint.`,
+                  ));
+                  process.exit(EXIT_ERROR);
+                }
+                if (n.tag) {
+                  console.error(chalk.red(
+                    `Template contains YAML tag "${n.tag}", rejected per Section 5.2 data model constraint.`,
+                  ));
+                  process.exit(EXIT_ERROR);
+                }
+              }
+            }
+          },
+          Alias() {
+            console.error(chalk.red(
+              "Template contains YAML alias, rejected per Section 5.2 data model constraint.",
+            ));
+            process.exit(EXIT_ERROR);
+          },
+        });
+
+        // Parse with JSON schema — prevents implicit typing, merge keys, aliases
+        const manifest = YAML.parse(templateContent, {
+          schema: "json",
+          version: "1.2",
+          uniqueKeys: true,
+          merge: false,
+          stringKeys: true,
+          strict: true,
+          resolveKnownTags: false,
+          maxAliasCount: 0,
+        });
+
+        if (!manifest || typeof manifest !== "object") {
+          console.error(chalk.red("Template did not parse to an object."));
+          process.exit(EXIT_ERROR);
+        }
+
+        // Stamp artifact fields
+        if (!manifest.artifact || typeof manifest.artifact !== "object") {
+          manifest.artifact = {};
+        }
+        manifest.artifact.digest = digest;
+        manifest.artifact.size_bytes = sizeBytes;
+
+        // Write output (ensure directory exists)
+        fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+        const outputContent = YAML.stringify(manifest, {
+          lineWidth: 0,
+          singleQuote: false,
+        });
+        fs.writeFileSync(outputPath, outputContent, "utf-8");
+
+        console.log(`Stamped manifest written to ${outputPath}`);
+        console.log(`  artifact.digest:     ${digest}`);
+        console.log(`  artifact.size_bytes: ${sizeBytes}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(chalk.red(`Error: ${msg}`));
+        process.exit(EXIT_ERROR);
+      }
+    },
+  );
+
 // ── rules command ───────────────────────────────────────────────────────────
 
 program

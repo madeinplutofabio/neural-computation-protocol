@@ -129,7 +129,11 @@ A bundle MUST provide:
 
 ### 5.2 Canonicalization
 
-Implementations MUST define and use a canonical serialization (e.g., canonical JSON) for digests and signatures to avoid equivalent-but-different encodings.
+Deterministic CBOR encoding per [RFC 8949 §4.2](https://www.rfc-editor.org/rfc/rfc8949#section-4.2) is the REQUIRED canonical serialization for all digest and signature computation. Two conformant implementations given identical semantic content MUST produce byte-identical canonical CBOR output.
+
+**Data model constraint:** Canonicalization applies to the JSON Data Model (null, boolean, number, string, array, object). YAML inputs MUST be parsed into that model before canonicalization. YAML-specific features (tags, anchors, aliases, custom types, timestamp auto-detection) MUST be rejected by conformant tooling when processing manifests for digest computation. CBOR tags MUST NOT be used in canonical representations (this follows from restricting to the JSON data model).
+
+JSON MUST NOT be used for digest or signature computation unless JCS ([RFC 8785](https://www.rfc-editor.org/rfc/rfc8785)) is explicitly selected. JSON MAY be used for tooling and debugging per Section [16.1](#161-normative-encoding).
 
 ---
 
@@ -232,6 +236,23 @@ Semantics:
   - The runtime MUST record the full output payload for audit/forensic replay (see Section [11.1](#111-minimal-trace-record-mandatory)), or MUST record a stable reference to an operator-controlled secure audit store that contains the full output.
 
 Runtimes MUST include `model_pin` and `reproducibility_level` in trace records for invocations of such Bricks.
+
+#### 6.6.2 Runtime Intrinsics and External Model Access
+
+External model inference (e.g., LLM calls described in Section [6.6.1](#661-stochastic-bricks-with-external-model-dependencies)) is a **runtime-provided intrinsic**, NOT a network call initiated by the Brick. The WASM sandbox (Section [6.5](#65-purity-and-capabilities)) remains intact: the Brick invokes a host-provided import function, and the runtime proxies the request on the Brick's behalf.
+
+**Import namespace:** Runtime-provided intrinsics MUST use the WASM import namespace `ncp_runtime` (e.g., `ncp_runtime.infer`). Future intrinsics MUST be added under this namespace.
+
+**Feature declaration:** Bricks requiring runtime intrinsics MUST declare them in `required_runtime_features[]` (e.g., `["infer"]`). Runtimes MUST reject Bricks that require unsupported features with `error_class: RUNTIME_REJECTED`.
+
+**Feature discovery:** Runtimes MUST expose their provided features via at least one of:
+
+- CLI: a command (e.g., `ncp-runtime --features`) returning a JSON array of feature strings
+- Programmatic: a `provided_runtime_features` field in the runtime's configuration or manifest
+
+This enables tooling to pre-validate Brick compatibility without execution.
+
+**Conformance profile:** v0.2 defines a single sandbox conformance profile. Runtime intrinsics are optional; if provided, they MUST follow this section (§6.6.2). Future protocol versions MAY define additional profiles with expanded capability sets.
 
 ### 6.7 Time Model
 
@@ -377,6 +398,27 @@ An edge MAY define:
 - `on_error`: mapping from `error_class` to next node(s)
 
 Graph runtime MUST implement **typed error routing**.
+
+#### 7.4.1 Routing Evaluation Order (Normative)
+
+When a Brick invocation completes, the runtime MUST evaluate outbound edges from the source node using the following deterministic algorithm:
+
+**On error (`Failure` or `LowConfidence` result):**
+
+1. Collect all outbound edges from the source node whose `on_error` map contains the specific `error_class` returned. Edges without a matching `error_class` entry are excluded.
+2. Order candidate edges by `priority` descending (highest priority first), then by `edge_id` lexicographic ascending as tie-breaker.
+3. Dispatch the first matching edge (single-target semantics).
+
+**On success (`Success` result):**
+
+1. Collect all outbound edges from the source node that define `on_success`.
+2. Apply threshold gating: if `on_success.threshold` is defined, compare it against `output.confidence`. If `output.confidence` is absent, treat the edge as eligible. If `output.confidence` is present but not a valid number in [0,1], the runtime MUST treat the invocation as Failure with error_class=INVALID_INPUT and route via `on_error`. Exclude edges whose threshold exceeds `output.confidence`. Edges without a `threshold` field are always candidates.
+3. Order candidate edges by `on_success.weight` descending (higher weight = higher priority for ordering), then by `edge_id` lexicographic ascending as tie-breaker. `weight` is a deterministic ordering value, NOT a probability. If `weight` is not specified, it defaults to `0.0`.
+4. Dispatch all candidate edges (fan-out) in the defined order. If only one edge is eligible, this degenerates to single-target.
+
+Graphs requiring single-target routing MUST ensure only one edge is eligible after threshold gating (or MUST model single-target selection explicitly via a Router Brick).
+
+**Terminal nodes:** If no outbound edge matches, the node is terminal for this execution path. The runtime MUST record the result in the trace and MUST NOT treat the absence of a matching edge as an error.
 
 ### 7.5 Budgets and Limits
 
@@ -687,7 +729,7 @@ Operators SHOULD require signature verification and may require attestations.
 NCP defines a **normative binary wire format** for the invocation envelope and result:
 
 - **CBOR** ([RFC 8949](https://www.rfc-editor.org/rfc/rfc8949)) MUST be supported.
-- **Deterministic (canonical) CBOR encoding** per [RFC 8742](https://www.rfc-editor.org/rfc/rfc8742) MUST be used for any bytes that are hashed/digested or signed.
+- **Deterministic (canonical) CBOR encoding** per [RFC 8949 §4.2](https://www.rfc-editor.org/rfc/rfc8949#section-4.2) MUST be used for any bytes that are hashed/digested or signed.
 
 JSON MAY be supported for tooling/debugging but MUST NOT be used for digest/signature computation.
 
@@ -713,9 +755,21 @@ Where:
 - The first 4 bytes at `result_ptr` MUST be `result_len` as a little-endian `u32`.
 - The CBOR result bytes MUST begin at `result_ptr + 4` and be `result_len` bytes.
 
+#### 16.2.1 WASM Trap Handling
+
+Runtime MUST catch all WASM traps (including but not limited to: panics, out-of-bounds memory access, stack overflow, `unreachable` instruction, division overflow traps, and table access violations).
+
+Rules:
+
+- Runtime MUST convert any WASM trap into a `Failure` result with `error_class: COMPUTATION_ERROR`.
+- Runtime SHOULD include the trap type in the `error.message` field (e.g., `"wasm trap: unreachable"`).
+- Runtime MUST set `retry_advice: NEVER` and `severity: ERROR` for trap-derived failures.
+- Runtime MUST record the trap in the trace per Section [11.1](#111-minimal-trace-record-mandatory).
+- Runtime MUST NOT propagate WASM traps as host-level exceptions. The trap is fully contained within the NCP error model.
+
 ### 16.3 Memory Management
 
-Runtimes MUST provide imports for allocation/free to avoid leaking memory across invocations.
+Runtimes MUST support result-buffer memory management to avoid leaks across invocations.
 
 One of the following memory models MUST be implemented by a compliant runtime:
 

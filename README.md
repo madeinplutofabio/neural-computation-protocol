@@ -55,7 +55,10 @@ npx ncp-validate rules
 ├── spec/           # Canonical protocol specification (Markdown + PDF releases)
 ├── schemas/        # JSON Schema (Draft 2020-12) for all NCP structures
 ├── examples/       # Example Brick and Graph manifests from spec appendices
+├── bricks/         # Reference Brick implementations (Rust → WASM)
 ├── tools/          # Validator CLI and tooling
+├── conformance/    # Test vectors for runtime implementors
+├── docs/           # Roadmap and supplementary documentation
 └── .github/        # CI workflows and issue templates
 ```
 
@@ -67,6 +70,10 @@ The `ncp-validate` CLI validates manifests in two phases:
 2. **Invariant rules** — cross-field consistency checks derived from the spec
 
 See [tools/ncp-validate/README.md](tools/ncp-validate/README.md) for full CLI docs and the complete rule list.
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased development plan.
 
 ## Contributing
 

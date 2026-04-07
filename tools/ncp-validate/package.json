@@ -11,7 +11,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate-examples": "node dist/cli.js brick ../../examples/bricks/sentiment-gate/manifest.yaml && node dist/cli.js brick ../../examples/bricks/llm-escalation/manifest.yaml && node dist/cli.js graph ../../examples/graphs/support-routing/graph.yaml"
+    "validate-examples": "node dist/cli.js pack --wasm ../../bricks/echo/echo.wasm --template ../../examples/bricks/echo/manifest.template.yaml --output ../../examples/bricks/echo/manifest.yaml && node dist/cli.js brick ../../examples/bricks/sentiment-gate/manifest.yaml && node dist/cli.js brick ../../examples/bricks/llm-escalation/manifest.yaml && node dist/cli.js brick ../../examples/bricks/echo/manifest.yaml && node dist/cli.js graph ../../examples/graphs/support-routing/graph.yaml"
   },
   "dependencies": {
     "ajv": "^8.17.0",

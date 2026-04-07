@@ -1,0 +1,22 @@
+[package]
+name = "ncp-echo"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "NCP reference echo Brick — returns input as output"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+minicbor = { version = "0.25", default-features = false, features = ["alloc"] }
+
+[features]
+trap = []
+
+[profile.release]
+panic = "abort"
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1

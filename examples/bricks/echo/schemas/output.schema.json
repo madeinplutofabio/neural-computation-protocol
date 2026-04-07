@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EchoOutput",
+  "description": "Echoes the input verbatim.",
+  "type": ["null", "boolean", "number", "string", "array", "object"]
+}

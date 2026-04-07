@@ -1,0 +1,66 @@
+{
+  "description": "Deterministic CBOR encoding test vectors per RFC 8949 §4.2 (NCP Section 5.2)",
+  "note": "IMPORTANT: expected_cbor_hex values must be verified against a reference CBOR library before use in conformance testing",
+  "vectors": [
+    {
+      "description": "empty map",
+      "input": {},
+      "expected_cbor_hex": "a0"
+    },
+    {
+      "description": "single string key",
+      "input": { "a": 1 },
+      "expected_cbor_hex": "a1616101"
+    },
+    {
+      "description": "integer zero",
+      "input": { "n": 0 },
+      "expected_cbor_hex": "a1616e00"
+    },
+    {
+      "description": "negative integer",
+      "input": { "n": -1 },
+      "expected_cbor_hex": "a1616e20"
+    },
+    {
+      "description": "boolean true",
+      "input": { "b": true },
+      "expected_cbor_hex": "a16162f5"
+    },
+    {
+      "description": "boolean false",
+      "input": { "b": false },
+      "expected_cbor_hex": "a16162f4"
+    },
+    {
+      "description": "null value",
+      "input": { "x": null },
+      "expected_cbor_hex": "a16178f6"
+    },
+    {
+      "description": "empty string",
+      "input": { "s": "" },
+      "expected_cbor_hex": "a1617360"
+    },
+    {
+      "description": "empty array",
+      "input": { "a": [] },
+      "expected_cbor_hex": "a1616180"
+    },
+    {
+      "description": "map key ordering — keys sorted by encoded length then lexicographic",
+      "input": { "bb": 2, "a": 1, "ccc": 3 },
+      "expected_cbor_hex": "a3616101626262026363636303"
+    },
+    {
+      "description": "nested map",
+      "input": { "outer": { "inner": 42 } },
+      "expected_cbor_hex": "a1656f75746572a165696e6e6572182a"
+    },
+    {
+      "description": "array of integers",
+      "input": { "nums": [1, 2, 3] },
+      "expected_cbor_hex": "a1646e756d7383010203"
+    }
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "description": "Routing evaluation order test vectors per NCP Section 7.4.1",
+  "vectors": [
+    {
+      "description": "on_error: single matching edge for COMPUTATION_ERROR",
+      "edges": [
+        { "edge_id": "e1", "on_error": { "COMPUTATION_ERROR": ["recovery_node"] } },
+        { "edge_id": "e2", "on_error": { "INVALID_INPUT": ["fallback_node"] } }
+      ],
+      "result": { "type": "Failure", "error_class": "COMPUTATION_ERROR" },
+      "expected_targets": ["e1"]
+    },
+    {
+      "description": "on_error: no matching edge — terminal node",
+      "edges": [
+        { "edge_id": "e1", "on_error": { "INVALID_INPUT": ["fallback_node"] } }
+      ],
+      "result": { "type": "Failure", "error_class": "COMPUTATION_ERROR" },
+      "expected_targets": []
+    },
+    {
+      "description": "on_error: multiple matching edges — priority ordering",
+      "edges": [
+        { "edge_id": "e1", "priority": 5, "on_error": { "COMPUTATION_ERROR": ["node_a"] } },
+        { "edge_id": "e2", "priority": 10, "on_error": { "COMPUTATION_ERROR": ["node_b"] } }
+      ],
+      "result": { "type": "Failure", "error_class": "COMPUTATION_ERROR" },
+      "expected_targets": ["e2"]
+    },
+    {
+      "description": "on_error: tie-breaking by edge_id lexicographic ascending",
+      "edges": [
+        { "edge_id": "edge_b", "priority": 10, "on_error": { "COMPUTATION_ERROR": ["node_a"] } },
+        { "edge_id": "edge_a", "priority": 10, "on_error": { "COMPUTATION_ERROR": ["node_b"] } }
+      ],
+      "result": { "type": "Failure", "error_class": "COMPUTATION_ERROR" },
+      "expected_targets": ["edge_a"]
+    },
+    {
+      "description": "on_error: LowConfidence routes via on_error LOW_CONFIDENCE",
+      "edges": [
+        { "edge_id": "e1", "on_error": { "LOW_CONFIDENCE": ["llm_node"] } },
+        { "edge_id": "e2", "on_success": { "weight": 1.0 } }
+      ],
+      "result": { "type": "LowConfidence", "error_class": "LOW_CONFIDENCE" },
+      "expected_targets": ["e1"]
+    },
+    {
+      "description": "on_success: single edge above threshold (fan-out with one candidate)",
+      "edges": [
+        { "edge_id": "e1", "on_success": { "threshold": 0.5, "weight": 1.0 } }
+      ],
+      "result": { "type": "Success" },
+      "result_confidence": 0.8,
+      "expected_targets": ["e1"]
+    },
+    {
+      "description": "on_success: edge below threshold excluded — terminal",
+      "edges": [
+        { "edge_id": "e1", "on_success": { "threshold": 0.9, "weight": 1.0 } }
+      ],
+      "result": { "type": "Success" },
+      "result_confidence": 0.7,
+      "expected_targets": []
+    },
+    {
+      "description": "on_success: no output.confidence — edge treated as eligible",
+      "edges": [
+        { "edge_id": "e1", "on_success": { "threshold": 0.9, "weight": 1.0 } }
+      ],
+      "result": { "type": "Success" },
+      "expected_targets": ["e1"]
+    },
+    {
+      "description": "on_success: fan-out dispatches all candidates ordered by weight desc then edge_id asc",
+      "edges": [
+        { "edge_id": "e1", "on_success": { "weight": 0.5 } },
+        { "edge_id": "e2", "on_success": { "weight": 0.9 } },
+        { "edge_id": "e3", "on_success": { "weight": 0.9 } }
+      ],
+      "result": { "type": "Success" },
+      "expected_targets": ["e2", "e3", "e1"]
+    },
+    {
+      "description": "on_success: weight tie broken by edge_id lexicographic ascending",
+      "edges": [
+        { "edge_id": "zz_edge", "on_success": { "weight": 1.0 } },
+        { "edge_id": "aa_edge", "on_success": { "weight": 1.0 } }
+      ],
+      "result": { "type": "Success" },
+      "expected_targets": ["aa_edge", "zz_edge"]
+    }
+  ]
+}
