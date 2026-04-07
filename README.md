@@ -3,6 +3,10 @@
   Copyright 2026 Fabio Marcello Salvadori
 -->
 
+<p align="center">
+  <img src="NCP-logo.png" alt="NCP Logo" width="200">
+</p>
+
 # NCP — Neural Computation Protocol
 
 [![Validate](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg)](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml)
