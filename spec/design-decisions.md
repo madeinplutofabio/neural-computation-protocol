@@ -68,7 +68,7 @@ This eliminates ambiguous intermediate states. A consumer never has to guess whe
 
 The v0.2.2 two-variant model (Success/Failure) created a contradiction: Section 9.2 required that if output is present, error_class MUST be `LOW_CONFIDENCE` — but the Failure variant had no output field. A `LOW_CONFIDENCE` result needs both output and error, which neither variant could express.
 
-The fix (applied in the canonical spec [`ncp-v0.2.3.md`](ncp-v0.2.3.md#91-result-union)): a third variant (`LowConfidence`) that carries both output and error. Each shape is self-describing. `carry_state_next` applies on Success and LowConfidence (Brick completed). `carry_state_side_effects` applies only on Failure. The structural boundary is enforced by schema, not runtime validation. See Section [9.2](ncp-v0.2.3.md#92-structural-boundary-rule-mandatory).
+The fix (applied in the canonical spec [`ncp-v0.2.3.md`](ncp-v0.2.3.md#91-result-union)): a third variant (`LowConfidence`) that carries both output and error. Each shape is self-describing. `carry_state_next` applies on Success and LowConfidence (Brick completed). `carry_state_side_effects` applies only on Failure. The structural boundary is enforced by the variant shape and MUST be validated by the runtime. See Section [9.2](ncp-v0.2.3.md#92-structural-boundary-rule-mandatory).
 
 ---
 
@@ -164,3 +164,73 @@ NCP's design bets on three converging trends:
 1. **LLM cost curves** — inference costs are falling, but still too high for commodity routing. NCP makes LLM calls surgical rather than pervasive.
 2. **WASM maturation** — WASI and component model adoption is accelerating, making WASM a credible universal sandbox.
 3. **Neuromorphic hardware** — NCP's pure-functional, graph-routed model maps naturally to hardware that implements neuron-like activation and routing at the silicon level.
+
+---
+
+## Phase 2 Reference Runtime Decisions
+
+These decisions govern the Phase 2 reference runtime implementation. They are implementation choices, not protocol-level requirements — other runtimes may make different choices while remaining spec-conformant.
+
+### WASM Engine: Wasmtime
+
+The reference runtime uses [Wasmtime](https://wasmtime.dev/) (Bytecode Alliance) as its WASM execution engine.
+
+Rationale:
+
+- Most mature Rust-native WASM runtime with a stable embedding API.
+- First-class support for **fuel metering** (enables deterministic compute budgeting; can be calibrated to `limits.max_ms` in the reference runtime), **memory limits** (maps to `limits.max_mem_mb`), and **trap catching** (maps to Section [16.2.1](ncp-v0.2.3.md#1621-wasm-trap-handling)).
+- Actively maintained by the Bytecode Alliance (Fastly, Mozilla, et al.).
+- **Module compilation** is performed once per Brick; **instantiation** is performed per invocation. This amortizes the compilation cost.
+
+### Input Memory Policy: Runtime Uses Brick's Exported alloc/free
+
+The runtime never allocates inside WASM memory directly. It only writes into regions returned by the Brick's exported `alloc`, and always frees via the Brick's exported `free` (Model B, Section [16.3](ncp-v0.2.3.md#163-memory-management)).
+
+Invocation flow:
+
+1. `envelope_ptr = brick.alloc(envelope_len)` — allocate space for the CBOR envelope.
+2. Runtime writes the envelope bytes into `[envelope_ptr, envelope_ptr + envelope_len)`.
+3. `result_ptr = brick.invoke(envelope_ptr, envelope_len)` — execute the Brick.
+4. Runtime reads the result from `result_ptr` (4-byte LE length prefix + CBOR payload).
+5. `brick.free(envelope_ptr, envelope_len)` — free the envelope buffer.
+6. `brick.free(result_ptr, 4 + result_len)` — free the result buffer.
+
+**OOM handling:** If `alloc(envelope_len)` returns `0`, the runtime MUST treat the invocation as `Failure` with `error_class: RESOURCE_EXCEEDED` without calling `invoke`. This mirrors the Brick-side OOM behavior (trap → `COMPUTATION_ERROR`) but at the runtime level.
+
+### Bundle Verification: Digest + Size on Load, Result Boundaries at Runtime
+
+**On load:**
+
+- Verify `sha256(wasm_bytes) == artifact.digest`. Reject on mismatch.
+- Verify `wasm_bytes.len() == artifact.size_bytes`. Reject on mismatch.
+- Validate the manifest structure and cross-field invariants (reuse `ncp-validate` logic).
+
+**At runtime (per invocation):**
+
+- Validate result structural boundaries per Section [9.2](ncp-v0.2.3.md#92-structural-boundary-rule-mandatory):
+  - Result MUST decode as valid CBOR.
+  - Result MUST match one of `Success` / `LowConfidence` / `Failure` shapes.
+  - Enforce output present/absent rules and `LOW_CONFIDENCE` restrictions.
+- Full JSON Schema validation of output payloads against `schemas.output` is deferred to Phase 3.
+
+### Trace Format: JSON Lines to stderr
+
+Traces are emitted as **JSON Lines** (one JSON object per line, newline-delimited).
+
+- Default output: stderr (keeps stdout clean for final graph output; composable with `2> trace.jsonl`).
+- `--trace <file>` flag: writes traces to a file instead of stderr.
+- Fields: exactly Section [11.1](ncp-v0.2.3.md#111-minimal-trace-record-mandatory) minimal trace record.
+- **Header line:** The first trace line is a `runtime_info` record containing `runtime_version` and `wasmtime_version`, emitted once at startup for trace interpretability.
+
+### Instance Lifecycle: Ephemeral (One Invoke per Instance)
+
+The reference runtime creates a **fresh WASM instance per invocation**. No instance reuse across invocations.
+
+Rationale:
+
+- Simplest correct implementation — no state leakage, no allocator concerns.
+- Wasmtime instantiation is fast (~microseconds for small modules).
+- Matches the echo brick's documented assumption ("ephemeral instances only").
+- Compiled `wasmtime::Module` objects are reused; only `Instance` is created fresh.
+
+Production runtimes MAY implement instance pooling or reuse as an optimization, provided they guarantee equivalent isolation semantics.
