@@ -79,7 +79,7 @@ jobs:
         if: steps.brick_check.outcome == 'success'
         working-directory: bricks/echo
         run: |
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --target wasm32-unknown-unknown --release --target-dir target
           cp target/wasm32-unknown-unknown/release/ncp_echo.wasm echo-rebuilt.wasm
 
       - name: Verify digest matches committed artifact
