@@ -38,3 +38,4 @@ Ncp Brick Protocol V0.pdf
 
 # Rust build artifacts (source WASM is committed, build cache is not)
 bricks/*/target/
+target/

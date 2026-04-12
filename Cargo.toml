@@ -1,0 +1,20 @@
+[workspace]
+members = [
+  "runtime",
+  "bricks/echo",
+  # Stub bricks (sentiment-stub, llm-escalation-stub) are added in Phase 2 Step 9.
+]
+default-members = ["runtime"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.94"
+
+[profile.release]
+panic = "abort"
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1

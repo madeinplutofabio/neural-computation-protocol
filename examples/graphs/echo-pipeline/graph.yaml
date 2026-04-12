@@ -1,0 +1,14 @@
+# Echo-only test graph for Phase 2 runtime development.
+# Single node, no edges — exercises brick resolution, invocation, and trace emission.
+
+graph_id: org.ncp-examples.echo-pipeline
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: echo_node
+    brick: { brick_id: org.ncp-examples.echo, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

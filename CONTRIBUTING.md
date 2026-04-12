@@ -23,13 +23,7 @@ Use the appropriate issue template:
 1. Fork the repository
 2. Create a feature branch from `main`
 3. Make your changes
-4. Ensure all checks pass:
-   ```bash
-   cd tools/ncp-validate
-   npm install && npm run build
-   npm test
-   npm run validate-examples
-   ```
+4. Ensure all checks pass (see below)
 5. Submit a pull request using the PR template
 
 ### Types of Changes
@@ -55,18 +49,53 @@ Changes to normative sections (MUST/SHOULD/MAY requirements) follow an RFC-style
 
 ## Development Setup
 
+### Validator (TypeScript)
+
 ```bash
-git clone https://github.com/<org>/ncp.git
-cd ncp/tools/ncp-validate
+cd tools/ncp-validate
 npm install
 npm run build
 npm test
+npm run validate-examples
+```
+
+### Runtime (Rust)
+
+Requires Rust 1.94+ (enforced via `rust-toolchain.toml`).
+
+```bash
+# Build the runtime
+cargo build
+
+# Run all unit tests (44 tests: envelope, result, routing, mapping)
+cargo test
+
+# Run end-to-end: single-node echo
+cargo run -- run examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json
+
+# Run end-to-end: two-node chain with routing
+cargo run -- run examples/graphs/echo-chain/graph.yaml \
+  --input examples/graphs/echo-chain/sample.json
+
+# Run end-to-end: trap handling
+cargo run -- run examples/graphs/trap-pipeline/graph.yaml \
+  --input examples/graphs/trap-pipeline/sample.json
+```
+
+### Building the Echo Brick (WASM)
+
+```bash
+cd bricks/echo
+cargo build --release --target wasm32-unknown-unknown
+# Output: target/wasm32-unknown-unknown/release/ncp_echo.wasm
 ```
 
 ## Style Guidelines
 
 - **Spec language:** Use RFC 2119 keywords (MUST, SHOULD, MAY) for normative requirements
-- **Code:** TypeScript strict mode, consistent with existing patterns
+- **TypeScript:** Strict mode, consistent with existing patterns
+- **Rust:** Standard `rustfmt` formatting, no `unsafe` in runtime code
 - **Commits:** Clear, descriptive messages referencing spec sections where applicable
 - **YAML examples:** 2-space indentation, comments for non-obvious fields
 

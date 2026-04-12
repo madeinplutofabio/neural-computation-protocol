@@ -1,0 +1,13 @@
+# Trap test: single node that always traps (unreachable instruction).
+# Used to verify the runtime converts WASM traps to Failure(COMPUTATION_ERROR).
+graph_id: org.ncp-examples.trap-pipeline
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+nodes:
+  - node_id: trap-node
+    brick:
+      brick_id: org.ncp-examples.trap
+      version_or_range: ">=0.1.0"
+
+edges: []

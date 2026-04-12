@@ -17,7 +17,7 @@
 
 "limits":
   "max_ms": 10
-  "max_mem_mb": 1
+  "max_mem_mb": 4
   "max_output_bytes": 65536
   "max_input_bytes": 65536
 

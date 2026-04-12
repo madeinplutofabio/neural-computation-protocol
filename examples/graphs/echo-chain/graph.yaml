@@ -1,0 +1,29 @@
+# Two-node chain: echo_a → echo_b via on_success edge with field mapping.
+# Exercises FIFO queue, routing, and mapping end-to-end.
+
+graph_id: org.ncp-examples.echo-chain
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000002"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000002"
+
+nodes:
+  - node_id: echo_a
+    brick: { brick_id: org.ncp-examples.echo, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: echo_b
+    brick: { brick_id: org.ncp-examples.echo, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: a_to_b
+    source_node: echo_a
+    target_node: echo_b
+    mapping:
+      - from: output.text
+        to: input.forwarded_text
+      - from: output.number
+        to: input.forwarded_number
+    on_success:
+      weight: 1.0

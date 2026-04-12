@@ -1,13 +1,13 @@
-brick_id: org.ncp-examples.echo
-version: 0.1.0
+brick_id: org.ncp-examples.trap
+version: "0.1.0"
 ncp_protocol_range: ">=0.2.0 <0.3.0"
 required_runtime_features: []
 status: active
 artifact:
   format: wasm
   entrypoint: invoke
-  digest: sha256:b5cc1a32634ac05ba0d208b9961179fd8b1cc298c7afa913cb59f6018b512973
-  size_bytes: 13846
+  digest: "sha256:a7ba957e811368037d5845affb2513ef8314a74349b89e1d07455db0c82c7f62"
+  size_bytes: 260
 schemas:
   input: schemas/input.schema.json
   output: schemas/output.schema.json
