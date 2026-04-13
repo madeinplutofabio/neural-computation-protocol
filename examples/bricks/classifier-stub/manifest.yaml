@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Stub classifier brick for benchmarks.
+# Keyword-based sentiment: positive → Success, negative → LowConfidence.
+
+brick_id: org.ncp-examples.classifier-stub
+version: 0.1.0
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: []
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  path: classifier-stub.wasm
+  digest: "sha256:d759a873676d7e7cd1293e9a756e105ced48341ed681ac2c7c4736072394e73e"
+  size_bytes: 15428
+
+schemas:
+  input: schemas/input.schema.json
+  output: schemas/output.schema.json
+  carry_state: null
+
+limits:
+  max_ms: 5
+  max_mem_mb: 32
+  max_output_bytes: 4096
+  max_input_bytes: 65536
+
+capabilities: []
+
+determinism:
+  mode: bit_exact
+
+time_model: pure
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+carry_state_side_effects_schema: null
+
+confidence_threshold: 0.70
+
+graph_ref_slots: []

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Stubbed support-routing graph for benchmarks.
+#
+# classifier_gate: keyword sentiment → Success (terminal) or LowConfidence
+# llm_escalation:  echo brick standing in for an LLM node
+#
+# LOW_CONFIDENCE at classifier_gate routes to llm_escalation via on_error.
+# Success at classifier_gate terminates (no outbound success edge).
+
+graph_id: org.ncp-examples.support-routing-stubbed
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+
+nodes:
+  - node_id: classifier_gate
+    brick: { brick_id: org.ncp-examples.classifier-stub, version_or_range: "=0.1.0" }
+
+  - node_id: llm_escalation
+    brick: { brick_id: org.ncp-examples.echo, version_or_range: "=0.1.0" }
+
+edges:
+  - edge_id: classify_to_llm
+    source_node: classifier_gate
+    target_node: llm_escalation
+    mapping:
+      - from: output.label
+        to: input.text
+    on_error:
+      LOW_CONFIDENCE: [llm_escalation]

@@ -2,7 +2,7 @@
 members = [
   "runtime",
   "bricks/echo",
-  # Stub bricks (sentiment-stub, llm-escalation-stub) are added in Phase 2 Step 9.
+  "bricks/classifier-stub",
 ]
 default-members = ["runtime"]
 resolver = "2"

@@ -43,5 +43,9 @@ pub enum Command {
         /// Maximum queued tasks before aborting (default: 10000)
         #[arg(long, default_value = "10000")]
         max_queued: u64,
+
+        /// Print per-step diagnostics to stderr
+        #[arg(long)]
+        verbose: bool,
     },
 }

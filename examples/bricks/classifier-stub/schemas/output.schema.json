@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Classifier Stub Output",
+  "description": "Sentiment classification result from classifier-stub brick.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["label", "confidence"],
+  "properties": {
+    "label": {
+      "type": "string",
+      "enum": ["positive", "negative"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    }
+  }
+}

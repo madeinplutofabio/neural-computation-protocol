@@ -154,7 +154,7 @@ pub struct CarryStateLifecycle {
     pub on_graph_version_change: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Edge {
     pub edge_id: String,
     pub source_node: String,
@@ -169,13 +169,13 @@ pub struct Edge {
     pub priority: Option<i64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FieldMapping {
     pub from: String,
     pub to: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct OnSuccess {
     #[serde(default)]
     pub weight: Option<f64>,

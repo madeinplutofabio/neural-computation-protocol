@@ -928,6 +928,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ncp-classifier-stub"
+version = "0.1.0"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
 name = "ncp-echo"
 version = "0.1.0"
 dependencies = [

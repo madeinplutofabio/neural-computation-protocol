@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Classifier Stub Input",
+  "description": "Benchmark input for classifier-stub brick.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text"],
+  "properties": {
+    "text": { "type": "string" }
+  }
+}

@@ -108,6 +108,34 @@ The `ncp-runtime` reference runtime (`runtime/`) loads a Graph manifest, resolve
 
 See `cargo run -- run --help` for full CLI options.
 
+## Performance
+
+Runtime overhead (Phase 2): ~26 us p50 for a 1-node graph, ~60 us p50 for a
+2-node routed+mapped graph (Ryzen 9 5900X, Wasmtime 43, release build, tracing
+disabled). Per-step overhead is ~26-30 us and scales linearly with step count.
+See [BENCHMARK.md](BENCHMARK.md) for full methodology and reproduction commands.
+
+### Numbers you can quote
+
+- **Runtime overhead:** ~**27–30 µs per step (p50)**
+  (envelope build + WASM invoke + CBOR decode/validation + routing/mapping)
+- **1-step graph:** ~**26–29 µs p50**
+- **2-step graph:** ~**58–60 µs p50**
+
+Orchestration overhead is **~0.03 ms/step** — negligible next to LLM latency
+(100–2000 ms) and token cost.
+
+**Approx. $ cost (explicit assumption):** at **$0.05/vCPU-hour**,
+**30 µs/step ≈ $0.00042 per million steps** (≈ 0.04 cents).
+LLM calls dominate total cost; the win comes from **routing fewer requests
+to the LLM**.
+
+## Cost model
+
+Cost savings depend on how often requests escalate to an LLM. At 10% escalation
+rate, modeled LLM spend drops ~10x — assuming deterministic paths meet quality
+targets. See [COST_MODEL.md](COST_MODEL.md) for the parameterized framework.
+
 ## Validator
 
 The `ncp-validate` CLI validates manifests in two phases:

@@ -1,0 +1,18 @@
+{
+  "edges": 0,
+  "graph_id": "org.ncp-examples.echo-pipeline",
+  "graph_version": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+  "max_us": 302,
+  "mean_us": 29,
+  "min_us": 25,
+  "nodes": 1,
+  "p50_us": 26,
+  "p95_us": 41,
+  "p99_us": 63,
+  "runs": 20000,
+  "runtime_version": "0.1.0",
+  "steps_per_run": 1,
+  "timestamp_utc": "2026-04-13T10:55:00.941Z",
+  "warmup": 500,
+  "wasmtime_version": "43"
+}
