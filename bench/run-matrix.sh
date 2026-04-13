@@ -93,5 +93,41 @@ cargo run --release --bin ncp-bench -- \
   --output "$RESULTS/mixed-50-50-llm200.json"
 
 echo ""
+echo "=== Cold-start measurement ==="
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 0 --runs 1 --cold-start \
+  --output "$RESULTS/cold-start-echo.json"
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --input examples/graphs/support-routing-stubbed/sample-positive.json \
+  --warmup 0 --runs 1 --cold-start \
+  --output "$RESULTS/cold-start-routing.json"
+
+echo ""
+echo "=== Concurrency throughput (echo-pipeline, 10k runs) ==="
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 500 --runs 10000 --concurrency 1 \
+  --output "$RESULTS/throughput-echo-c1.json"
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 500 --runs 10000 --concurrency 2 \
+  --output "$RESULTS/throughput-echo-c2.json"
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 500 --runs 10000 --concurrency 4 \
+  --output "$RESULTS/throughput-echo-c4.json"
+
+echo ""
 echo "=== Done. Results in $RESULTS/ ==="
 ls -la "$RESULTS/"

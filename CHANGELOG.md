@@ -17,7 +17,9 @@ Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Benchmark harness** (`runtime/src/bin/ncp-bench.rs`): configurable warmup/runs, JSON output,
   LLM latency simulation via `--simulate-llm-ms` with `ExecuteHooks.on_invoke`,
   `--dataset` mode for mixed-workload JSONL files with dual timing (execute-only + end-to-end),
-  dataset SHA-256 provenance in JSON output, contextual parse error messages
+  dataset SHA-256 provenance in JSON output, contextual parse error messages,
+  `--concurrency N` multi-threaded throughput mode via `Arc<RuntimeContext>`,
+  `--cold-start` load+compile timing measurement
 - **RuntimeContext library pattern** (`runtime/src/lib.rs`): load/compile once, execute N times;
   pluggable `TraceSink` trait with `enabled()` for zero-cost bench mode
 - **Classifier-stub brick** (`bricks/classifier-stub/`): keyword-based sentiment, `bit_exact`,
@@ -26,11 +28,12 @@ Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   echo escalation path with `on_error(LOW_CONFIDENCE)` routing
 - **Benchmark datasets** (`bench/datasets/`): 3 deterministic JSONL files (90/10, 97/3, 50/50
   positive/negative mix) with variant rotation for realistic input diversity
-- **Benchmark results** (`bench/results/`): 11 Windows + 11 Linux (WSL2) machine-readable JSON
-  files covering pure runtime overhead, simulated LLM latency, LLM-only baseline, and
-  measured mixed synthetic workloads
-- **Benchmark matrix script** (`bench/run-matrix.sh`): runs all 11 configs with one command
-- **BENCHMARK.md**: full methodology, results tables, Claims section with measured LLM-only
+- **Benchmark results** (`bench/results/`): 16 Windows + 16 Linux (WSL2) machine-readable JSON
+  files covering pure runtime overhead, simulated LLM latency, LLM-only baseline,
+  measured mixed synthetic workloads, cold-start timing, and concurrency throughput
+- **Benchmark matrix script** (`bench/run-matrix.sh`): runs all 16 configs with one command
+- **BENCHMARK.md**: full methodology, results tables (pure overhead, simulated LLM, mixed
+  workloads, cold start, concurrency throughput), Claims section with measured LLM-only
   baseline, measured mixed-workload speedups (not modeled), cross-platform comparison
   (Windows vs Linux/WSL2), and explicit caveats
 - **COST_MODEL.md**: parameterized cost framework with explicit $/step derivation

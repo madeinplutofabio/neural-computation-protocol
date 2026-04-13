@@ -40,11 +40,11 @@ report the median.
 
 | Graph | Nodes | Edges | Steps | p50 | p95 | p99 | Mean | Min | Max |
 |---|---|---|---|---|---|---|---|---|---|
-| echo-pipeline | 1 | 0 | 1 | 26 us | 41 us | 63 us | 29 us | 25 us | 302 us |
-| echo-chain | 2 | 1 | 2 | 60 us | 82 us | 121 us | 64 us | 58 us | 248 us |
-| trap-pipeline | 1 | 0 | 1 | 25 us | 37 us | 50 us | 27 us | 25 us | 195 us |
-| routing-positive | 2 | 1 | 1 | 29 us | 43 us | 55 us | 31 us | 27 us | 171 us |
-| routing-negative | 2 | 1 | 2 | 58 us | 87 us | 128 us | 63 us | 56 us | 498 us |
+| echo-pipeline | 1 | 0 | 1 | 27 us | 35 us | 43 us | 28 us | 26 us | 219 us |
+| echo-chain | 2 | 1 | 2 | 59 us | 88 us | 116 us | 65 us | 57 us | 235 us |
+| trap-pipeline | 1 | 0 | 1 | 29 us | 41 us | 62 us | 31 us | 27 us | 173 us |
+| routing-positive | 2 | 1 | 1 | 27 us | 39 us | 45 us | 28 us | 26 us | 163 us |
+| routing-negative | 2 | 1 | 2 | 57 us | 83 us | 117 us | 61 us | 55 us | 298 us |
 
 All latencies are per full graph execution (entry to terminal), in
 microseconds. Max values reflect OS scheduling jitter, not algorithmic cost.
@@ -52,30 +52,30 @@ microseconds. Max values reflect OS scheduling jitter, not algorithmic cost.
 ### Interpretation
 
 - **echo-pipeline** (1 node, 1 step): baseline single-invoke overhead.
-  26 us p50 = WASM instantiate + alloc + invoke + result decode + envelope build.
+  27 us p50 = WASM instantiate + alloc + invoke + result decode + envelope build.
 
 - **echo-chain** (2 nodes, 2 steps): adds routing, field mapping, second invoke.
-  60 us p50 ~ 2x baseline, confirming per-step overhead is ~26-30 us. The routing
+  59 us p50 ~ 2x baseline, confirming per-step overhead is ~27-30 us. The routing
   and mapping layers add negligible cost on top of WASM invocation.
 
-- **trap-pipeline** (1 node, 1 step): measures Failure path. 25 us p50 — comparable
+- **trap-pipeline** (1 node, 1 step): measures Failure path. 29 us p50 — comparable
   to the echo happy path. Trap detection and error construction do not add
   measurable overhead.
 
 - **routing-positive** (2 nodes, 1 step): classifier returns Success for positive
-  input — no escalation, graph terminates after 1 step. 29 us p50 is consistent
+  input — no escalation, graph terminates after 1 step. 27 us p50 is consistent
   with single-step overhead despite the graph having 2 nodes and 1 edge.
 
 - **routing-negative** (2 nodes, 2 steps): classifier returns LowConfidence for
   negative input — routes via `on_error(LOW_CONFIDENCE)` to the echo brick
-  (LLM stand-in). 58 us p50 is consistent with 2-step overhead.
+  (LLM stand-in). 57 us p50 is consistent with 2-step overhead.
 
 ### Tail latency
 
-p99 stays under 65 us for single-step graphs and under 130 us for 2-step
-graphs. The max outliers (171-498 us) are consistent with OS scheduling jitter
-on a desktop workstation (Windows), not algorithmic. Linux results would likely
-show tighter tails.
+p99 stays under 62 us for single-step graphs and under 117 us for 2-step
+graphs. The max outliers (163-298 us) are consistent with OS scheduling jitter
+on a desktop workstation (Windows), not algorithmic. Linux results show tighter
+tails (see cross-platform comparison below).
 
 ## Results — Simulated LLM Latency
 
@@ -91,17 +91,17 @@ provide a measured (not inferred) comparison point.
 
 | Scenario | Graph | Steps | p_llm | p50 | Mean | Simulated LLM |
 |---|---|---|---|---|---|---|
-| LLM-only baseline | echo-pipeline | 1 | 1.0 | 200,516 us | 200,546 us | 200 ms (always hit) |
-| Hybrid — positive | routing-stubbed | 1 | 0.0 | 27 us | 27 us | 200 ms (not hit) |
-| Hybrid — negative | routing-stubbed | 2 | 1.0 | 200,557 us | 200,604 us | 200 ms (hit) |
+| LLM-only baseline | echo-pipeline | 1 | 1.0 | 200,511 us | 200,551 us | 200 ms (always hit) |
+| Hybrid — positive | routing-stubbed | 1 | 0.0 | 32 us | 34 us | 200 ms (not hit) |
+| Hybrid — negative | routing-stubbed | 2 | 1.0 | 200,556 us | 200,607 us | 200 ms (hit) |
 
 **Key observations:**
 
 - **LLM-only baseline** (every request calls the LLM): measured p50 = 200.5 ms.
   This is the comparison point for all speedup claims below.
 
-- **Hybrid — positive** (deterministic path handles the request): p50 = 27 us.
-  The LLM is never called. Speedup vs LLM-only: **~7,400x**.
+- **Hybrid — positive** (deterministic path handles the request): p50 = 32 us.
+  The LLM is never called. Speedup vs LLM-only: **~6,300x**.
 
 - **Hybrid — negative** (request escalates to LLM): p50 = 200.6 ms. Dominated
   entirely by the simulated LLM call. Runtime overhead adds <0.1% on top of
@@ -122,19 +122,19 @@ and slow LLM-simulated escalations in a single run.
 
 | Dataset | Lines | p_llm (measured) | Exec mean | Exec p50 | Exec p95 | Exec p99 | Speedup vs baseline |
 |---|---|---|---|---|---|---|---|
-| 97/3 | 100 | 0.03 | 6,048 us (6.0 ms) | 29 us | 76 us | 200,659 us | **~33x** |
-| 90/10 | 100 | 0.10 | 20,083 us (20.1 ms) | 30 us | 200,433 us | 200,992 us | **~10x** |
-| 50/50 | 100 | 0.50 | 100,321 us (100.3 ms) | 200,103 us | 201,002 us | 201,105 us | **~2x** |
+| 97/3 | 100 | 0.03 | 6,050 us (6.1 ms) | 31 us | 79 us | 200,661 us | **~33x** |
+| 90/10 | 100 | 0.10 | 20,088 us (20.1 ms) | 32 us | 200,486 us | 200,947 us | **~10x** |
+| 50/50 | 100 | 0.50 | 100,308 us (100.3 ms) | 200,104 us | 200,970 us | 201,095 us | **~2x** |
 
-**Baseline (LLM-only):** mean = 200,546 us (200.5 ms), measured with the same
+**Baseline (LLM-only):** mean = 200,551 us (200.6 ms), measured with the same
 harness and `--simulate-llm-ms 200`. Speedup = baseline mean / dataset exec mean.
 
 **Key observations:**
 
 - Speedup scales as **~1/p_llm**, confirmed by measurement: 33x at 3%, 10x at 10%, 2x at 50%.
-- At 3% escalation, **p95 = 76 us** — 95% of requests complete in under 0.1 ms
+- At 3% escalation, **p95 = 79 us** — 95% of requests complete in under 0.1 ms
   (only the ~3% escalation tail is slow).
-- At 10% escalation, **p50 = 30 us** but **p95 = 200 ms** — the 10% tail is dominated by LLM latency.
+- At 10% escalation, **p50 = 32 us** but **p95 = 200 ms** — the 10% tail is dominated by LLM latency.
 - Parse overhead is negligible: e2e and exec stats differ by <2 us across all datasets.
 
 ## Claims
@@ -149,8 +149,8 @@ encode/decode, routing, and field mapping. For any workload where brick
 compute or LLM I/O exceeds 1 ms, the runtime layer contributes <3% of
 total latency.
 
-**Evidence:** echo-pipeline p50 = 26 us, echo-chain p50 = 60 us (2 steps),
-routing-positive p50 = 29 us (1 step), routing-negative p50 = 58 us (2 steps).
+**Evidence:** echo-pipeline p50 = 27 us, echo-chain p50 = 59 us (2 steps),
+routing-positive p50 = 27 us (1 step), routing-negative p50 = 57 us (2 steps).
 Overhead scales linearly with step count.
 
 ### Claim 2: Deterministic routing avoids LLM calls
@@ -160,7 +160,7 @@ validation, formatting), the LLM node is never invoked. The graph terminates
 at the classifier with 0 LLM calls.
 
 **Evidence:** routing-positive — `p_llm_requests = 0.0`, `mean_steps = 1.0`,
-p50 = 29 us. The echo brick (LLM stand-in) was never reached.
+p50 = 27 us. The echo brick (LLM stand-in) was never reached.
 
 ### Claim 3: Latency improvement scales with escalation rate
 
@@ -169,7 +169,7 @@ simulated LLM), using the same harness and baseline:
 
 | p_llm | Measured exec mean | Speedup vs baseline |
 |---|---|---|
-| 3% | 6.0 ms | **~33x** |
+| 3% | 6.1 ms | **~33x** |
 | 10% | 20.1 ms | **~10x** |
 | 50% | 100.3 ms | **~2x** |
 
@@ -177,8 +177,8 @@ Speedup scales as ~1/p_llm. These are direct measurements, not modeled
 weighted averages — the harness ran each dataset mix end-to-end and
 computed the latency distribution from actual iteration timings.
 
-**Corroboration:** the modeled weighted average (0.90 × 27 us + 0.10 ×
-200,557 us ≈ 20,080 us) matches the measured 90/10 mean of 20,083 us
+**Corroboration:** the modeled weighted average (0.90 × 34 us + 0.10 ×
+200,607 us ≈ 20,091 us) matches the measured 90/10 mean of 20,088 us
 to within 0.01%, confirming harness correctness.
 
 ### Claim 4: Cost savings are proportional to escalation avoidance
@@ -213,10 +213,62 @@ and the quality of deterministic bricks.
   acceptance rate, not just speed.
 - **Production latency**: these benchmarks use stub bricks. Real bricks with
   ML inference or complex logic will add per-step compute time.
-- **Absolute numbers**: results vary by platform. Linux (WSL2) shows ~1.7x
+- **Absolute numbers**: results vary by platform. Linux (WSL2) shows ~1.8x
   faster per-step overhead than Windows on the same hardware (see cross-
   platform comparison below). Cloud VMs, containers, and different CPUs will
   show different absolute numbers but similar relative scaling.
+
+## Results — Cold Start
+
+Cold-start time measures the full load + compile path: reading graph and brick
+manifests, loading WASM bytes, verifying SHA-256 digests, and compiling WASM
+modules via Wasmtime. Measured with `--cold-start --warmup 0 --runs 1`.
+
+| Graph | Bricks | WASM total | Windows | Linux (WSL2) |
+|---|---|---|---|---|
+| echo-pipeline | 1 (echo, 14 KB) | 14 KB | 15.7 ms | **7.8 ms** |
+| support-routing-stubbed | 2 (classifier-stub 15 KB + echo 14 KB) | 29 KB | 25.9 ms | **17.6 ms** |
+
+Cold start scales roughly with the number and size of WASM modules. Linux is
+~2x faster on cold start (tighter filesystem + compilation overhead). For
+comparison, a single step after warmup takes ~27 us (Windows) / ~15 us (Linux)
+— cold start is hundreds of warm invokes, but still well under 30 ms even for
+a 2-brick graph.
+
+## Results — Concurrency Throughput
+
+Throughput measured with the echo-pipeline graph (1 node, 1 step), 10,000 total
+runs distributed across N worker threads. Each thread gets its own WASM instance
+(via `RuntimeContext::execute`, which is `&self` / Send+Sync). The compiled
+Module is shared via `Arc<RuntimeContext>`.
+
+### Windows
+
+| Threads | Mean latency | Wall time | Throughput |
+|---|---|---|---|
+| 1 | 29 us | 301 ms | **33,181 req/s** |
+| 2 | 49 us | 256 ms | **39,027 req/s** |
+| 4 | 112 us | 284 ms | **35,159 req/s** |
+
+### Linux (WSL2)
+
+| Threads | Mean latency | Wall time | Throughput |
+|---|---|---|---|
+| 1 | 16 us | 170 ms | **58,870 req/s** |
+| 2 | 26 us | 137 ms | **73,199 req/s** |
+| 4 | 60 us | 153 ms | **65,218 req/s** |
+
+**Key observations:**
+
+- Linux single-threaded throughput is ~1.8x Windows (59k vs 33k req/s),
+  consistent with the per-step latency ratio.
+- 2 threads is the sweet spot on both platforms: ~1.18x on Windows (39k),
+  ~1.24x on Linux (73k). Per-request latency increases due to contention.
+- 4 threads shows diminishing returns on this workload, as the trivial echo
+  brick does not leave enough headroom for parallelism — thread coordination
+  overhead dominates.
+- For I/O-bound workloads (real LLM calls), concurrency gains will be much
+  larger since threads can overlap LLM wait times.
 
 ## Cross-Platform Comparison
 
@@ -227,13 +279,13 @@ same release build. Linux runs via WSL2 (Ubuntu 24.04).
 
 | Graph | Steps | Windows | Linux (WSL2) |
 |---|---|---|---|
-| echo-pipeline | 1 | 26 us | **16 us** |
-| echo-chain | 2 | 60 us | **34 us** |
-| trap-pipeline | 1 | 25 us | **14 us** |
-| routing-positive | 1 | 29 us | **17 us** |
-| routing-negative | 2 | 58 us | **35 us** |
+| echo-pipeline | 1 | 27 us | **15 us** |
+| echo-chain | 2 | 59 us | **34 us** |
+| trap-pipeline | 1 | 29 us | **14 us** |
+| routing-positive | 1 | 27 us | **16 us** |
+| routing-negative | 2 | 57 us | **35 us** |
 
-Linux per-step overhead is ~16-17 us (vs ~26-29 us on Windows), a ~1.7x
+Linux per-step overhead is ~15-16 us (vs ~27-29 us on Windows), a ~1.8x
 improvement. This is consistent with tighter syscall overhead and scheduler
 granularity on Linux.
 
@@ -241,11 +293,11 @@ granularity on Linux.
 
 | Graph | Windows p99 | Linux p99 |
 |---|---|---|
-| echo-pipeline | 63 us | **31 us** |
-| echo-chain | 121 us | **55 us** |
-| trap-pipeline | 50 us | **24 us** |
-| routing-positive | 55 us | **34 us** |
-| routing-negative | 128 us | **63 us** |
+| echo-pipeline | 43 us | **29 us** |
+| echo-chain | 116 us | **61 us** |
+| trap-pipeline | 62 us | **26 us** |
+| routing-positive | 45 us | **33 us** |
+| routing-negative | 117 us | **63 us** |
 
 Linux tails are ~2x tighter than Windows, as expected from scheduler
 differences.
@@ -254,9 +306,9 @@ differences.
 
 | Dataset | p_llm | Windows mean | Linux mean | Speedup vs baseline |
 |---|---|---|---|---|
-| 97/3 | 0.03 | 6,048 us | 6,025 us | **~33x** |
-| 90/10 | 0.10 | 20,083 us | 20,041 us | **~10x** |
-| 50/50 | 0.50 | 100,321 us | 100,124 us | **~2x** |
+| 97/3 | 0.03 | 6,050 us | 6,024 us | **~33x** |
+| 90/10 | 0.10 | 20,088 us | 20,039 us | **~10x** |
+| 50/50 | 0.50 | 100,308 us | 100,122 us | **~2x** |
 
 Mixed-workload means are nearly identical across platforms because they are
 dominated by the 200ms simulated LLM sleep. The speedup ratios hold
@@ -309,6 +361,10 @@ relative comparisons, not as a performance guarantee.
    via `ExecuteHooks.on_invoke` after each invoke matching `--llm-brick-pattern`
 10. Datasets are deterministic (no shuffle) to keep results exactly reproducible;
     the dataset SHA-256 is printed by `ncp-bench` and recorded in JSON outputs
+11. Cold-start: `--cold-start` measures load + compile time separately (graph
+    and brick manifests, WASM loading, SHA-256 verification, Wasmtime compilation)
+12. Concurrency: `--concurrency N` distributes runs across N worker threads
+    sharing `Arc<RuntimeContext>`; reports wall time and throughput (req/s)
 
 ## Reproduce
 
@@ -399,6 +455,29 @@ cargo run --release --bin ncp-bench -- \
   --output bench/results/mixed-50-50-llm200.json
 ```
 
+# cold-start (load + compile timing)
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 0 --runs 1 --cold-start \
+  --output bench/results/cold-start-echo.json
+
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --input examples/graphs/support-routing-stubbed/sample-positive.json \
+  --warmup 0 --runs 1 --cold-start \
+  --output bench/results/cold-start-routing.json
+
+# concurrency throughput (1, 2, 4 threads)
+for C in 1 2 4; do
+  cargo run --release --bin ncp-bench -- \
+    examples/graphs/echo-pipeline/graph.yaml \
+    --input examples/graphs/echo-pipeline/sample.json \
+    --warmup 500 --runs 10000 --concurrency $C \
+    --output bench/results/throughput-echo-c${C}.json
+done
+```
+
 Machine-readable results (with environment metadata) are committed in
 [`bench/results/`](bench/results/). Results are environment-specific; treat
 committed numbers as a baseline, not a guarantee.
@@ -411,8 +490,9 @@ committed numbers as a baseline, not a guarantee.
 - Results are from a single desktop machine running Windows. Cloud VMs,
   containers, Linux, and ARM targets will show different absolute numbers
   but similar relative scaling. Linux typically shows tighter tail latencies.
-- WASM Module compilation happens once at load time and is excluded from timing.
-  First-request latency in a cold-start scenario will be higher.
+- WASM Module compilation happens once at load time and is excluded from
+  per-iteration timing. Cold-start is measured separately (8-26 ms for
+  1-2 brick graphs depending on platform); see Results — Cold Start.
 - The echo brick is ~14 KB WASM; larger modules may have different
   instantiation characteristics.
 - The classifier-stub uses keyword matching, not ML inference. Real classifiers

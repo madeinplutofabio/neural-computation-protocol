@@ -119,8 +119,9 @@ See [BENCHMARK.md](BENCHMARK.md) for full methodology and reproduction commands.
 
 - **Runtime overhead:** ~**27–30 µs per step (p50)**
   (envelope build + WASM invoke + CBOR decode/validation + routing/mapping)
-- **1-step graph:** ~**26–29 µs p50**
-- **2-step graph:** ~**58–60 µs p50**
+- **1-step graph:** ~**27 µs p50** | **2-step graph:** ~**57–59 µs p50**
+- **Cold start:** ~**16–26 ms** (load + compile, 1–2 bricks)
+- **Throughput:** ~**33k req/s** (single thread) | ~**39k req/s** (2 threads)
 
 Orchestration overhead is **~0.03 ms/step** — negligible next to LLM latency
 (100–2000 ms) and token cost.
