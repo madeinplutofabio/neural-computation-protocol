@@ -5,190 +5,186 @@
 
 # NCP Cost Model
 
-A parameterized model for estimating per-request cost savings when routing
-deterministic work through NCP brick graphs instead of sending every request
-to an LLM.
+A parameterized framework for estimating **cost and latency** savings when routing
+deterministic work through NCP brick graphs instead of sending every request to an LLM.
 
-## Purpose
+This document is deliberately **vendor-neutral**: you plug in your own token pricing and latency numbers.
 
-This model helps estimate **when NCP graphs are cost-effective** relative to
-an LLM-only architecture. It does not hardcode vendor pricing — you plug in
-your own numbers. The goal is a framework for reasoning about cost, not a
-sales claim.
+If you want the measured benchmark evidence behind the claims, see:
+- [`BENCHMARK.md`](BENCHMARK.md) (full methodology + raw results)
+
+---
+
+## What this model is (and is not)
+
+This model helps you answer:
+
+- “If I can avoid the LLM on X% of requests, what happens to **latency** and **spend**?”
+- “Which metrics should I measure in production (p_llm, k_llm, step count)?”
+- “What is the break-even point where deterministic routing is worth it?”
+
+This model does **not** guarantee:
+
+- accuracy / quality parity with LLM-only systems
+- your exact production numbers (workload + infra matter)
+
+---
 
 ## Definitions
 
 | Term | Meaning |
 |---|---|
-| **Request** | One full graph execution: entry node to terminal(s) |
+| **Request** | One full graph execution: entry node → terminal node(s) |
 | **Step** | One brick invocation within a request |
-| **S** | Average steps per request (from traces or bench) |
-| **p_llm** | Fraction of requests that route to an LLM brick |
-| **k_llm** | Average LLM calls per request when escalated |
-| **C_brick_step** | Compute cost of one brick invocation step |
-| **C_llm_call** | Average cost of one LLM call (tokens x price) |
+| **S** | Average steps per request |
+| **p_llm** | Fraction of requests that hit an LLM node (escalation rate) |
+| **k_llm** | Average LLM calls per escalated request |
+| **C_step** | Compute cost of one deterministic step (brick invocation) |
+| **C_llm** | Average cost of one LLM call (tokens × price) |
+| **t_step** | Average latency of one deterministic step |
+| **t_llm** | Average latency of one LLM call |
 
-## Architecture Comparison
+---
 
-### Architecture A: LLM-only
+## Architecture comparison
 
-Every request calls an LLM. No deterministic pre-filtering.
+### A) LLM-only architecture
 
-```
-C_A = k_A * C_llm_call
-```
+Every request calls an LLM.
 
-Where `k_A` = average LLM calls per request (often 1).
+- **Cost:**
 
-### Architecture B: NCP hybrid
+  ```
+  C_A = k_A * C_llm
+  ```
 
-Requests enter a brick graph. Deterministic bricks handle what they can
-(sentiment, classification, validation, formatting). Only requests that
-require judgment escalate to an LLM via routing.
+  (often `k_A = 1`)
 
-```
-C_B = S * C_brick_step + p_llm * k_llm * C_llm_call
-```
+- **Latency (mean):**
 
-### Savings ratio
+  ```
+  t_A ≈ t_llm
+  ```
 
-```
-Savings = C_A / C_B
-```
+### B) NCP hybrid architecture
 
-When `p_llm` is small and `C_brick_step << C_llm_call`, savings scale
-roughly as `1 / p_llm`.
+Requests enter a brick graph. Deterministic bricks handle what they can.
+Only a fraction escalates to an LLM.
 
-## How to Measure the Inputs
+- **Cost:**
 
-### C_brick_step (from benchmarks)
+  ```
+  C_B = S * C_step + p_llm * k_llm * C_llm
+  ```
 
-Phase 2 benchmarks show **~27–30 µs p50 per step** with tracing disabled
-(`NullTrace`). This step time includes envelope build, WASM invoke, CBOR
-decode/validation, routing, and mapping.
+- **Latency (mean):**
 
-To convert step time into dollars, use a simple CPU-time model:
+  ```
+  t_B ≈ S * t_step + p_llm * k_llm * t_llm
+  ```
 
-```
-C_brick_step = t_step_seconds × price_per_vCPU_second
-price_per_vCPU_second = price_per_vCPU_hour / 3600
-```
+---
 
-#### Example (explicit assumption)
+## How to measure the inputs
 
-Assume `price_per_vCPU_hour = $0.05` (replace with your infra cost).
+### 1) Measure S (steps per request)
 
-- `price_per_vCPU_second = 0.05 / 3600 ≈ 1.3889e-5 $/s`
-- `t_step = 30 µs = 0.000030 s`
+From runtime traces or benchmark output:
 
-```
-C_brick_step ≈ 0.000030 × 1.3889e-5 ≈ 4.17e-10 $ per step
-```
+- `mean_steps_per_run` in `ncp-bench` JSON output
+- or compute from trace JSONL by counting step records per request
 
-That implies:
+### 2) Measure p_llm and k_llm
 
-- **1,000,000 steps ≈ $0.000417** (≈ **0.04 cents**)
-- If an average request executes **S = 2 steps**, then:
-  **1,000,000 requests ≈ $0.000834** (≈ **0.08 cents**)
+From traces (or simulated-bench output):
 
-Runtime orchestration costs fractions of a cent per million requests on
-typical CPU pricing. LLM calls dominate cost.
+- `p_llm` = fraction of requests that hit ≥1 LLM node
+- `k_llm` = LLM calls per escalated request
 
-#### Notes
+In `ncp-bench` with `--simulate-llm-ms`, the JSON output includes:
 
-- This model assumes CPU cost scales with time and that the core is
-  available (no contention).
-- The cited numbers are with **tracing disabled**. Tracing adds overhead.
-- Real bricks (ML inference, heavier logic) add compute time on top of the
-  runtime layer.
+- `p_llm_requests`
+- `k_llm`
+- `llm_invokes_per_run`
 
-### C_llm_call (from your provider)
+### 3) Estimate C_llm (token pricing)
+
+For a single call:
 
 ```
-C_llm_call = tokens_in * price_in/1000 + tokens_out * price_out/1000
+C_llm = tokens_in * price_in + tokens_out * price_out
 ```
 
-Example (illustrative, not a recommendation):
-- 500 input tokens at $3/M = $0.0015
-- 200 output tokens at $15/M = $0.003
-- C_llm_call = $0.0045
+(Use your provider’s units; e.g., $/token or $/1M tokens.)
 
-### p_llm and k_llm (from traces)
+### 4) Estimate C_step (deterministic compute)
 
-Run your graph on a representative dataset. From traces:
+From measured step latency `t_step` and your compute pricing.
 
-```
-p_llm = (requests that hit an LLM node) / (total requests)
-k_llm = (total LLM invocations) / (requests that hit an LLM node)
-```
-
-Phase 2 runtime traces include `node_id` and `brick_id` per step, so you
-can compute these from trace JSONL output.
-
-## Example Scenario
-
-| Parameter | Value | Source |
-|---|---|---|
-| k_A | 1 | LLM-only: one call per request |
-| C_llm_call | $0.0045 | 500 in + 200 out tokens |
-| S | 2.3 | Average from traces |
-| C_brick_step | $0.0000000004 | ~30 us/step on $0.05/vCPU-hr VM |
-| p_llm | 0.10 | 10% of requests escalate |
-| k_llm | 1 | One LLM call when escalated |
+A simple approximation:
 
 ```
-C_A = 1 * $0.0045 = $0.0045 per request
-C_B = 2.3 * $0.0000000004 + 0.10 * 1 * $0.0045 ~ $0.00045 per request
-Savings = $0.0045 / $0.00045 = 10x
+C_step ≈ t_step * price_per_cpu_second
 ```
 
-At 10% escalation rate, cost drops ~10x. At 3% escalation, ~33x.
+On modern machines, `t_step` is typically **tens of microseconds** for trivial bricks.
+That makes `C_step` negligible compared to `C_llm` in most systems.
 
-Brick compute cost is negligible relative to LLM cost at common token sizes —
-the entire savings story is driven by **p_llm**.
+---
 
-**The key lever is p_llm.** If your graph can handle 90%+ of requests with
-deterministic bricks, the cost reduction is substantial.
+## Worked example (measured benchmark endpoints)
 
-## How to Get p_llm from Traces
+The Phase 2 benchmark suite measures:
 
-Run your graph on a representative dataset with tracing enabled. Then extract
-the escalation rate from the trace JSONL:
+- deterministic path latency (microseconds)
+- LLM-only baseline latency (simulated 200ms I/O wait)
+- mixed datasets (97/3, 90/10, 50/50) where p_llm is measured, not assumed
 
-```bash
-# Count total requests (trace records with step=0 are entry invocations)
-TOTAL=$(grep '"step":0' trace.jsonl | wc -l)
+From `bench/results/linux/`:
 
-# Count requests that hit an LLM brick
-# (replace "org.acme.llm-" with your LLM brick_id prefix)
-LLM=$(grep '"brick_id":"org.acme.llm-' trace.jsonl | wc -l)
+- LLM-only baseline mean ≈ **200.2 ms**
+- Mixed 90/10 mean ≈ **20.0 ms** (measured p_llm ≈ 0.10)
+- Mixed 97/3 mean ≈ **6.0 ms** (measured p_llm ≈ 0.03)
 
-echo "p_llm = $LLM / $TOTAL"
-```
+**Latency implication (mean):** if your workload escalates 10% of the time, mean latency drops ~10× (because the LLM dominates).
 
-For more precise analysis, parse the JSONL and group by `trace_id` to get
-per-request step counts and LLM hit rates.
+**Cost implication:** if your spend is dominated by LLM calls, and you avoid 90% of them, your LLM spend drops ~10×. The deterministic runtime overhead is tiny by comparison.
 
-## What This Model Does NOT Cover
+---
 
-- **Quality/accuracy trade-offs**: routing fewer requests to LLMs only saves
-  money if the deterministic path produces acceptable results. Measure
-  escalation acceptance rate, human override rate, or downstream metrics.
-- **Latency**: brick steps are microseconds; LLM calls are 100ms–2s. The
-  latency story is even more favorable than cost, but this model focuses on $.
-- **Cold start**: WASM compilation at load time adds one-time latency. Amortized
-  over thousands of requests, this is negligible.
-- **Multi-provider pricing**: if you use different LLMs for different nodes,
-  extend `C_llm_call` per node type.
+## What to report in a production write-up
 
-## How to Validate
+If you want credible claims, publish these:
 
-1. Run your graph on a representative dataset with tracing enabled
-2. Extract `p_llm`, `k_llm`, `S` from traces
-3. Plug in your provider's token pricing
-4. Compare `C_A` vs `C_B`
-5. Sanity-check: does the savings ratio match your intuition about the
-   workload's complexity distribution?
+1. `p_llm` (escalation rate) on a representative dataset
+2. `k_llm` (LLM calls per escalated request)
+3. `S` (mean steps per request)
+4. Latency distribution (p50/p95/p99), not just mean
+5. Token usage (input/output tokens per call) for cost
 
-The model is only as good as `p_llm`. If you don't know your escalation rate
-yet, start with a conservative estimate (e.g., 30%) and measure.
+NCP makes (1)–(3) easy to compute from trace records.
+
+---
+
+## Caveats and extensions
+
+- **Quality/accuracy matters:** Avoiding the LLM only helps if deterministic results are acceptable.
+  Track acceptance rate, human override rate, downstream conversion, etc.
+- **Tail latency:** Mixed workloads often have low p50 but high p95 (the “LLM tail”).
+  That’s normal: most requests are fast, and the hard tail is slow.
+- **Multiple LLM nodes:** If different nodes use different models, extend the formula
+  with `C_llm_i` and `t_llm_i` per node.
+- **Cold start:** First-run latency includes graph + WASM compile time.
+  Benchmarks report `cold_start_us` when enabled.
+
+---
+
+## How to validate with your own workload
+
+1. Build a graph with a clear “LLM escalation” node boundary
+2. Run a representative dataset through the runtime with tracing enabled
+3. Compute `p_llm`, `k_llm`, `S` from traces
+4. Plug in your provider’s token pricing
+5. Compare LLM-only vs hybrid
+
+If you don’t know `p_llm` yet, start with a conservative estimate (30–50%) and measure.

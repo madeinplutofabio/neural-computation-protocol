@@ -5,104 +5,100 @@
 
 # Contributing to NCP
 
-Thank you for your interest in contributing to the Neural Computation Protocol.
+Thanks for helping make NCP useful in real systems.
 
-## How to Contribute
+If you haven’t already, please read:
+- `README.md`
+- `BENCHMARK.md`
+- `CODE_OF_CONDUCT.md`
+- `SECURITY.md`
 
-### Reporting Issues
+## What contributions are most valuable
 
-Use the appropriate issue template:
+High-impact contributions right now:
 
-- **[Bug in Spec](../../issues/new?template=bug-in-spec.md)** — contradictions, ambiguities, or errors in the specification
-- **[Clarification Request](../../issues/new?template=clarification.md)** — unclear spec language or intent
-- **[Implementation Question](../../issues/new?template=implementation-question.md)** — questions about building runtimes, Bricks, or tooling
-- **[Proposed Extension](../../issues/new?template=proposed-extension.md)** — feature proposals for future NCP versions
+1. **Integrations (Phase 3)**
+   - MCP server adapter (one MCP tool = one NCP graph)
+   - LangGraph wrapper (an NCP graph as a node)
 
-### Submitting Changes
+2. **Brick packs**
+   Deterministic bricks that teams can reuse:
+   - schema validation / sanitizers
+   - extractors / parsers
+   - routers / classifiers
+   - safety/policy gates
 
-1. Fork the repository
-2. Create a feature branch from `main`
-3. Make your changes
-4. Ensure all checks pass (see below)
-5. Submit a pull request using the PR template
+3. **Conformance + test vectors**
+   Anything that helps third-party runtimes interoperate correctly.
 
-### Types of Changes
+4. **Docs + examples**
+   “How to adopt” guides and realistic example graphs.
 
-#### Spec Clarifications (non-breaking, v0.2.x)
+## Development setup
 
-Clarifications fix ambiguous language without changing protocol semantics. These can be submitted as direct PRs and are versioned as patch releases.
+### Prereqs
 
-#### Normative Changes (breaking, requires version bump)
+- Rust 1.94+
+- Node.js 18+ (for the validator)
+- Linux recommended for tight benchmark tails (Windows also supported)
 
-Changes to normative sections (MUST/SHOULD/MAY requirements) follow an RFC-style process:
+### Build & test (runtime)
 
-1. Open a **Proposed Extension** issue describing the change and motivation
-2. Discussion period (minimum 14 days)
-3. If accepted, submit a PR with spec changes, schema updates, validator updates, and test fixtures
-4. Version bump determined by backward compatibility impact
+```bash
+cargo test -p ncp-runtime
+cargo build -p ncp-runtime --release
+```
 
-#### Schema, Validator, and Documentation Updates
+### Run the runtime
 
-- Schema changes must align with the canonical spec
-- Validator updates must include test fixtures (positive and negative)
-- All examples must validate green after changes
+```bash
+cargo run -p ncp-runtime --release -- run examples/graphs/echo-chain/graph.yaml   --input examples/graphs/echo-chain/sample.json
+```
 
-## Development Setup
+### Benchmarks
 
-### Validator (TypeScript)
+See `BENCHMARK.md` for the full benchmark matrix and how to reproduce.
+
+Quick sanity run:
+
+```bash
+cargo run -p ncp-runtime --release --bin ncp-bench --   examples/graphs/echo-pipeline/graph.yaml   --input examples/graphs/echo-pipeline/sample.json   --warmup 200 --runs 2000
+```
+
+### Validator
 
 ```bash
 cd tools/ncp-validate
 npm install
 npm run build
-npm test
-npm run validate-examples
+node dist/cli.js graph ../../examples/graphs/echo-chain/graph.yaml
 ```
 
-### Runtime (Rust)
+## Adding a new brick
 
-Requires Rust 1.94+ (enforced via `rust-toolchain.toml`).
+Bricks are WASM modules that implement the NCP ABI (Model B) and are packaged with:
 
-```bash
-# Build the runtime
-cargo build
+- a `manifest.yaml`
+- an artifact digest + size
+- optional JSON schemas for input/output
 
-# Run all unit tests (44 tests: envelope, result, routing, mapping)
-cargo test
+A good way to start is to copy `bricks/echo` as a template.
 
-# Run end-to-end: single-node echo
-cargo run -- run examples/graphs/echo-pipeline/graph.yaml \
-  --input examples/graphs/echo-pipeline/sample.json
+When you add a brick:
+- keep it deterministic unless you explicitly declare otherwise in the manifest
+- keep limits realistic (`max_ms`, `max_mem_mb`, output size)
+- add an example graph under `examples/graphs/`
 
-# Run end-to-end: two-node chain with routing
-cargo run -- run examples/graphs/echo-chain/graph.yaml \
-  --input examples/graphs/echo-chain/sample.json
+## Pull requests
 
-# Run end-to-end: trap handling
-cargo run -- run examples/graphs/trap-pipeline/graph.yaml \
-  --input examples/graphs/trap-pipeline/sample.json
-```
+- Keep PRs focused and well-scoped.
+- Add or update tests when changing runtime behavior.
+- Update docs when changing CLI flags, bench output fields, or schema semantics.
 
-### Building the Echo Brick (WASM)
+## Reporting security issues
 
-```bash
-cd bricks/echo
-cargo build --release --target wasm32-unknown-unknown
-# Output: target/wasm32-unknown-unknown/release/ncp_echo.wasm
-```
-
-## Style Guidelines
-
-- **Spec language:** Use RFC 2119 keywords (MUST, SHOULD, MAY) for normative requirements
-- **TypeScript:** Strict mode, consistent with existing patterns
-- **Rust:** Standard `rustfmt` formatting, no `unsafe` in runtime code
-- **Commits:** Clear, descriptive messages referencing spec sections where applicable
-- **YAML examples:** 2-space indentation, comments for non-obvious fields
-
-## Code of Conduct
-
-This project follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you are expected to uphold this code.
+Please follow `SECURITY.md`. Do not disclose vulnerabilities in public issues.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+By contributing, you agree that your contributions will be licensed under Apache-2.0.

@@ -4,156 +4,211 @@
 -->
 
 <p align="center">
-  <img src="NCP-logo.png" alt="NCP Logo" width="200">
+  <img src="NCP-logo.png" alt="NCP Logo" width="200" />
 </p>
 
-# NCP — Neural Computation Protocol
+<h1 align="center">NCP — Neural Computation Protocol</h1>
 
-[![Validate](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg)](https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+<p align="center">
+  <strong>Composable, auditable micro-agent graphs for agentic AI systems.</strong><br/>
+  Route cheap deterministic work to WASM “Bricks”. Escalate only when needed.
+</p>
 
-NCP standardizes composable, auditable micro-agent primitives for agentic systems. The protocol defines:
+<p align="center">
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml">
+    <img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" />
+  </a>
+  <a href="https://opensource.org/licenses/Apache-2.0">
+    <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" />
+  </a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases">
+    <img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases=true" />
+  </a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers">
+    <img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" />
+  </a>
+</p>
 
-- **Bricks** — pure-functional, sandboxed WASM computation units
-- **Graphs** — compositions of Bricks connected by typed edges with routing policies
-- **Runtime** — executor that sandboxes Bricks, routes signals, owns state, and produces traces
+---
 
-## Core philosophy
+**Docs:** [Adoption guide](docs/ADOPTION_GUIDE.md) · [Benchmarks](BENCHMARK.md) · [Cost model](COST_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Spec](spec/ncp-v0.2.3.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-Bricks are commodity: open-source, reusable, deterministic. Graphs are product: proprietary topology plus synaptic weights equals competitive advantage. Intelligence lives in graph topology, not individual Bricks.
+## What is NCP?
+
+NCP is an open protocol + reference implementation for building **agentic systems from small, sandboxed WASM functions** (**Bricks**) wired into **directed graphs**.
+
+Instead of “LLM for everything”, you build a graph that:
+
+- runs **cheap deterministic steps** first (validation, parsing, routing, extraction, policy checks)
+- escalates to **expensive / slow steps** only when needed (LLMs, retrieval, heavy ML inference)
+- emits **traceable, replayable** execution metadata (hashes + provenance)
+
+### Core concepts
+
+| Concept | What it is |
+|---|---|
+| **Brick** | Pure-functional WASM computation unit. No filesystem. No network. No ambient authority. Deterministic by default. |
+| **Graph** | Bricks connected by typed edges with routing policies (success/error), threshold gating, and field mapping. |
+| **Runtime** | The executor: sandboxes Bricks, enforces resource limits, routes signals deterministically, and produces traces. |
+
+**Core insight:** Bricks are commodity (reusable, swappable). Graphs are product (your topology + thresholds + weights).
+
+---
+
+## Why teams use NCP
+
+- **Cost**: avoid paying LLM tokens for requests your deterministic path can handle.
+- **Latency**: keep most requests in microseconds; reserve 100ms–2s paths for the hard tail.
+- **Auditability**: every invoke can be traced (hashes, step counters, trigger provenance).
+- **Safety**: WASM sandbox + explicit limits; no prompt-injection surface inside deterministic bricks.
+- **Composability**: swap bricks / rewire graphs without changing application code.
+
+### When NCP is a good fit
+
+- you have **high volume** requests with a “long tail” that truly needs an LLM
+- you want **repeatable / testable** agent behavior (deterministic fast path)
+- you need **clear boundaries**: what can run, for how long, with how much memory
+
+---
+
+## Benchmarks (marketing-relevant)
+
+Benchmarks are in [`BENCHMARK.md`](BENCHMARK.md) with full methodology, raw JSON, and reproduction commands.
+
+**In practice:** if you can keep ~90% of requests off the LLM, your average latency and cost drop ~10×.
+The benchmark suite proves this curve end-to-end (mixed datasets + simulated 200ms LLM).
+
+Highlights below use the **Linux run** in `bench/results/linux/`:
+
+### 1) Runtime overhead is tiny
+
+Single-step graph (**echo-pipeline**) p50 is **15µs**.
+Two-step graph (**echo-chain**) p50 is **34µs**.
+
+That includes: CBOR envelope build + WASM invoke + result decode + routing/mapping overhead.
+
+### 2) “LLM avoidance” turns into real speedups
+
+We measure a synthetic mixed workload where an LLM call costs **200ms** (simulated by `thread::sleep(200ms)` after matching the “LLM brick”). This models network-bound LLM calls without vendor dependencies.
+
+- **LLM-only baseline** (every request hits the 200ms “LLM”): mean **200.2ms**
+- **Hybrid 90/10** (90% handled deterministically): mean **20.0ms** (**~10× lower**)
+- **Hybrid 97/3** (97% handled deterministically): mean **6.0ms** (**~33× lower**)
+
+These results are measured end-to-end by cycling a dataset (`--dataset`) so the latency distribution includes both fast-path and slow-path requests in one run.
+
+**Cost follows the same curve**: if you avoid LLM calls, you avoid LLM spend. See [`COST_MODEL.md`](COST_MODEL.md).
+
+---
 
 ## Quick start (runtime)
 
+Prereqs: **Rust 1.94+**.
+
+New here? Start with **docs/ADOPTION_GUIDE.md** [docs/ADOPTION_GUIDE.md](docs/ADOPTION_GUIDE.md) — what to build first, how to choose bricks, how to design “fast path vs LLM path”, and how to deploy NCP in a service.
+
 ```bash
-# Build the reference runtime (requires Rust 1.94+)
-cargo build --release
+git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
+cd neural-computation-protocol
 
-# Run a single-node graph
-cargo run -- run examples/graphs/echo-pipeline/graph.yaml \
-  --input examples/graphs/echo-pipeline/sample.json
+# Build the reference runtime
+cargo build -p ncp-runtime --release
 
-# Run a two-node chain with routing and field mapping
-cargo run -- run examples/graphs/echo-chain/graph.yaml \
+# Run a graph (2-step example: echo_a -> echo_b with field mapping)
+cargo run -p ncp-runtime --release -- run examples/graphs/echo-chain/graph.yaml \
   --input examples/graphs/echo-chain/sample.json
 
-# Run with safety budget
-cargo run -- run examples/graphs/echo-chain/graph.yaml \
-  --input examples/graphs/echo-chain/sample.json --max-steps 1
-
-# Write trace to file instead of stderr
-cargo run -- run examples/graphs/echo-pipeline/graph.yaml \
+# Optional: write trace to file (JSONL)
+cargo run -p ncp-runtime --release -- run examples/graphs/echo-pipeline/graph.yaml \
   --input examples/graphs/echo-pipeline/sample.json --trace trace.jsonl
-
-# Output all terminal results as JSON array
-cargo run -- run examples/graphs/echo-chain/graph.yaml \
-  --input examples/graphs/echo-chain/sample.json --all-terminals
 ```
 
-## Quick start (validator)
+### Benchmark quick start
+
+```bash
+# Pure runtime overhead
+cargo run -p ncp-runtime --release --bin ncp-bench -- \
+  examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json \
+  --warmup 500 --runs 20000
+
+# Mixed workload + simulated LLM latency
+cargo run -p ncp-runtime --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --dataset bench/datasets/support-routing-90-10.jsonl \
+  --warmup 100 --runs 1000 \
+  --simulate-llm-ms 200 --llm-brick-pattern echo
+```
+
+---
+
+## Specification + tooling
+
+- **Protocol version:** v0.2.3
+- **Canonical spec:** `spec/ncp-v0.2.3.md`
+- **JSON Schemas:** `schemas/` (Draft 2020-12)
+- **Validator:** `tools/ncp-validate/`
+- **Reference runtime:** `runtime/` (Rust + Wasmtime 43)
+- **Conformance vectors:** `conformance/`
+
+### Validator quick start
+
+Prereqs: Node.js 18+.
 
 ```bash
 cd tools/ncp-validate
-npm install && npm run build
+npm install
+npm run build
 
-# Validate a Brick manifest
-npx ncp-validate brick ../../examples/bricks/sentiment-gate/manifest.yaml
-# → 12 rules checked: 12 passed, 0 failed
-
-# Validate a Graph manifest
-npx ncp-validate graph ../../examples/graphs/support-routing/graph.yaml
-# → 8 rules checked: 8 passed, 0 failed
-
-# Cross-validate Graph against its Bricks
-npx ncp-validate cross ../../examples/graphs/support-routing/graph.yaml \
-  --brick-dir ../../examples/bricks/
-# → 4 rules checked: 4 passed, 0 failed
-
-# List all validation rules
-npx ncp-validate rules
+# Validate a brick or graph manifest
+node dist/cli.js brick ../../examples/bricks/echo/manifest.yaml
+node dist/cli.js graph ../../examples/graphs/echo-chain/graph.yaml
 ```
 
-## Specification
-
-- **Current version:** v0.2.3
-- **Canonical spec:** [spec/ncp-v0.2.3.md](spec/ncp-v0.2.3.md)
-- **PDF releases:** [spec/releases/](spec/releases/)
+---
 
 ## Repository structure
 
 ```
-├── spec/           # Canonical protocol specification (Markdown + PDF releases)
-├── schemas/        # JSON Schema (Draft 2020-12) for all NCP structures
-├── runtime/        # Reference runtime (Rust, Wasmtime 43)
-├── bricks/         # Reference Brick implementations (Rust → WASM)
-├── examples/       # Example Brick manifests, Graph manifests, and test fixtures
-├── tools/          # Validator CLI and tooling
-├── conformance/    # Test vectors for runtime implementors
-├── docs/           # Roadmap and supplementary documentation
-└── .github/        # CI workflows and issue templates
+spec/            Protocol specification (Markdown + PDF releases)
+schemas/         JSON Schema for all NCP structures
+runtime/         Reference runtime (Rust) + bench harness
+bricks/          Reference brick implementations (Rust -> WASM)
+examples/        Brick + graph manifests, fixtures, and demo graphs
+bench/           Datasets + machine-readable results (Windows + Linux)
+tools/           Validator CLI (ncp-validate)
+conformance/     Test vectors for runtime implementors
+docs/            Roadmap and design notes
 ```
 
-## Runtime
-
-The `ncp-runtime` reference runtime (`runtime/`) loads a Graph manifest, resolves and verifies WASM Brick bundles, and executes the graph via FIFO queue orchestration:
-
-- WASM sandbox via Wasmtime 43 with memory limits
-- Model B ABI: `alloc`/`free`/`invoke` with 4-byte LE length-prefixed results
-- CBOR envelope with sorted keys for cross-runtime determinism
-- Result boundary validation (Success / LowConfidence / Failure)
-- Deterministic routing per Section 7.4.1 (on_error priority, on_success weight/threshold)
-- Field mapping with dot-path resolution and deep merge
-- SHA-256 artifact digest verification
-- JSON Lines trace emission (Section 11.1)
-- Safety budgets: `--max-steps`, `--max-queued`
-
-See `cargo run -- run --help` for full CLI options.
-
-## Performance
-
-Runtime overhead (Phase 2): ~26 us p50 for a 1-node graph, ~60 us p50 for a
-2-node routed+mapped graph (Ryzen 9 5900X, Wasmtime 43, release build, tracing
-disabled). Per-step overhead is ~26-30 us and scales linearly with step count.
-See [BENCHMARK.md](BENCHMARK.md) for full methodology and reproduction commands.
-
-### Numbers you can quote
-
-- **Runtime overhead:** ~**27–30 µs per step (p50)**
-  (envelope build + WASM invoke + CBOR decode/validation + routing/mapping)
-- **1-step graph:** ~**27 µs p50** | **2-step graph:** ~**57–59 µs p50**
-- **Cold start:** ~**16–26 ms** (load + compile, 1–2 bricks)
-- **Throughput:** ~**33k req/s** (single thread) | ~**39k req/s** (2 threads)
-
-Orchestration overhead is **~0.03 ms/step** — negligible next to LLM latency
-(100–2000 ms) and token cost.
-
-**Approx. $ cost (explicit assumption):** at **$0.05/vCPU-hour**,
-**30 µs/step ≈ $0.00042 per million steps** (≈ 0.04 cents).
-LLM calls dominate total cost; the win comes from **routing fewer requests
-to the LLM**.
-
-## Cost model
-
-Cost savings depend on how often requests escalate to an LLM. At 10% escalation
-rate, modeled LLM spend drops ~10x — assuming deterministic paths meet quality
-targets. See [COST_MODEL.md](COST_MODEL.md) for the parameterized framework.
-
-## Validator
-
-The `ncp-validate` CLI validates manifests in two phases:
-
-1. **JSON Schema** — structural validation against NCP Draft 2020-12 schemas
-2. **Invariant rules** — cross-field consistency checks derived from the spec
-
-See [tools/ncp-validate/README.md](tools/ncp-validate/README.md) for full CLI docs and the complete rule list.
+---
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the phased development plan.
+High-level roadmap lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-## Contributing
+If you’re evaluating NCP today:
+- Phase 1 (Spec + Validator): ✅ complete
+- Phase 2 (Reference Runtime + Benchmarking): ✅ complete
+- Phase 3 (Integrations + distribution): 🚧 in progress
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+---
+
+## Get involved
+
+If you want NCP to be useful in real systems, the best help is:
+
+- **Adapters / integrations** (MCP tool server, LangGraph node wrapper)
+- **Brick packs** (reusable deterministic bricks: validators, extractors, routers)
+- **Conformance** (vectors + cross-runtime test harness)
+- **Docs** (clear patterns, examples, and “how to adopt” guides)
+
+Start here:
+- `CONTRIBUTING.md`
+- `SECURITY.md`
+
+---
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache-2.0 — see `LICENSE` and `NOTICE`.
