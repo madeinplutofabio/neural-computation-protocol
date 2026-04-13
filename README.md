@@ -22,7 +22,7 @@
     <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" />
   </a>
   <a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases=true" />
+    <img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" />
   </a>
   <a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers">
     <img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" />
