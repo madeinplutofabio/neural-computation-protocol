@@ -107,6 +107,36 @@ provide a measured (not inferred) comparison point.
   entirely by the simulated LLM call. Runtime overhead adds <0.1% on top of
   LLM latency.
 
+## Results — Mixed Synthetic Workloads
+
+These runs use `--dataset` mode: a JSONL file with a fixed mix of positive
+(non-escalating) and negative (escalating) inputs, cycled deterministically.
+Each iteration parses one JSON line and executes the full graph. Both
+end-to-end (parse + execute) and execute-only latencies are reported;
+parse overhead is negligible (<2 us difference).
+
+This is a **measured** mixed synthetic workload, not a modeled weighted
+average. The harness cycles through the dataset in fixed order, producing
+a real latency distribution that includes both fast deterministic paths
+and slow LLM-simulated escalations in a single run.
+
+| Dataset | Lines | p_llm (measured) | Exec mean | Exec p50 | Exec p95 | Exec p99 | Speedup vs baseline |
+|---|---|---|---|---|---|---|---|
+| 97/3 | 100 | 0.03 | 6,048 us (6.0 ms) | 29 us | 76 us | 200,659 us | **~33x** |
+| 90/10 | 100 | 0.10 | 20,083 us (20.1 ms) | 30 us | 200,433 us | 200,992 us | **~10x** |
+| 50/50 | 100 | 0.50 | 100,321 us (100.3 ms) | 200,103 us | 201,002 us | 201,105 us | **~2x** |
+
+**Baseline (LLM-only):** mean = 200,546 us (200.5 ms), measured with the same
+harness and `--simulate-llm-ms 200`. Speedup = baseline mean / dataset exec mean.
+
+**Key observations:**
+
+- Speedup scales as **~1/p_llm**, confirmed by measurement: 33x at 3%, 10x at 10%, 2x at 50%.
+- At 3% escalation, **p95 = 76 us** — 95% of requests complete in under 0.1 ms
+  (only the ~3% escalation tail is slow).
+- At 10% escalation, **p50 = 30 us** but **p95 = 200 ms** — the 10% tail is dominated by LLM latency.
+- Parse overhead is negligible: e2e and exec stats differ by <2 us across all datasets.
+
 ## Claims
 
 The following claims are supported by the benchmark data above and the
@@ -134,22 +164,22 @@ p50 = 29 us. The echo brick (LLM stand-in) was never reached.
 
 ### Claim 3: Latency improvement scales with escalation rate
 
-This is a modeled mixed workload, using measured endpoints. For a workload
-where `p_llm` = 10% (90% of requests handled deterministically):
+Measured on mixed synthetic workloads (deterministic dataset order, 200ms
+simulated LLM), using the same harness and baseline:
 
-```
-Measured LLM-only baseline:     p50 = 200,516 us  (200.5 ms)
-Measured deterministic path:    p50 =      27 us  (0.027 ms)
-Measured escalation path:       p50 = 200,557 us  (200.6 ms)
+| p_llm | Measured exec mean | Speedup vs baseline |
+|---|---|---|
+| 3% | 6.0 ms | **~33x** |
+| 10% | 20.1 ms | **~10x** |
+| 50% | 100.3 ms | **~2x** |
 
-Expected latency (NCP hybrid) = 0.90 * 27 us + 0.10 * 200,557 us
-                               ≈ 20,080 us ≈ 20 ms
+Speedup scales as ~1/p_llm. These are direct measurements, not modeled
+weighted averages — the harness ran each dataset mix end-to-end and
+computed the latency distribution from actual iteration timings.
 
-Speedup vs measured baseline   = 200,516 us / 20,080 us ≈ 10x
-```
-
-At `p_llm` = 3%, expected latency drops to ~6 ms → **~33x speedup** vs the
-measured LLM-only baseline.
+**Corroboration:** the modeled weighted average (0.90 × 27 us + 0.10 ×
+200,557 us ≈ 20,080 us) matches the measured 90/10 mean of 20,083 us
+to within 0.01%, confirming harness correctness.
 
 ### Claim 4: Cost savings are proportional to escalation avoidance
 
@@ -183,11 +213,58 @@ and the quality of deterministic bricks.
   acceptance rate, not just speed.
 - **Production latency**: these benchmarks use stub bricks. Real bricks with
   ML inference or complex logic will add per-step compute time.
-- **Absolute numbers**: all results are from a single desktop machine. Cloud
-  VMs, containers, and different CPUs will show different absolute numbers but
-  similar relative scaling.
+- **Absolute numbers**: results vary by platform. Linux (WSL2) shows ~1.7x
+  faster per-step overhead than Windows on the same hardware (see cross-
+  platform comparison below). Cloud VMs, containers, and different CPUs will
+  show different absolute numbers but similar relative scaling.
+
+## Cross-Platform Comparison
+
+All runs on the same hardware (Ryzen 9 5900X), same Rust 1.94.0 / Wasmtime 43,
+same release build. Linux runs via WSL2 (Ubuntu 24.04).
+
+### Pure runtime overhead (p50, microseconds)
+
+| Graph | Steps | Windows | Linux (WSL2) |
+|---|---|---|---|
+| echo-pipeline | 1 | 26 us | **16 us** |
+| echo-chain | 2 | 60 us | **34 us** |
+| trap-pipeline | 1 | 25 us | **14 us** |
+| routing-positive | 1 | 29 us | **17 us** |
+| routing-negative | 2 | 58 us | **35 us** |
+
+Linux per-step overhead is ~16-17 us (vs ~26-29 us on Windows), a ~1.7x
+improvement. This is consistent with tighter syscall overhead and scheduler
+granularity on Linux.
+
+### Tail latency (p99, microseconds)
+
+| Graph | Windows p99 | Linux p99 |
+|---|---|---|
+| echo-pipeline | 63 us | **31 us** |
+| echo-chain | 121 us | **55 us** |
+| trap-pipeline | 50 us | **24 us** |
+| routing-positive | 55 us | **34 us** |
+| routing-negative | 128 us | **63 us** |
+
+Linux tails are ~2x tighter than Windows, as expected from scheduler
+differences.
+
+### Mixed synthetic workloads (exec mean, with 200ms simulated LLM)
+
+| Dataset | p_llm | Windows mean | Linux mean | Speedup vs baseline |
+|---|---|---|---|---|
+| 97/3 | 0.03 | 6,048 us | 6,025 us | **~33x** |
+| 90/10 | 0.10 | 20,083 us | 20,041 us | **~10x** |
+| 50/50 | 0.50 | 100,321 us | 100,124 us | **~2x** |
+
+Mixed-workload means are nearly identical across platforms because they are
+dominated by the 200ms simulated LLM sleep. The speedup ratios hold
+regardless of OS.
 
 ## Environment
+
+### Windows (primary)
 
 | Parameter | Value |
 |---|---|
@@ -200,6 +277,18 @@ and the quality of deterministic bricks.
 | Runtime | ncp-runtime 0.1.0 |
 | Build | `cargo build --release` (optimized) |
 | Power | Desktop workstation (no throttling) |
+
+### Linux (WSL2)
+
+| Parameter | Value |
+|---|---|
+| CPU | Same (AMD Ryzen 9 5900X, shared with host) |
+| RAM | Same (shared with host) |
+| OS | Ubuntu 24.04.1 LTS on WSL2 (kernel 5.10.16.3-microsoft-standard-WSL2) |
+| Rust | 1.94.0 |
+| Wasmtime | 43.0.0 |
+| Runtime | ncp-runtime 0.1.0 |
+| Build | `cargo build --release` (optimized) |
 
 Results are environment-specific; treat committed numbers as a baseline for
 relative comparisons, not as a performance guarantee.
@@ -218,6 +307,8 @@ relative comparisons, not as a performance guarantee.
 8. Verbose: off (no stderr I/O during timed iterations)
 9. LLM simulation: `--simulate-llm-ms 200` injects a `thread::sleep(200ms)`
    via `ExecuteHooks.on_invoke` after each invoke matching `--llm-brick-pattern`
+10. Datasets are deterministic (no shuffle) to keep results exactly reproducible;
+    the dataset SHA-256 is printed by `ncp-bench` and recorded in JSON outputs
 
 ## Reproduce
 
@@ -282,6 +373,30 @@ cargo run --release --bin ncp-bench -- \
   --warmup 50 --runs 1000 \
   --simulate-llm-ms 200 --llm-brick-pattern echo \
   --output bench/results/routing-negative-llm200.json
+
+# mixed synthetic workload — 90/10 with simulated 200ms LLM
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --dataset bench/datasets/support-routing-90-10.jsonl \
+  --warmup 50 --runs 1000 \
+  --simulate-llm-ms 200 --llm-brick-pattern echo \
+  --output bench/results/mixed-90-10-llm200.json
+
+# mixed synthetic workload — 97/3 with simulated 200ms LLM
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --dataset bench/datasets/support-routing-97-3.jsonl \
+  --warmup 50 --runs 1000 \
+  --simulate-llm-ms 200 --llm-brick-pattern echo \
+  --output bench/results/mixed-97-3-llm200.json
+
+# mixed synthetic workload — 50/50 with simulated 200ms LLM
+cargo run --release --bin ncp-bench -- \
+  examples/graphs/support-routing-stubbed/graph.yaml \
+  --dataset bench/datasets/support-routing-50-50.jsonl \
+  --warmup 50 --runs 1000 \
+  --simulate-llm-ms 200 --llm-brick-pattern echo \
+  --output bench/results/mixed-50-50-llm200.json
 ```
 
 Machine-readable results (with environment metadata) are committed in
