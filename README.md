@@ -15,21 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml">
-    <img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" />
-  </a>
-  <a href="https://opensource.org/licenses/Apache-2.0">
-    <img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" />
-  </a>
-  <a href="https://doi.org/10.5281/zenodo.19570210">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570210.svg?v=1" alt="DOI">
-  </a>
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" />
-  </a>
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers">
-    <img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" />
-  </a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a><a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a><a href="https://doi.org/10.5281/zenodo.19570210"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570210.svg?v=1" alt="DOI"></a><a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a><a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" /></a>
 </p>
 
 ---
