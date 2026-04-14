@@ -33,6 +33,8 @@
 
 **Docs:** [Adoption guide](docs/ADOPTION_GUIDE.md) · [Benchmarks](BENCHMARK.md) · [Cost model](COST_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Spec](spec/ncp-v0.2.3.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
+**Status:** Protocol v0.2.3 + validator are stable. The Phase 2 runtime is a reference implementation (fast, deterministic, benchmarked). Phase 3 focuses on integrations (MCP/LangGraph) and distribution.
+
 ## What is NCP?
 
 NCP is an open protocol + reference implementation for building **agentic systems from small, sandboxed WASM functions** (**Bricks**) wired into **directed graphs**.
@@ -63,6 +65,15 @@ Instead of “LLM for everything”, you build a graph that:
 - **Safety**: WASM sandbox + explicit limits; no prompt-injection surface inside deterministic bricks.
 - **Composability**: swap bricks / rewire graphs without changing application code.
 
+### Who this is for
+
+If you ship “agentic” workflows in production and your **latency or LLM bill keeps climbing**, NCP is for:
+
+- **CEOs/CTOs**: reduce inference spend and make behavior more predictable.
+- **Platform/AI engineers**: build a fast deterministic path + a controlled LLM tail.
+- **SRE/DevOps**: tighten limits, reduce surprise load, and get replayable traces for incidents.
+- **Product teams**: iterate by rewiring graphs instead of rewriting code.
+
 ### When NCP is a good fit
 
 - you have **high volume** requests with a “long tail” that truly needs an LLM
@@ -71,12 +82,21 @@ Instead of “LLM for everything”, you build a graph that:
 
 ---
 
-## Benchmarks (marketing-relevant)
+## Benchmarks
 
 Benchmarks are in [`BENCHMARK.md`](BENCHMARK.md) with full methodology, raw JSON, and reproduction commands.
 
-**In practice:** if you can keep ~90% of requests off the LLM, your average latency and cost drop ~10×.
-The benchmark suite proves this curve end-to-end (mixed datasets + simulated 200ms LLM).
+**In practice:** if you can keep ~90% of requests off the LLM, your average latency and cost drop ~10×. The benchmark suite proves this curve end-to-end (mixed datasets + simulated 200ms LLM).
+
+> **Important:** the **µs numbers** are *runtime overhead* (fast path). The win comes from avoiding **ms–s** LLM calls on requests that don’t need “thinking”.
+
+### A concrete example
+
+Support triage:
+- 90% are “boring”: password reset, invoice request, status updates → deterministic bricks handle them.
+- 10% are messy: angry customers, edge cases → escalate to LLM.
+
+That’s exactly what NCP is built for: a **cheap, deterministic fast path** + an **explicit escalation path**.
 
 Highlights below use the **Linux run** in `bench/results/linux/`:
 
@@ -105,7 +125,7 @@ These results are measured end-to-end by cycling a dataset (`--dataset`) so the 
 
 Prereqs: **Rust 1.94+**.
 
-New here? Start with **docs/ADOPTION_GUIDE.md** [docs/ADOPTION_GUIDE.md](docs/ADOPTION_GUIDE.md) — what to build first, how to choose bricks, how to design “fast path vs LLM path”, and how to deploy NCP in a service.
+New here? Start with **docs/ADOPTION_GUIDE.md** — what to build first, how to choose bricks, how to design “fast path vs LLM path”, and how to deploy NCP in a service.
 
 ```bash
 git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
@@ -196,6 +216,8 @@ If you’re evaluating NCP today:
 
 ## Get involved
 
+If you find NCP useful, please consider giving us a star on GitHub: it helps attract more security experts and framework authors into the community.
+
 If you want NCP to be useful in real systems, the best help is:
 
 - **Adapters / integrations** (MCP tool server, LangGraph node wrapper)
@@ -212,3 +234,9 @@ Start here:
 ## License
 
 Apache-2.0 — see `LICENSE` and `NOTICE`.
+
+---
+
+Maintained by [![Linkedin](https://i.sstatic.net/gVE0j.png) @fmsalvadori](https://www.linkedin.com/in/fmsalvadori/)
+&nbsp;
+[![GitHub](https://i.sstatic.net/tskMh.png) MadeInPluto](https://github.com/madeinplutofabio)

@@ -13,6 +13,13 @@ If you haven’t already, please read:
 - `CODE_OF_CONDUCT.md`
 - `SECURITY.md`
 
+## Ground rules
+
+- **No CLA.**
+- **License:** Apache-2.0.
+- **DCO required:** every commit must include `Signed-off-by` (see [`DCO.md`](DCO.md)).
+- Be respectful and constructive (see [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)).
+
 ## What contributions are most valuable
 
 High-impact contributions right now:
