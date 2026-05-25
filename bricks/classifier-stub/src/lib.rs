@@ -140,6 +140,11 @@ fn contains_ci(haystack: &[u8], needle: &[u8]) -> bool {
     false
 }
 
+// Rationale: ASCII range check via `>=`/`<=` compiles to simpler wasm
+// than `RangeInclusive::contains` (no range allocation) and is more
+// idiomatic for byte-level ops in no_std. Source unchanged keeps the
+// wasm artifact + manifest digest valid.
+#[allow(clippy::manual_range_contains)]
 fn to_lower(b: u8) -> u8 {
     if b >= b'A' && b <= b'Z' {
         b + 32

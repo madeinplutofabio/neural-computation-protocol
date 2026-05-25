@@ -92,6 +92,11 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
 /// Minimal envelope parser: extract the raw CBOR bytes of the "input" field.
 /// Only accepts definite-length maps (canonical CBOR per §5.2 requires definite-length).
+// Rationale: clippy suggests `?` but the explicit `match` keeps the
+// "reject indefinite-length map" comment on the rejection arm where it
+// belongs (per spec §5.2). The `?` rewrite buries that intent. Source
+// unchanged keeps the wasm artifact + manifest digest valid.
+#[allow(clippy::question_mark)]
 fn extract_input_from_envelope(envelope: &[u8]) -> Option<Vec<u8>> {
     let mut decoder = minicbor::Decoder::new(envelope);
 
