@@ -11,7 +11,7 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
-## [0.3.3] — 2026-05-XX
+## [0.3.3] — 2026-05-26
 
 ### Added
 - **Rust CI workflow** (`.github/workflows/rust.yml`): fmt, clippy with `-D warnings`,
@@ -40,6 +40,16 @@ Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   `run` subcommand (previously copy-pasted commands failed with
   `unrecognized argument`). `ncp-bench` invocations unaffected (positional graph
   argument, no subcommand)
+
+### Changed
+- `runtime/Cargo.toml`: crate version bumped `0.1.0` → `0.3.3` to align with
+  the release tag and eliminate the `cargo install ncp-runtime` version
+  surprise. `Cargo.lock` updated to match (only the self-version entry).
+- Brick crates (`ncp-echo`, `ncp-classifier-stub`) intentionally remain at
+  crate version `0.1.0`. Their Rust crate version is decoupled from the
+  NCP-brick-manifest version (declared in `examples/bricks/*/manifest.yaml`,
+  also `0.1.0`). The two will align when bricks are published to crates.io
+  in Phase 3A.
 
 ## [0.3.2] — 2026-04-14
 
