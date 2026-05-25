@@ -26,6 +26,10 @@ pub const ROOT_TRIGGER: Trigger<'static> = Trigger {
 /// Input auto-detection:
 ///   - If JSON has top-level "input" key → use its value
 ///   - Else → wrap entire JSON as input
+// Rationale: envelope construction needs these distinct fields (graph
+// context + trace metadata + step + trigger). Refactor into a builder
+// struct in Phase 3B/3C if/when the signature grows further.
+#[allow(clippy::too_many_arguments)]
 pub fn build_envelope(
     json_input: &serde_json::Value,
     graph_id: &str,

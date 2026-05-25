@@ -47,7 +47,7 @@ fn route_on_error(edges: &[&Edge], error_class: &str) -> Vec<RoutedEdge> {
             // edge.target_node. The map keys are the error_class filter.
             e.on_error
                 .as_ref()
-                .map_or(false, |m| m.contains_key(error_class))
+                .is_some_and(|m| m.contains_key(error_class))
         })
         .copied()
         .collect();

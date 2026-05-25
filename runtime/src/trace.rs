@@ -18,6 +18,11 @@ pub trait TraceSink: Send {
     }
 
     fn emit_runtime_info(&mut self, runtime_version: &str, wasmtime_version: &str, timestamp: &str);
+
+    // Rationale: invoke trace record carries every field of the §11.1 schema;
+    // the trait signature mirrors the schema 1:1 to keep call sites honest.
+    // Refactor into a TraceRecord struct in Phase 3B/3C.
+    #[allow(clippy::too_many_arguments)]
     fn emit_invoke(
         &mut self,
         trace_id: &str,
@@ -141,7 +146,7 @@ impl TraceSink for JsonlTraceWriter {
         timestamp: &str,
     ) {
         let input_hash = sha256_prefixed(envelope_bytes);
-        let output_hash = result_bytes.map(|b| sha256_prefixed(b));
+        let output_hash = result_bytes.map(sha256_prefixed);
         let result_len = result_bytes.map(|b| b.len());
 
         let mut record = serde_json::json!({

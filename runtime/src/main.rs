@@ -39,6 +39,9 @@ fn main() -> Result<()> {
     }
 }
 
+// Rationale: CLI dispatch shim — args mirror clap-parsed flags 1:1.
+// Refactor into a RunArgs struct in Phase 3B/3C if/when flags grow further.
+#[allow(clippy::too_many_arguments)]
 fn run_graph(
     graph: PathBuf,
     input: PathBuf,

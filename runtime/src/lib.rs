@@ -35,14 +35,9 @@ pub struct InvokeMetric {
 }
 
 /// Hooks for streaming execution events.
+#[derive(Default)]
 pub struct ExecuteHooks<'a> {
     pub on_invoke: Option<&'a mut dyn FnMut(InvokeMetric)>,
-}
-
-impl<'a> Default for ExecuteHooks<'a> {
-    fn default() -> Self {
-        Self { on_invoke: None }
-    }
 }
 
 /// Options for a single execute() call.
@@ -126,7 +121,7 @@ impl RuntimeContext {
     /// Load from file paths (CLI convenience).
     pub fn load(graph_path: &Path, brick_dir: &Path, brick_map: Option<&Path>) -> Result<Self> {
         let graph = manifest::load_graph(graph_path)?;
-        let brick_map = brick_map.map(|p| resolver::load_brick_map(p)).transpose()?;
+        let brick_map = brick_map.map(resolver::load_brick_map).transpose()?;
         Self::from_graph(graph, brick_dir, &brick_map)
     }
 

@@ -110,7 +110,7 @@ fn select_wasm(brick_id: &str, dir: &Path, artifact_path: &Option<PathBuf>) -> R
         .with_context(|| format!("reading directory '{}'", dir.display()))?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
-        .filter(|p| p.extension().map_or(false, |ext| ext == "wasm"))
+        .filter(|p| p.extension().is_some_and(|ext| ext == "wasm"))
         .collect();
     wasm_files.sort();
 
