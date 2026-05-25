@@ -141,7 +141,11 @@ fn contains_ci(haystack: &[u8], needle: &[u8]) -> bool {
 }
 
 fn to_lower(b: u8) -> u8 {
-    if b >= b'A' && b <= b'Z' { b + 32 } else { b }
+    if b >= b'A' && b <= b'Z' {
+        b + 32
+    } else {
+        b
+    }
 }
 
 /// Check if text contains any negative keyword.
@@ -228,7 +232,11 @@ pub extern "C" fn alloc(len: i32) -> i32 {
         Err(_) => return 0,
     };
     let ptr = unsafe { alloc::alloc::alloc(layout) };
-    if ptr.is_null() { 0 } else { ptr as i32 }
+    if ptr.is_null() {
+        0
+    } else {
+        ptr as i32
+    }
 }
 
 #[no_mangle]
@@ -249,23 +257,20 @@ pub extern "C" fn invoke(envelope_ptr: i32, envelope_len: i32) -> i32 {
         return write_result(&build_failure("invalid envelope pointer or length"));
     }
 
-    let envelope = unsafe {
-        slice::from_raw_parts(envelope_ptr as *const u8, envelope_len as usize)
-    };
+    let envelope =
+        unsafe { slice::from_raw_parts(envelope_ptr as *const u8, envelope_len as usize) };
 
     let result_cbor = match extract_input_from_envelope(envelope) {
-        Some(input_cbor) => {
-            match extract_text_field(&input_cbor) {
-                Some(text) => {
-                    if is_negative(&text) {
-                        build_low_confidence("negative", 0.30)
-                    } else {
-                        build_success("positive", 0.95)
-                    }
+        Some(input_cbor) => match extract_text_field(&input_cbor) {
+            Some(text) => {
+                if is_negative(&text) {
+                    build_low_confidence("negative", 0.30)
+                } else {
+                    build_success("positive", 0.95)
                 }
-                None => build_failure("input.text field not found"),
             }
-        }
+            None => build_failure("input.text field not found"),
+        },
         None => build_failure("failed to extract input from envelope"),
     };
 

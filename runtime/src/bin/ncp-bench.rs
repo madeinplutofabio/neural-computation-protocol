@@ -149,7 +149,10 @@ fn main() -> Result<()> {
         eprintln!("Cold start: {} us ({:.3} ms)", us, us as f64 / 1000.0);
         (ctx, Some(us))
     } else {
-        (RuntimeContext::load(&args.graph, &args.brick_dir, args.brick_map.as_deref())?, None)
+        (
+            RuntimeContext::load(&args.graph, &args.brick_dir, args.brick_map.as_deref())?,
+            None,
+        )
     };
 
     let ctx = Arc::new(ctx);
@@ -189,7 +192,11 @@ fn main() -> Result<()> {
         let raw = std::fs::read_to_string(path)
             .with_context(|| format!("reading dataset '{}'", path.display()))?;
         let sha256 = hex::encode(Sha256::digest(raw.as_bytes()));
-        let lines: Vec<String> = raw.lines().filter(|l| !l.trim().is_empty()).map(String::from).collect();
+        let lines: Vec<String> = raw
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .map(String::from)
+            .collect();
         if lines.is_empty() {
             bail!("dataset '{}' contains no lines", path.display());
         }
@@ -199,7 +206,9 @@ fn main() -> Result<()> {
         }
         eprintln!(
             "  dataset: {} ({} lines, sha256:{})",
-            path.display(), lines.len(), &sha256[..16]
+            path.display(),
+            lines.len(),
+            &sha256[..16]
         );
         InputSource::Dataset {
             lines,
@@ -244,87 +253,94 @@ fn main() -> Result<()> {
     let base_per_thread = total_runs / num_threads;
     let remainder = total_runs % num_threads;
 
-    eprintln!("Bench: {} iterations across {} thread(s)...", total_runs, num_threads);
+    eprintln!(
+        "Bench: {} iterations across {} thread(s)...",
+        total_runs, num_threads
+    );
 
     let wall_start = Instant::now();
 
-    let handles: Vec<_> = (0..num_threads).map(|t| {
-        let ctx = Arc::clone(&ctx);
-        let source = Arc::clone(&source);
-        let pattern = Arc::clone(&pattern);
-        let runs = base_per_thread + if t < remainder { 1 } else { 0 };
-        // Offset so each thread works on different dataset indices
-        let index_offset = t * base_per_thread + t.min(remainder);
+    let handles: Vec<_> = (0..num_threads)
+        .map(|t| {
+            let ctx = Arc::clone(&ctx);
+            let source = Arc::clone(&source);
+            let pattern = Arc::clone(&pattern);
+            let runs = base_per_thread + if t < remainder { 1 } else { 0 };
+            // Offset so each thread works on different dataset indices
+            let index_offset = t * base_per_thread + t.min(remainder);
 
-        std::thread::spawn(move || -> Result<ThreadResults> {
-            let mut tracer = NullTrace;
-            let opts = ExecuteOptions {
-                trace_id: Some("bench-trace".to_string()),
-                session_id: Some("bench-session".to_string()),
-                verbose: false,
-                all_terminals: false,
-                ..Default::default()
-            };
+            std::thread::spawn(move || -> Result<ThreadResults> {
+                let mut tracer = NullTrace;
+                let opts = ExecuteOptions {
+                    trace_id: Some("bench-trace".to_string()),
+                    session_id: Some("bench-session".to_string()),
+                    verbose: false,
+                    all_terminals: false,
+                    ..Default::default()
+                };
 
-            let mut execute_us: Vec<u64> = Vec::with_capacity(runs);
-            let mut end_to_end_us: Vec<u64> = Vec::with_capacity(runs);
-            let mut total_llm_invokes: u64 = 0;
-            let mut runs_with_llm: u64 = 0;
-            let mut total_steps: u64 = 0;
+                let mut execute_us: Vec<u64> = Vec::with_capacity(runs);
+                let mut end_to_end_us: Vec<u64> = Vec::with_capacity(runs);
+                let mut total_llm_invokes: u64 = 0;
+                let mut runs_with_llm: u64 = 0;
+                let mut total_steps: u64 = 0;
 
-            for i in 0..runs {
-                let mut run_llm_invokes: u64 = 0;
+                for i in 0..runs {
+                    let mut run_llm_invokes: u64 = 0;
 
-                let mut on_invoke = |metric: InvokeMetric| {
-                    if !simulating { return; }
-                    if metric.brick_id.contains(&*pattern) {
-                        run_llm_invokes += 1;
-                        std::thread::sleep(std::time::Duration::from_millis(
-                            simulate_llm_ms.unwrap(),
-                        ));
+                    let mut on_invoke = |metric: InvokeMetric| {
+                        if !simulating {
+                            return;
+                        }
+                        if metric.brick_id.contains(&*pattern) {
+                            run_llm_invokes += 1;
+                            std::thread::sleep(std::time::Duration::from_millis(
+                                simulate_llm_ms.unwrap(),
+                            ));
+                        }
+                    };
+
+                    let mut hooks = ExecuteHooks {
+                        on_invoke: Some(&mut on_invoke),
+                    };
+
+                    let e2e_start = Instant::now();
+                    let json_input = match source.as_ref() {
+                        InputSource::Single(v) => std::borrow::Cow::Borrowed(v),
+                        InputSource::Dataset { lines, .. } => {
+                            let di = (index_offset + i) % lines.len();
+                            let v = parse_dataset_line(&lines[di], di)?;
+                            std::borrow::Cow::Owned(v)
+                        }
+                    };
+                    let exec_start = Instant::now();
+                    let report = ctx.execute(&json_input, &mut tracer, &mut hooks, &opts)?;
+                    let exec_elapsed = exec_start.elapsed();
+                    let e2e_elapsed = e2e_start.elapsed();
+
+                    execute_us.push(exec_elapsed.as_micros() as u64);
+                    end_to_end_us.push(e2e_elapsed.as_micros() as u64);
+                    total_steps += report.total_steps;
+                    total_llm_invokes += run_llm_invokes;
+                    if run_llm_invokes > 0 {
+                        runs_with_llm += 1;
                     }
-                };
 
-                let mut hooks = ExecuteHooks {
-                    on_invoke: Some(&mut on_invoke),
-                };
-
-                let e2e_start = Instant::now();
-                let json_input = match source.as_ref() {
-                    InputSource::Single(v) => std::borrow::Cow::Borrowed(v),
-                    InputSource::Dataset { lines, .. } => {
-                        let di = (index_offset + i) % lines.len();
-                        let v = parse_dataset_line(&lines[di], di)?;
-                        std::borrow::Cow::Owned(v)
+                    if report.terminals.is_empty() {
+                        bail!("bench run produced no terminal results");
                     }
-                };
-                let exec_start = Instant::now();
-                let report = ctx.execute(&json_input, &mut tracer, &mut hooks, &opts)?;
-                let exec_elapsed = exec_start.elapsed();
-                let e2e_elapsed = e2e_start.elapsed();
-
-                execute_us.push(exec_elapsed.as_micros() as u64);
-                end_to_end_us.push(e2e_elapsed.as_micros() as u64);
-                total_steps += report.total_steps;
-                total_llm_invokes += run_llm_invokes;
-                if run_llm_invokes > 0 {
-                    runs_with_llm += 1;
                 }
 
-                if report.terminals.is_empty() {
-                    bail!("bench run produced no terminal results");
-                }
-            }
-
-            Ok(ThreadResults {
-                execute_us,
-                end_to_end_us,
-                total_llm_invokes,
-                runs_with_llm,
-                total_steps,
+                Ok(ThreadResults {
+                    execute_us,
+                    end_to_end_us,
+                    total_llm_invokes,
+                    runs_with_llm,
+                    total_steps,
+                })
             })
         })
-    }).collect();
+        .collect();
 
     // Collect results from all threads
     let mut all_execute_us: Vec<u64> = Vec::with_capacity(total_runs);
@@ -334,7 +350,9 @@ fn main() -> Result<()> {
     let mut total_steps: u64 = 0;
 
     for handle in handles {
-        let tr = handle.join().map_err(|_| anyhow::anyhow!("worker thread panicked"))??;
+        let tr = handle
+            .join()
+            .map_err(|_| anyhow::anyhow!("worker thread panicked"))??;
         all_execute_us.extend(tr.execute_us);
         all_e2e_us.extend(tr.end_to_end_us);
         total_llm_invokes += tr.total_llm_invokes;
@@ -428,9 +446,15 @@ fn main() -> Result<()> {
             0.0
         };
         obj.insert("simulate_llm_ms".into(), serde_json::json!(simulate_llm_ms));
-        obj.insert("llm_brick_pattern".into(), serde_json::json!(pattern.as_ref()));
+        obj.insert(
+            "llm_brick_pattern".into(),
+            serde_json::json!(pattern.as_ref()),
+        );
         obj.insert("llm_invokes".into(), serde_json::json!(total_llm_invokes));
-        obj.insert("llm_invokes_per_run".into(), serde_json::json!(total_llm_invokes as f64 / count as f64));
+        obj.insert(
+            "llm_invokes_per_run".into(),
+            serde_json::json!(total_llm_invokes as f64 / count as f64),
+        );
         obj.insert("runs_with_llm".into(), serde_json::json!(runs_with_llm));
         obj.insert("p_llm_requests".into(), serde_json::json!(p_llm_requests));
         obj.insert("k_llm".into(), serde_json::json!(k_llm));
@@ -442,7 +466,12 @@ fn main() -> Result<()> {
     }
 
     // Dataset-specific fields
-    if let InputSource::Dataset { lines, path, sha256 } = source.as_ref() {
+    if let InputSource::Dataset {
+        lines,
+        path,
+        sha256,
+    } = source.as_ref()
+    {
         obj.insert("mode".into(), serde_json::json!("dataset"));
         obj.insert("dataset_path".into(), serde_json::json!(path));
         obj.insert("dataset_size".into(), serde_json::json!(lines.len()));
@@ -498,10 +527,40 @@ fn percentile(sorted: &[u64], pct: f64) -> u64 {
 }
 
 fn print_stats(prefix: &str, s: &Stats) {
-    eprintln!("{}  mean: {:>8} us  ({:.3} ms)", prefix, s.mean, s.mean as f64 / 1000.0);
-    eprintln!("{}  min:  {:>8} us  ({:.3} ms)", prefix, s.min, s.min as f64 / 1000.0);
-    eprintln!("{}  max:  {:>8} us  ({:.3} ms)", prefix, s.max, s.max as f64 / 1000.0);
-    eprintln!("{}  p50:  {:>8} us  ({:.3} ms)", prefix, s.p50, s.p50 as f64 / 1000.0);
-    eprintln!("{}  p95:  {:>8} us  ({:.3} ms)", prefix, s.p95, s.p95 as f64 / 1000.0);
-    eprintln!("{}  p99:  {:>8} us  ({:.3} ms)", prefix, s.p99, s.p99 as f64 / 1000.0);
+    eprintln!(
+        "{}  mean: {:>8} us  ({:.3} ms)",
+        prefix,
+        s.mean,
+        s.mean as f64 / 1000.0
+    );
+    eprintln!(
+        "{}  min:  {:>8} us  ({:.3} ms)",
+        prefix,
+        s.min,
+        s.min as f64 / 1000.0
+    );
+    eprintln!(
+        "{}  max:  {:>8} us  ({:.3} ms)",
+        prefix,
+        s.max,
+        s.max as f64 / 1000.0
+    );
+    eprintln!(
+        "{}  p50:  {:>8} us  ({:.3} ms)",
+        prefix,
+        s.p50,
+        s.p50 as f64 / 1000.0
+    );
+    eprintln!(
+        "{}  p95:  {:>8} us  ({:.3} ms)",
+        prefix,
+        s.p95,
+        s.p95 as f64 / 1000.0
+    );
+    eprintln!(
+        "{}  p99:  {:>8} us  ({:.3} ms)",
+        prefix,
+        s.p99,
+        s.p99 as f64 / 1000.0
+    );
 }

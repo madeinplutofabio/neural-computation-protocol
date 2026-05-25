@@ -17,9 +17,9 @@ pub fn resolve_path(value: &CborValue, path: &str) -> Option<CborValue> {
     for segment in &segments {
         match current {
             CborValue::Map(pairs) => {
-                let found = pairs.into_iter().find(|(k, _)| {
-                    matches!(k, CborValue::Text(s) if s == segment)
-                });
+                let found = pairs
+                    .into_iter()
+                    .find(|(k, _)| matches!(k, CborValue::Text(s) if s == segment));
                 match found {
                     Some((_, v)) => current = v,
                     None => return None,
@@ -45,10 +45,7 @@ pub fn set_path(path: &str, value: CborValue) -> CborValue {
 
     // Build inside-out: wrap the value in nested single-key maps from right to left
     for segment in segments.into_iter().rev() {
-        result = CborValue::Map(vec![(
-            CborValue::Text(segment.to_string()),
-            result,
-        )]);
+        result = CborValue::Map(vec![(CborValue::Text(segment.to_string()), result)]);
     }
 
     result
@@ -133,16 +130,21 @@ pub fn extract_confidence(value: &CborValue) -> Option<f64> {
 mod tests {
     use super::*;
 
-    fn text(s: &str) -> CborValue { CborValue::Text(s.to_string()) }
-    fn int(n: i64) -> CborValue { CborValue::Integer(n) }
+    fn text(s: &str) -> CborValue {
+        CborValue::Text(s.to_string())
+    }
+    fn int(n: i64) -> CborValue {
+        CborValue::Integer(n)
+    }
 
     fn sample_map() -> CborValue {
         CborValue::Map(vec![
             (text("label"), text("positive")),
             (text("confidence"), CborValue::Float(0.95)),
-            (text("nested"), CborValue::Map(vec![
-                (text("deep"), int(42)),
-            ])),
+            (
+                text("nested"),
+                CborValue::Map(vec![(text("deep"), int(42))]),
+            ),
         ])
     }
 
@@ -200,8 +202,14 @@ mod tests {
         let a = set_path("x", int(1));
         let b = set_path("y", int(2));
         let merged = merge_maps(a, b);
-        assert!(matches!(resolve_path(&merged, "x"), Some(CborValue::Integer(1))));
-        assert!(matches!(resolve_path(&merged, "y"), Some(CborValue::Integer(2))));
+        assert!(matches!(
+            resolve_path(&merged, "x"),
+            Some(CborValue::Integer(1))
+        ));
+        assert!(matches!(
+            resolve_path(&merged, "y"),
+            Some(CborValue::Integer(2))
+        ));
     }
 
     #[test]
@@ -209,8 +217,14 @@ mod tests {
         let a = set_path("input.x", int(1));
         let b = set_path("input.y", int(2));
         let merged = merge_maps(a, b);
-        assert!(matches!(resolve_path(&merged, "input.x"), Some(CborValue::Integer(1))));
-        assert!(matches!(resolve_path(&merged, "input.y"), Some(CborValue::Integer(2))));
+        assert!(matches!(
+            resolve_path(&merged, "input.x"),
+            Some(CborValue::Integer(1))
+        ));
+        assert!(matches!(
+            resolve_path(&merged, "input.y"),
+            Some(CborValue::Integer(2))
+        ));
     }
 
     #[test]
@@ -220,17 +234,24 @@ mod tests {
             (text("b"), int(2)),
             (text("c"), int(3)),
         ]);
-        let overlay = CborValue::Map(vec![
-            (text("b"), int(20)),
-            (text("d"), int(4)),
-        ]);
+        let overlay = CborValue::Map(vec![(text("b"), int(20)), (text("d"), int(4))]);
         let merged = merge_maps(base, overlay);
         if let CborValue::Map(pairs) = &merged {
-            let keys: Vec<&str> = pairs.iter().map(|(k, _)| {
-                if let CborValue::Text(s) = k { s.as_str() } else { "" }
-            }).collect();
+            let keys: Vec<&str> = pairs
+                .iter()
+                .map(|(k, _)| {
+                    if let CborValue::Text(s) = k {
+                        s.as_str()
+                    } else {
+                        ""
+                    }
+                })
+                .collect();
             assert_eq!(keys, vec!["a", "b", "c", "d"]);
-            assert!(matches!(resolve_path(&merged, "b"), Some(CborValue::Integer(20))));
+            assert!(matches!(
+                resolve_path(&merged, "b"),
+                Some(CborValue::Integer(20))
+            ));
         } else {
             panic!("expected map");
         }

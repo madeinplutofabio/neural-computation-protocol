@@ -90,17 +90,16 @@ pub fn decode_result(cbor_bytes: &[u8]) -> Result<BrickResult> {
     // Collect all top-level key-value pairs, rejecting duplicates
     let mut fields: HashMap<String, CborValue> = HashMap::new();
     for _ in 0..map_len {
-        let key = decode_text(&mut decoder)
-            .context("result map key must be a text string")?;
-        let value = decode_value(&mut decoder)
-            .context("decoding result map value")?;
+        let key = decode_text(&mut decoder).context("result map key must be a text string")?;
+        let value = decode_value(&mut decoder).context("decoding result map value")?;
         if fields.insert(key.clone(), value).is_some() {
             bail!("duplicate top-level key in result map: '{key}'");
         }
     }
 
     // Extract discriminant
-    let type_val = fields.get("type")
+    let type_val = fields
+        .get("type")
         .ok_or_else(|| anyhow::anyhow!("result missing 'type' discriminant field"))?;
     let type_str = match type_val {
         CborValue::Text(s) => s.as_str(),
@@ -111,13 +110,16 @@ pub fn decode_result(cbor_bytes: &[u8]) -> Result<BrickResult> {
         "Success" => validate_success(&fields),
         "LowConfidence" => validate_low_confidence(&fields),
         "Failure" => validate_failure(&fields),
-        other => bail!("unknown result type '{other}' (expected Success, LowConfidence, or Failure)"),
+        other => {
+            bail!("unknown result type '{other}' (expected Success, LowConfidence, or Failure)")
+        }
     }
 }
 
 fn validate_success(fields: &HashMap<String, CborValue>) -> Result<BrickResult> {
     // MUST have output
-    let output = fields.get("output")
+    let output = fields
+        .get("output")
         .ok_or_else(|| anyhow::anyhow!("Success result missing 'output' field"))?
         .clone();
 
@@ -143,15 +145,16 @@ fn validate_success(fields: &HashMap<String, CborValue>) -> Result<BrickResult> 
 
 fn validate_low_confidence(fields: &HashMap<String, CborValue>) -> Result<BrickResult> {
     // MUST have output
-    let output = fields.get("output")
+    let output = fields
+        .get("output")
         .ok_or_else(|| anyhow::anyhow!("LowConfidence result missing 'output' field"))?
         .clone();
 
     // MUST have error
-    let error_val = fields.get("error")
+    let error_val = fields
+        .get("error")
         .ok_or_else(|| anyhow::anyhow!("LowConfidence result missing 'error' field"))?;
-    let error = parse_error_object(error_val)
-        .context("parsing LowConfidence error object")?;
+    let error = parse_error_object(error_val).context("parsing LowConfidence error object")?;
 
     // error.error_class MUST be LOW_CONFIDENCE
     if error.error_class != "LOW_CONFIDENCE" {
@@ -178,10 +181,10 @@ fn validate_low_confidence(fields: &HashMap<String, CborValue>) -> Result<BrickR
 
 fn validate_failure(fields: &HashMap<String, CborValue>) -> Result<BrickResult> {
     // MUST have error
-    let error_val = fields.get("error")
+    let error_val = fields
+        .get("error")
         .ok_or_else(|| anyhow::anyhow!("Failure result missing 'error' field"))?;
-    let error = parse_error_object(error_val)
-        .context("parsing Failure error object")?;
+    let error = parse_error_object(error_val).context("parsing Failure error object")?;
 
     // error.error_class MUST NOT be LOW_CONFIDENCE
     if error.error_class == "LOW_CONFIDENCE" {
@@ -249,10 +252,9 @@ fn parse_error_object(val: &CborValue) -> Result<ErrorObject> {
         }
     }
 
-    let error_class = error_class
-        .ok_or_else(|| anyhow::anyhow!("error object missing 'error_class' field"))?;
-    let message = message
-        .ok_or_else(|| anyhow::anyhow!("error object missing 'message' field"))?;
+    let error_class =
+        error_class.ok_or_else(|| anyhow::anyhow!("error object missing 'error_class' field"))?;
+    let message = message.ok_or_else(|| anyhow::anyhow!("error object missing 'message' field"))?;
 
     Ok(ErrorObject {
         error_class,
@@ -280,19 +282,24 @@ fn decode_text(d: &mut minicbor::Decoder<'_>) -> Result<String> {
 fn decode_value(d: &mut minicbor::Decoder<'_>) -> Result<CborValue> {
     use minicbor::data::Type;
 
-    match d.datatype()
+    match d
+        .datatype()
         .map_err(|e| anyhow::anyhow!("cannot peek CBOR type: {e}"))?
     {
         Type::Null => {
-            d.null().map_err(|e| anyhow::anyhow!("decoding null: {e}"))?;
+            d.null()
+                .map_err(|e| anyhow::anyhow!("decoding null: {e}"))?;
             Ok(CborValue::Null)
         }
         Type::Undefined => {
-            d.undefined().map_err(|e| anyhow::anyhow!("consuming undefined: {e}"))?;
+            d.undefined()
+                .map_err(|e| anyhow::anyhow!("consuming undefined: {e}"))?;
             bail!("CBOR undefined is not allowed in NCP results");
         }
         Type::Bool => {
-            let b = d.bool().map_err(|e| anyhow::anyhow!("decoding bool: {e}"))?;
+            let b = d
+                .bool()
+                .map_err(|e| anyhow::anyhow!("decoding bool: {e}"))?;
             Ok(CborValue::Bool(b))
         }
         Type::U8 | Type::U16 | Type::U32 | Type::U64 => {
@@ -307,7 +314,9 @@ fn decode_value(d: &mut minicbor::Decoder<'_>) -> Result<CborValue> {
             Ok(CborValue::Integer(n))
         }
         Type::F16 | Type::F32 | Type::F64 => {
-            let f = d.f64().map_err(|e| anyhow::anyhow!("decoding float: {e}"))?;
+            let f = d
+                .f64()
+                .map_err(|e| anyhow::anyhow!("decoding float: {e}"))?;
             Ok(CborValue::Float(f))
         }
         Type::String => {
@@ -315,13 +324,15 @@ fn decode_value(d: &mut minicbor::Decoder<'_>) -> Result<CborValue> {
             Ok(CborValue::Text(s))
         }
         Type::Bytes => {
-            let b = d.bytes()
+            let b = d
+                .bytes()
                 .map_err(|e| anyhow::anyhow!("decoding bytes: {e}"))?
                 .to_vec();
             Ok(CborValue::Bytes(b))
         }
         Type::Array => {
-            let len = d.array()
+            let len = d
+                .array()
                 .map_err(|e| anyhow::anyhow!("decoding array: {e}"))?
                 .ok_or_else(|| anyhow::anyhow!("indefinite-length arrays not supported"))?;
             if len > MAX_COLLECTION_LEN {
@@ -334,7 +345,8 @@ fn decode_value(d: &mut minicbor::Decoder<'_>) -> Result<CborValue> {
             Ok(CborValue::Array(items))
         }
         Type::Map => {
-            let len = d.map()
+            let len = d
+                .map()
                 .map_err(|e| anyhow::anyhow!("decoding map: {e}"))?
                 .ok_or_else(|| anyhow::anyhow!("indefinite-length maps not supported"))?;
             if len > MAX_COLLECTION_LEN {
@@ -349,8 +361,7 @@ fn decode_value(d: &mut minicbor::Decoder<'_>) -> Result<CborValue> {
             Ok(CborValue::Map(pairs))
         }
         Type::Tag => {
-            let tag = d.tag()
-                .map_err(|e| anyhow::anyhow!("decoding tag: {e}"))?;
+            let tag = d.tag().map_err(|e| anyhow::anyhow!("decoding tag: {e}"))?;
             bail!("CBOR tags are not supported in Phase 2 results (tag={tag:?})");
         }
         other => bail!("unsupported CBOR type: {other:?}"),
@@ -399,10 +410,18 @@ mod tests {
 
     fn encode_test_value(enc: &mut Encoder<&mut Vec<u8>>, val: &EncodableValue) {
         match val {
-            EncodableValue::Text(s) => { enc.str(s).unwrap(); }
-            EncodableValue::Int(n) => { enc.i64(*n).unwrap(); }
-            EncodableValue::Float(f) => { enc.f64(*f).unwrap(); }
-            EncodableValue::Null => { enc.null().unwrap(); }
+            EncodableValue::Text(s) => {
+                enc.str(s).unwrap();
+            }
+            EncodableValue::Int(n) => {
+                enc.i64(*n).unwrap();
+            }
+            EncodableValue::Float(f) => {
+                enc.f64(*f).unwrap();
+            }
+            EncodableValue::Null => {
+                enc.null().unwrap();
+            }
             EncodableValue::Map(pairs) => {
                 enc.map(pairs.len() as u64).unwrap();
                 for (k, v) in pairs {
@@ -413,7 +432,9 @@ mod tests {
         }
     }
 
-    fn text(s: &str) -> EncodableValue { EncodableValue::Text(s.to_string()) }
+    fn text(s: &str) -> EncodableValue {
+        EncodableValue::Text(s.to_string())
+    }
     fn output_map() -> EncodableValue {
         EncodableValue::Map(vec![
             ("label".into(), text("positive")),
@@ -431,10 +452,7 @@ mod tests {
 
     #[test]
     fn valid_success() {
-        let bytes = encode_result(&[
-            ("type", text("Success")),
-            ("output", output_map()),
-        ]);
+        let bytes = encode_result(&[("type", text("Success")), ("output", output_map())]);
         let result = decode_result(&bytes).unwrap();
         assert_eq!(result.result_type(), "Success");
         assert!(result.output().is_some());
@@ -503,10 +521,7 @@ mod tests {
 
     #[test]
     fn invalid_low_confidence_without_error() {
-        let bytes = encode_result(&[
-            ("type", text("LowConfidence")),
-            ("output", output_map()),
-        ]);
+        let bytes = encode_result(&[("type", text("LowConfidence")), ("output", output_map())]);
         let err = decode_result(&bytes).unwrap_err();
         assert!(err.to_string().contains("missing 'error'"));
     }
@@ -524,35 +539,27 @@ mod tests {
 
     #[test]
     fn invalid_missing_type() {
-        let bytes = encode_result(&[
-            ("output", output_map()),
-        ]);
+        let bytes = encode_result(&[("output", output_map())]);
         let err = decode_result(&bytes).unwrap_err();
         assert!(err.to_string().contains("missing 'type'"));
     }
 
     #[test]
     fn invalid_unknown_type() {
-        let bytes = encode_result(&[
-            ("type", text("Unknown")),
-            ("output", output_map()),
-        ]);
+        let bytes = encode_result(&[("type", text("Unknown")), ("output", output_map())]);
         let err = decode_result(&bytes).unwrap_err();
         assert!(err.to_string().contains("unknown result type"));
     }
 
     #[test]
     fn invalid_error_missing_message() {
-        let error_no_msg = EncodableValue::Map(vec![
-            ("error_class".into(), text("COMPUTATION_ERROR")),
-        ]);
-        let bytes = encode_result(&[
-            ("type", text("Failure")),
-            ("error", error_no_msg),
-        ]);
+        let error_no_msg =
+            EncodableValue::Map(vec![("error_class".into(), text("COMPUTATION_ERROR"))]);
+        let bytes = encode_result(&[("type", text("Failure")), ("error", error_no_msg)]);
         let err = decode_result(&bytes).unwrap_err();
         assert!(
-            err.chain().any(|c| c.to_string().contains("missing 'message'")),
+            err.chain()
+                .any(|c| c.to_string().contains("missing 'message'")),
             "expected cause not found in error chain: {err:?}"
         );
     }
@@ -572,9 +579,12 @@ mod tests {
         let mut buf = Vec::new();
         let mut enc = Encoder::new(&mut buf);
         enc.map(3).unwrap();
-        enc.str("type").unwrap(); enc.str("Success").unwrap();
-        enc.str("output").unwrap(); enc.str("hello").unwrap();
-        enc.str("type").unwrap(); enc.str("Failure").unwrap();
+        enc.str("type").unwrap();
+        enc.str("Success").unwrap();
+        enc.str("output").unwrap();
+        enc.str("hello").unwrap();
+        enc.str("type").unwrap();
+        enc.str("Failure").unwrap();
         let err = decode_result(&buf).unwrap_err();
         assert!(err.to_string().contains("duplicate top-level key"));
     }
@@ -606,15 +616,20 @@ mod tests {
         let mut buf = Vec::new();
         let mut enc = Encoder::new(&mut buf);
         enc.map(2).unwrap();
-        enc.str("type").unwrap(); enc.str("Failure").unwrap();
+        enc.str("type").unwrap();
+        enc.str("Failure").unwrap();
         enc.str("error").unwrap();
         enc.map(3).unwrap();
-        enc.str("error_class").unwrap(); enc.str("COMPUTATION_ERROR").unwrap();
-        enc.str("error_class").unwrap(); enc.str("LOW_CONFIDENCE").unwrap();
-        enc.str("message").unwrap(); enc.str("oops").unwrap();
+        enc.str("error_class").unwrap();
+        enc.str("COMPUTATION_ERROR").unwrap();
+        enc.str("error_class").unwrap();
+        enc.str("LOW_CONFIDENCE").unwrap();
+        enc.str("message").unwrap();
+        enc.str("oops").unwrap();
         let err = decode_result(&buf).unwrap_err();
         assert!(
-            err.chain().any(|c| c.to_string().contains("duplicate key 'error_class'")),
+            err.chain()
+                .any(|c| c.to_string().contains("duplicate key 'error_class'")),
             "expected cause not found in error chain: {err:?}"
         );
     }

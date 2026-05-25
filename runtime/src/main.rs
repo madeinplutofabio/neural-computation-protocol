@@ -25,7 +25,17 @@ fn main() -> Result<()> {
             max_steps,
             max_queued,
             verbose,
-        } => run_graph(graph, input, brick_dir, brick_map, trace, all_terminals, max_steps, max_queued, verbose),
+        } => run_graph(
+            graph,
+            input,
+            brick_dir,
+            brick_map,
+            trace,
+            all_terminals,
+            max_steps,
+            max_queued,
+            verbose,
+        ),
     }
 }
 
@@ -41,11 +51,7 @@ fn run_graph(
     verbose: bool,
 ) -> Result<()> {
     // Load and compile graph
-    let ctx = RuntimeContext::load(
-        &graph,
-        &brick_dir,
-        brick_map.as_deref(),
-    )?;
+    let ctx = RuntimeContext::load(&graph, &brick_dir, brick_map.as_deref())?;
 
     eprintln!(
         "Loaded graph '{}' with {} nodes, {} edges",
@@ -95,7 +101,8 @@ fn run_graph(
     }
 
     if all_terminals {
-        let arr: Vec<serde_json::Value> = report.terminals
+        let arr: Vec<serde_json::Value> = report
+            .terminals
             .iter()
             .map(|t| {
                 let mut obj = serde_json::json!({

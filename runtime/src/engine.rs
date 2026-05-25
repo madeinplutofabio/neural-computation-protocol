@@ -35,9 +35,7 @@ impl CompiledBrick {
         if mem_bytes == 0 {
             bail!("limits.max_mem_mb must be > 0");
         }
-        let limits = StoreLimitsBuilder::new()
-            .memory_size(mem_bytes)
-            .build();
+        let limits = StoreLimitsBuilder::new().memory_size(mem_bytes).build();
         let mut store = Store::new(&self.engine, StoreState { limits });
         store.limiter(|state| &mut state.limits);
 

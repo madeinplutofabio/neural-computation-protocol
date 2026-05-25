@@ -124,15 +124,9 @@ struct Task {
 
 impl RuntimeContext {
     /// Load from file paths (CLI convenience).
-    pub fn load(
-        graph_path: &Path,
-        brick_dir: &Path,
-        brick_map: Option<&Path>,
-    ) -> Result<Self> {
+    pub fn load(graph_path: &Path, brick_dir: &Path, brick_map: Option<&Path>) -> Result<Self> {
         let graph = manifest::load_graph(graph_path)?;
-        let brick_map = brick_map
-            .map(|p| resolver::load_brick_map(p))
-            .transpose()?;
+        let brick_map = brick_map.map(|p| resolver::load_brick_map(p)).transpose()?;
         Self::from_graph(graph, brick_dir, &brick_map)
     }
 
@@ -147,7 +141,8 @@ impl RuntimeContext {
         }
 
         let mut compiled_bricks: HashMap<(String, String), engine::CompiledBrick> = HashMap::new();
-        let mut brick_manifests: HashMap<(String, String), manifest::BrickManifest> = HashMap::new();
+        let mut brick_manifests: HashMap<(String, String), manifest::BrickManifest> =
+            HashMap::new();
         let mut node_brick_key: HashMap<String, (String, String)> = HashMap::new();
         let mut resolved_info: Vec<ResolvedBrickInfo> = Vec::new();
 
@@ -158,13 +153,24 @@ impl RuntimeContext {
                 brick_dir,
                 brick_map,
             )?;
-            let key = (node.brick.brick_id.clone(), resolved.manifest.version.clone());
+            let key = (
+                node.brick.brick_id.clone(),
+                resolved.manifest.version.clone(),
+            );
 
-            if node_brick_key.insert(node.node_id.clone(), key.clone()).is_some() {
-                bail!("graph validation failed: duplicate node_id '{}'", node.node_id);
+            if node_brick_key
+                .insert(node.node_id.clone(), key.clone())
+                .is_some()
+            {
+                bail!(
+                    "graph validation failed: duplicate node_id '{}'",
+                    node.node_id
+                );
             }
 
-            if let std::collections::hash_map::Entry::Vacant(entry) = compiled_bricks.entry(key.clone()) {
+            if let std::collections::hash_map::Entry::Vacant(entry) =
+                compiled_bricks.entry(key.clone())
+            {
                 resolved_info.push(ResolvedBrickInfo {
                     brick_id: key.0.clone(),
                     version: key.1.clone(),
@@ -178,11 +184,8 @@ impl RuntimeContext {
         }
 
         // Detect entry node: not the target of any edge
-        let target_nodes: std::collections::HashSet<&str> = graph
-            .edges
-            .iter()
-            .map(|e| e.target_node.as_str())
-            .collect();
+        let target_nodes: std::collections::HashSet<&str> =
+            graph.edges.iter().map(|e| e.target_node.as_str()).collect();
 
         let entry_nodes: Vec<&str> = graph
             .nodes
@@ -228,12 +231,24 @@ impl RuntimeContext {
         }
     }
 
-    pub fn graph_id(&self) -> &str { &self.graph.graph_id }
-    pub fn graph_version(&self) -> &str { &self.graph.graph_version }
-    pub fn node_count(&self) -> usize { self.graph.nodes.len() }
-    pub fn edge_count(&self) -> usize { self.graph.edges.len() }
-    pub fn entry_node_id(&self) -> &str { &self.entry_node_id }
-    pub fn resolved_bricks(&self) -> &[ResolvedBrickInfo] { &self.resolved_info }
+    pub fn graph_id(&self) -> &str {
+        &self.graph.graph_id
+    }
+    pub fn graph_version(&self) -> &str {
+        &self.graph.graph_version
+    }
+    pub fn node_count(&self) -> usize {
+        self.graph.nodes.len()
+    }
+    pub fn edge_count(&self) -> usize {
+        self.graph.edges.len()
+    }
+    pub fn entry_node_id(&self) -> &str {
+        &self.entry_node_id
+    }
+    pub fn resolved_bricks(&self) -> &[ResolvedBrickInfo] {
+        &self.resolved_info
+    }
 
     /// Execute the graph with the given input.
     pub fn execute(
@@ -243,17 +258,25 @@ impl RuntimeContext {
         hooks: &mut ExecuteHooks<'_>,
         opts: &ExecuteOptions,
     ) -> Result<ExecutionReport> {
-        let trace_id = opts.trace_id.as_deref()
+        let trace_id = opts
+            .trace_id
+            .as_deref()
             .map(str::to_owned)
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-        let session_id = opts.session_id.as_deref()
+        let session_id = opts
+            .session_id
+            .as_deref()
             .map(str::to_owned)
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
         let mut queue: std::collections::VecDeque<Task> = std::collections::VecDeque::new();
         let mut step: u64 = 0;
         let mut terminals: Vec<TerminalResult> = Vec::new();
-        let mut counts = ResultCounts { success: 0, low_confidence: 0, failure: 0 };
+        let mut counts = ResultCounts {
+            success: 0,
+            low_confidence: 0,
+            failure: 0,
+        };
         let verbose = opts.verbose;
         let tracing = tracer.enabled();
 
@@ -272,11 +295,14 @@ impl RuntimeContext {
             if let Some(max) = opts.max_steps {
                 if step >= max {
                     let msg = format!("max_steps budget ({max}) exhausted");
-                    if verbose { eprintln!("Safety budget: {msg}"); }
+                    if verbose {
+                        eprintln!("Safety budget: {msg}");
+                    }
                     counts.failure += 1;
                     terminals.push(TerminalResult {
                         node_id: task.node_id.clone(),
-                        brick_id: self.node_brick_key
+                        brick_id: self
+                            .node_brick_key
                             .get(&task.node_id)
                             .map(|k| k.0.clone())
                             .unwrap_or_else(|| "__runtime__".to_string()),
@@ -287,13 +313,16 @@ impl RuntimeContext {
                 }
             }
 
-            let brick_key = self.node_brick_key
+            let brick_key = self
+                .node_brick_key
                 .get(&task.node_id)
                 .with_context(|| format!("no brick key recorded for node '{}'", task.node_id))?;
-            let compiled = self.compiled_bricks
+            let compiled = self
+                .compiled_bricks
                 .get(brick_key)
                 .with_context(|| format!("no compiled brick for key {:?}", brick_key))?;
-            let brick_manifest = self.brick_manifests
+            let brick_manifest = self
+                .brick_manifests
                 .get(brick_key)
                 .with_context(|| format!("no manifest for key {:?}", brick_key))?;
 
@@ -318,11 +347,14 @@ impl RuntimeContext {
             let mut pre_invoke_failure: Option<result::BrickResult> = None;
             if let Some(max_input) = brick_manifest.limits.max_input_bytes {
                 if env.len() as u64 > max_input {
-                    let msg = format!(
+                    let msg =
+                        format!(
                         "envelope too large for brick '{}': {} bytes > limits.max_input_bytes {}",
                         brick_key.0, env.len(), max_input,
                     );
-                    if verbose { eprintln!("  {msg}"); }
+                    if verbose {
+                        eprintln!("  {msg}");
+                    }
                     pre_invoke_failure = Some(result::trap_failure("INVALID_INPUT", msg));
                 }
             }
@@ -336,13 +368,17 @@ impl RuntimeContext {
                 } else {
                     eprintln!(
                         "[step {}] Invoking brick '{}' node '{}' ({} byte envelope)",
-                        step, brick_key.0, task.node_id, env.len(),
+                        step,
+                        brick_key.0,
+                        task.node_id,
+                        env.len(),
                     );
                 }
             }
 
             // Invoke brick (or use pre-invoke failure)
-            let (brick_result, raw_result_bytes, latency_ms) = if let Some(br) = pre_invoke_failure {
+            let (brick_result, raw_result_bytes, latency_ms) = if let Some(br) = pre_invoke_failure
+            {
                 (br, None, 0.0)
             } else {
                 let start = std::time::Instant::now();
@@ -355,12 +391,16 @@ impl RuntimeContext {
 
                 match invoke_result {
                     Ok(result_bytes) => {
-                        if verbose { eprintln!("  Got {} byte result", result_bytes.len()); }
+                        if verbose {
+                            eprintln!("  Got {} byte result", result_bytes.len());
+                        }
                         let decoded = match result::decode_result(&result_bytes) {
                             Ok(r) => r,
                             Err(e) => {
                                 let msg = format!("{e:#}");
-                                if verbose { eprintln!("  Result rejected: {msg}"); }
+                                if verbose {
+                                    eprintln!("  Result rejected: {msg}");
+                                }
                                 result::trap_failure("RUNTIME_REJECTED", msg)
                             }
                         };
@@ -380,7 +420,9 @@ impl RuntimeContext {
                         } else {
                             "COMPUTATION_ERROR"
                         };
-                        if verbose { eprintln!("  Brick trap: {msg}"); }
+                        if verbose {
+                            eprintln!("  Brick trap: {msg}");
+                        }
                         (result::trap_failure(error_class, msg), None, latency)
                     }
                 }
@@ -430,10 +472,13 @@ impl RuntimeContext {
                 });
             }
 
-            if verbose { eprintln!("  Result type: {}", brick_result.result_type()); }
+            if verbose {
+                eprintln!("  Result type: {}", brick_result.result_type());
+            }
 
             // ── Routing ────────────────────────────────────────────
-            let outbound_indices = self.edges_by_source
+            let outbound_indices = self
+                .edges_by_source
                 .get(task.node_id.as_str())
                 .cloned()
                 .unwrap_or_default();
@@ -442,14 +487,14 @@ impl RuntimeContext {
                 .map(|&i| &self.graph.edges[i])
                 .collect();
 
-            let output_confidence = brick_result
-                .output()
-                .and_then(mapping::extract_confidence);
+            let output_confidence = brick_result.output().and_then(mapping::extract_confidence);
 
             let routed = router::route(&outbound, &brick_result, output_confidence);
 
             if routed.is_empty() {
-                if verbose { eprintln!("  Terminal node (no outbound edges dispatched)"); }
+                if verbose {
+                    eprintln!("  Terminal node (no outbound edges dispatched)");
+                }
                 terminals.push(TerminalResult {
                     node_id: task.node_id.clone(),
                     brick_id: brick_key.0.clone(),
@@ -458,13 +503,19 @@ impl RuntimeContext {
                 });
             } else {
                 for routed_edge in &routed {
-                    let edge_idx = self.edge_by_id.get(routed_edge.edge_id.as_str())
-                        .with_context(|| format!("routed edge '{}' not found in graph", routed_edge.edge_id))?;
+                    let edge_idx = self
+                        .edge_by_id
+                        .get(routed_edge.edge_id.as_str())
+                        .with_context(|| {
+                            format!("routed edge '{}' not found in graph", routed_edge.edge_id)
+                        })?;
                     let edge_def = &self.graph.edges[*edge_idx];
 
                     let mapped_input = if edge_def.mapping.is_empty() {
                         match brick_result.output() {
-                            Some(output) => serde_json::json!({ "input": mapping::cbor_to_json(output) }),
+                            Some(output) => {
+                                serde_json::json!({ "input": mapping::cbor_to_json(output) })
+                            }
                             None => serde_json::json!({ "input": null }),
                         }
                     } else {
@@ -479,10 +530,12 @@ impl RuntimeContext {
                         let mut target_cbor = CborValue::Map(vec![]);
                         for fm in &edge_def.mapping {
                             let resolved = mapping::resolve_path(&source_root, &fm.from)
-                                .with_context(|| format!(
-                                    "mapping '{}' → '{}': source path '{}' not found in output",
-                                    fm.from, fm.to, fm.from,
-                                ))?;
+                                .with_context(|| {
+                                    format!(
+                                        "mapping '{}' → '{}': source path '{}' not found in output",
+                                        fm.from, fm.to, fm.from,
+                                    )
+                                })?;
                             let overlay = mapping::set_path(&fm.to, resolved);
                             target_cbor = mapping::merge_maps(target_cbor, overlay);
                         }

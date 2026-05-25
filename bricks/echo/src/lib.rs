@@ -203,9 +203,8 @@ pub extern "C" fn invoke(envelope_ptr: i32, envelope_len: i32) -> i32 {
         return write_result(&build_failure_result("invalid envelope pointer or length"));
     }
 
-    let envelope = unsafe {
-        slice::from_raw_parts(envelope_ptr as *const u8, envelope_len as usize)
-    };
+    let envelope =
+        unsafe { slice::from_raw_parts(envelope_ptr as *const u8, envelope_len as usize) };
 
     let result_cbor = match extract_input_from_envelope(envelope) {
         Some(input_cbor) => build_success_result(&input_cbor),
