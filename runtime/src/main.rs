@@ -25,10 +25,23 @@ fn main() -> Result<()> {
             max_steps,
             max_queued,
             verbose,
-        } => run_graph(graph, input, brick_dir, brick_map, trace, all_terminals, max_steps, max_queued, verbose),
+        } => run_graph(
+            graph,
+            input,
+            brick_dir,
+            brick_map,
+            trace,
+            all_terminals,
+            max_steps,
+            max_queued,
+            verbose,
+        ),
     }
 }
 
+// Rationale: CLI dispatch shim — args mirror clap-parsed flags 1:1.
+// Refactor into a RunArgs struct in Phase 3B/3C if/when flags grow further.
+#[allow(clippy::too_many_arguments)]
 fn run_graph(
     graph: PathBuf,
     input: PathBuf,
@@ -41,11 +54,7 @@ fn run_graph(
     verbose: bool,
 ) -> Result<()> {
     // Load and compile graph
-    let ctx = RuntimeContext::load(
-        &graph,
-        &brick_dir,
-        brick_map.as_deref(),
-    )?;
+    let ctx = RuntimeContext::load(&graph, &brick_dir, brick_map.as_deref())?;
 
     eprintln!(
         "Loaded graph '{}' with {} nodes, {} edges",
@@ -95,7 +104,8 @@ fn run_graph(
     }
 
     if all_terminals {
-        let arr: Vec<serde_json::Value> = report.terminals
+        let arr: Vec<serde_json::Value> = report
+            .terminals
             .iter()
             .map(|t| {
                 let mut obj = serde_json::json!({

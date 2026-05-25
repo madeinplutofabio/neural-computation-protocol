@@ -69,10 +69,7 @@ fn resolve_brick_dir(
         }
     }
 
-    let short_name = brick_id
-        .rsplit('.')
-        .next()
-        .unwrap_or(brick_id);
+    let short_name = brick_id.rsplit('.').next().unwrap_or(brick_id);
     let dir = brick_dir.join(short_name);
 
     if !dir.is_dir() {
@@ -113,7 +110,7 @@ fn select_wasm(brick_id: &str, dir: &Path, artifact_path: &Option<PathBuf>) -> R
         .with_context(|| format!("reading directory '{}'", dir.display()))?
         .filter_map(|entry| entry.ok())
         .map(|entry| entry.path())
-        .filter(|p| p.extension().map_or(false, |ext| ext == "wasm"))
+        .filter(|p| p.extension().is_some_and(|ext| ext == "wasm"))
         .collect();
     wasm_files.sort();
 
@@ -132,7 +129,12 @@ fn select_wasm(brick_id: &str, dir: &Path, artifact_path: &Option<PathBuf>) -> R
     // 4. Error (sorted candidates for determinism)
     let candidates: Vec<String> = wasm_files
         .iter()
-        .map(|p| p.file_name().unwrap_or_default().to_string_lossy().into_owned())
+        .map(|p| {
+            p.file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned()
+        })
         .collect();
 
     if candidates.is_empty() {
@@ -167,14 +169,12 @@ fn verify_artifact(brick_id: &str, manifest: &BrickManifest, wasm_bytes: &[u8]) 
 
     // Digest check — expect "sha256:<hex>"
     let expected_digest = &manifest.artifact.digest;
-    let expected_hex = expected_digest
-        .strip_prefix("sha256:")
-        .with_context(|| {
-            format!(
-                "unsupported digest format for '{}': expected 'sha256:<hex>', got '{}'",
-                brick_id, expected_digest
-            )
-        })?;
+    let expected_hex = expected_digest.strip_prefix("sha256:").with_context(|| {
+        format!(
+            "unsupported digest format for '{}': expected 'sha256:<hex>', got '{}'",
+            brick_id, expected_digest
+        )
+    })?;
 
     // Strict validation: must be exactly 64 lowercase hex chars
     let expected_hex = expected_hex.to_ascii_lowercase();

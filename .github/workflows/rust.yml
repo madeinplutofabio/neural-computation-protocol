@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# CI INVARIANTS
+#   - If you rename this workflow's `name:` or any `job:` key below, you MUST
+#     update the branch protection ruleset's required-status-checks list to
+#     match (see docs/BRANCH_PROTECTION.md). Otherwise PRs will block forever
+#     waiting on phantom check contexts.
+#   - NEVER change `-p ncp-runtime` to `--workspace` in the host jobs. The
+#     brick crates are #![no_std] + core::arch::wasm32::* and cannot compile
+#     for host targets.
+
+name: Rust
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write   # required by Swatinem/rust-cache@v2 (writes to GitHub cache service)
+
+concurrency:
+  group: rust-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# ──────────────────────────────────────────────────────────────────────
+# HOST JOBS (fmt, clippy, test): build runtime crate on host triples.
+# NEVER change `-p ncp-runtime` to `--workspace` — the brick crates are
+# #![no_std] + core::arch::wasm32::* and cannot compile for host targets.
+# ──────────────────────────────────────────────────────────────────────
+jobs:
+  fmt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    # Host-only lint scope: WASM crates linted in wasm-build job (different target).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with: { key: clippy }
+      - run: cargo clippy -p ncp-runtime --all-targets --locked -- -D warnings
+
+  test:
+    # Host-only crate scope: -p ncp-runtime avoids attempting to compile
+    # the WASM-only brick crates (no_std + wasm32 intrinsics).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25   # Windows runners are consistently slowest; one bound covers all OSes safely.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.os }}
+      - run: cargo test -p ncp-runtime --all-targets --locked
+
+  # ──────────────────────────────────────────────────────────────────────
+  # WASM JOB: build & lint the brick crates for wasm32-unknown-unknown.
+  # Brick crates are LIBRARY targets that can only compile to WASM.
+  # If you find yourself moving these into the host matrix, STOP — they
+  # use core::arch::wasm32::* intrinsics and host compilation will fail.
+  # ──────────────────────────────────────────────────────────────────────
+  wasm-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with: { key: wasm }
+      - run: cargo build -p ncp-echo --target wasm32-unknown-unknown --release --locked
+      - run: cargo build -p ncp-classifier-stub --target wasm32-unknown-unknown --release --locked
+      - run: cargo clippy -p ncp-echo --target wasm32-unknown-unknown --locked -- -D warnings
+      - run: cargo clippy -p ncp-classifier-stub --target wasm32-unknown-unknown --locked -- -D warnings

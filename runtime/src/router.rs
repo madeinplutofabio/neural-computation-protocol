@@ -47,7 +47,7 @@ fn route_on_error(edges: &[&Edge], error_class: &str) -> Vec<RoutedEdge> {
             // edge.target_node. The map keys are the error_class filter.
             e.on_error
                 .as_ref()
-                .map_or(false, |m| m.contains_key(error_class))
+                .is_some_and(|m| m.contains_key(error_class))
         })
         .copied()
         .collect();
@@ -97,11 +97,14 @@ fn route_on_success(edges: &[&Edge], output_confidence: Option<f64>) -> Vec<Rout
         let mut wb = b.on_success.as_ref().and_then(|s| s.weight).unwrap_or(0.0);
 
         // Defensive determinism: treat non-finite weights as 0.0
-        if !wa.is_finite() { wa = 0.0; }
-        if !wb.is_finite() { wb = 0.0; }
+        if !wa.is_finite() {
+            wa = 0.0;
+        }
+        if !wb.is_finite() {
+            wb = 0.0;
+        }
 
-        wb.total_cmp(&wa)
-            .then_with(|| a.edge_id.cmp(&b.edge_id))
+        wb.total_cmp(&wa).then_with(|| a.edge_id.cmp(&b.edge_id))
     });
 
     candidates
@@ -170,9 +173,15 @@ mod tests {
     #[test]
     fn v1_on_error_single_match() {
         let mut e1 = edge("e1", "recovery_node");
-        e1.on_error = Some(HashMap::from([("COMPUTATION_ERROR".into(), vec!["recovery_node".into()])]));
+        e1.on_error = Some(HashMap::from([(
+            "COMPUTATION_ERROR".into(),
+            vec!["recovery_node".into()],
+        )]));
         let mut e2 = edge("e2", "fallback_node");
-        e2.on_error = Some(HashMap::from([("INVALID_INPUT".into(), vec!["fallback_node".into()])]));
+        e2.on_error = Some(HashMap::from([(
+            "INVALID_INPUT".into(),
+            vec!["fallback_node".into()],
+        )]));
 
         let result = failure("COMPUTATION_ERROR");
         let edges: Vec<&Edge> = vec![&e1, &e2];
@@ -182,7 +191,10 @@ mod tests {
     #[test]
     fn v2_on_error_no_match_terminal() {
         let mut e1 = edge("e1", "fallback_node");
-        e1.on_error = Some(HashMap::from([("INVALID_INPUT".into(), vec!["fallback_node".into()])]));
+        e1.on_error = Some(HashMap::from([(
+            "INVALID_INPUT".into(),
+            vec!["fallback_node".into()],
+        )]));
 
         let result = failure("COMPUTATION_ERROR");
         let edges: Vec<&Edge> = vec![&e1];
@@ -193,10 +205,16 @@ mod tests {
     fn v3_on_error_priority_ordering() {
         let mut e1 = edge("e1", "node_a");
         e1.priority = Some(5);
-        e1.on_error = Some(HashMap::from([("COMPUTATION_ERROR".into(), vec!["node_a".into()])]));
+        e1.on_error = Some(HashMap::from([(
+            "COMPUTATION_ERROR".into(),
+            vec!["node_a".into()],
+        )]));
         let mut e2 = edge("e2", "node_b");
         e2.priority = Some(10);
-        e2.on_error = Some(HashMap::from([("COMPUTATION_ERROR".into(), vec!["node_b".into()])]));
+        e2.on_error = Some(HashMap::from([(
+            "COMPUTATION_ERROR".into(),
+            vec!["node_b".into()],
+        )]));
 
         let result = failure("COMPUTATION_ERROR");
         let edges: Vec<&Edge> = vec![&e1, &e2];
@@ -207,10 +225,16 @@ mod tests {
     fn v4_on_error_tiebreak_edge_id() {
         let mut eb = edge("edge_b", "node_a");
         eb.priority = Some(10);
-        eb.on_error = Some(HashMap::from([("COMPUTATION_ERROR".into(), vec!["node_a".into()])]));
+        eb.on_error = Some(HashMap::from([(
+            "COMPUTATION_ERROR".into(),
+            vec!["node_a".into()],
+        )]));
         let mut ea = edge("edge_a", "node_b");
         ea.priority = Some(10);
-        ea.on_error = Some(HashMap::from([("COMPUTATION_ERROR".into(), vec!["node_b".into()])]));
+        ea.on_error = Some(HashMap::from([(
+            "COMPUTATION_ERROR".into(),
+            vec!["node_b".into()],
+        )]));
 
         let result = failure("COMPUTATION_ERROR");
         let edges: Vec<&Edge> = vec![&eb, &ea];
@@ -220,9 +244,15 @@ mod tests {
     #[test]
     fn v5_low_confidence_routes_via_on_error() {
         let mut e1 = edge("e1", "llm_node");
-        e1.on_error = Some(HashMap::from([("LOW_CONFIDENCE".into(), vec!["llm_node".into()])]));
+        e1.on_error = Some(HashMap::from([(
+            "LOW_CONFIDENCE".into(),
+            vec!["llm_node".into()],
+        )]));
         let mut e2 = edge("e2", "next_node");
-        e2.on_success = Some(OnSuccess { weight: Some(1.0), threshold: None });
+        e2.on_success = Some(OnSuccess {
+            weight: Some(1.0),
+            threshold: None,
+        });
 
         let result = low_confidence();
         let edges: Vec<&Edge> = vec![&e1, &e2];
@@ -232,7 +262,10 @@ mod tests {
     #[test]
     fn v6_on_success_above_threshold() {
         let mut e1 = edge("e1", "next_node");
-        e1.on_success = Some(OnSuccess { threshold: Some(0.5), weight: Some(1.0) });
+        e1.on_success = Some(OnSuccess {
+            threshold: Some(0.5),
+            weight: Some(1.0),
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&e1];
@@ -242,7 +275,10 @@ mod tests {
     #[test]
     fn v7_on_success_below_threshold_terminal() {
         let mut e1 = edge("e1", "next_node");
-        e1.on_success = Some(OnSuccess { threshold: Some(0.9), weight: Some(1.0) });
+        e1.on_success = Some(OnSuccess {
+            threshold: Some(0.9),
+            weight: Some(1.0),
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&e1];
@@ -252,7 +288,10 @@ mod tests {
     #[test]
     fn v8_on_success_no_confidence_eligible() {
         let mut e1 = edge("e1", "next_node");
-        e1.on_success = Some(OnSuccess { threshold: Some(0.9), weight: Some(1.0) });
+        e1.on_success = Some(OnSuccess {
+            threshold: Some(0.9),
+            weight: Some(1.0),
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&e1];
@@ -262,11 +301,20 @@ mod tests {
     #[test]
     fn v9_on_success_fanout_weight_ordering() {
         let mut e1 = edge("e1", "node_a");
-        e1.on_success = Some(OnSuccess { weight: Some(0.5), threshold: None });
+        e1.on_success = Some(OnSuccess {
+            weight: Some(0.5),
+            threshold: None,
+        });
         let mut e2 = edge("e2", "node_b");
-        e2.on_success = Some(OnSuccess { weight: Some(0.9), threshold: None });
+        e2.on_success = Some(OnSuccess {
+            weight: Some(0.9),
+            threshold: None,
+        });
         let mut e3 = edge("e3", "node_c");
-        e3.on_success = Some(OnSuccess { weight: Some(0.9), threshold: None });
+        e3.on_success = Some(OnSuccess {
+            weight: Some(0.9),
+            threshold: None,
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&e1, &e2, &e3];
@@ -276,24 +324,37 @@ mod tests {
     #[test]
     fn v10_on_success_weight_tiebreak_edge_id() {
         let mut ezz = edge("zz_edge", "node_a");
-        ezz.on_success = Some(OnSuccess { weight: Some(1.0), threshold: None });
+        ezz.on_success = Some(OnSuccess {
+            weight: Some(1.0),
+            threshold: None,
+        });
         let mut eaa = edge("aa_edge", "node_b");
-        eaa.on_success = Some(OnSuccess { weight: Some(1.0), threshold: None });
+        eaa.on_success = Some(OnSuccess {
+            weight: Some(1.0),
+            threshold: None,
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&ezz, &eaa];
-        assert_eq!(ids(&route(&edges, &result, None)), vec!["aa_edge", "zz_edge"]);
+        assert_eq!(
+            ids(&route(&edges, &result, None)),
+            vec!["aa_edge", "zz_edge"]
+        );
     }
 
     #[test]
     fn v11_invalid_confidence_routes_as_invalid_input_via_on_error() {
         let mut on_err = edge("e_err", "err_node");
-        on_err.on_error = Some(HashMap::from([
-            ("INVALID_INPUT".into(), vec!["err_node".into()])
-        ]));
+        on_err.on_error = Some(HashMap::from([(
+            "INVALID_INPUT".into(),
+            vec!["err_node".into()],
+        )]));
 
         let mut on_ok = edge("e_ok", "next");
-        on_ok.on_success = Some(OnSuccess { threshold: Some(0.5), weight: Some(1.0) });
+        on_ok.on_success = Some(OnSuccess {
+            threshold: Some(0.5),
+            weight: Some(1.0),
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&on_ok, &on_err];
@@ -307,9 +368,15 @@ mod tests {
     #[test]
     fn v12_nan_weight_sorted_after_finite() {
         let mut ea = edge("ea", "node_a");
-        ea.on_success = Some(OnSuccess { weight: Some(f64::NAN), threshold: None });
+        ea.on_success = Some(OnSuccess {
+            weight: Some(f64::NAN),
+            threshold: None,
+        });
         let mut eb = edge("eb", "node_b");
-        eb.on_success = Some(OnSuccess { weight: Some(0.1), threshold: None });
+        eb.on_success = Some(OnSuccess {
+            weight: Some(0.1),
+            threshold: None,
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&ea, &eb];
@@ -320,9 +387,15 @@ mod tests {
     #[test]
     fn v13_both_nan_weights_tiebreak_by_edge_id() {
         let mut eb = edge("eb", "node_b");
-        eb.on_success = Some(OnSuccess { weight: Some(f64::NAN), threshold: None });
+        eb.on_success = Some(OnSuccess {
+            weight: Some(f64::NAN),
+            threshold: None,
+        });
         let mut ea = edge("ea", "node_a");
-        ea.on_success = Some(OnSuccess { weight: Some(f64::NAN), threshold: None });
+        ea.on_success = Some(OnSuccess {
+            weight: Some(f64::NAN),
+            threshold: None,
+        });
 
         let result = success();
         let edges: Vec<&Edge> = vec![&eb, &ea];

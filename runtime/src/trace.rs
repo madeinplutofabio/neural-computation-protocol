@@ -13,9 +13,16 @@ const TRACE_SCHEMA_VERSION: &str = "ncp-trace-0.1";
 pub trait TraceSink: Send {
     /// Returns false to skip all trace work (timestamp allocation, serialization).
     /// NullTrace returns false; real writers return true (default).
-    fn enabled(&self) -> bool { true }
+    fn enabled(&self) -> bool {
+        true
+    }
 
     fn emit_runtime_info(&mut self, runtime_version: &str, wasmtime_version: &str, timestamp: &str);
+
+    // Rationale: invoke trace record carries every field of the §11.1 schema;
+    // the trait signature mirrors the schema 1:1 to keep call sites honest.
+    // Refactor into a TraceRecord struct in Phase 3B/3C.
+    #[allow(clippy::too_many_arguments)]
     fn emit_invoke(
         &mut self,
         trace_id: &str,
@@ -43,13 +50,32 @@ pub trait TraceSink: Send {
 pub struct NullTrace;
 
 impl TraceSink for NullTrace {
-    fn enabled(&self) -> bool { false }
+    fn enabled(&self) -> bool {
+        false
+    }
     fn emit_runtime_info(&mut self, _: &str, _: &str, _: &str) {}
     fn emit_invoke(
-        &mut self, _: &str, _: &str, _: u64, _: &str, _: &str, _: &str, _: &str,
-        _: &str, _: &str, _: &[u8], _: &str, _: u64, _: &str, _: &str,
-        _: &BrickResult, _: Option<&[u8]>, _: f64, _: &str,
-    ) {}
+        &mut self,
+        _: &str,
+        _: &str,
+        _: u64,
+        _: &str,
+        _: &str,
+        _: &str,
+        _: &str,
+        _: &str,
+        _: &str,
+        _: &[u8],
+        _: &str,
+        _: u64,
+        _: &str,
+        _: &str,
+        _: &BrickResult,
+        _: Option<&[u8]>,
+        _: f64,
+        _: &str,
+    ) {
+    }
 }
 
 // ── JsonlTraceWriter ───────────────────────────────────────────────
@@ -120,7 +146,7 @@ impl TraceSink for JsonlTraceWriter {
         timestamp: &str,
     ) {
         let input_hash = sha256_prefixed(envelope_bytes);
-        let output_hash = result_bytes.map(|b| sha256_prefixed(b));
+        let output_hash = result_bytes.map(sha256_prefixed);
         let result_len = result_bytes.map(|b| b.len());
 
         let mut record = serde_json::json!({
@@ -152,7 +178,10 @@ impl TraceSink for JsonlTraceWriter {
 
         if let Some(error) = result.error() {
             let map = record.as_object_mut().unwrap();
-            map.insert("error_class".into(), serde_json::Value::String(error.error_class.clone()));
+            map.insert(
+                "error_class".into(),
+                serde_json::Value::String(error.error_class.clone()),
+            );
         }
 
         self.write_line(&record);
