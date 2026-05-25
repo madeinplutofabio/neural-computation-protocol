@@ -11,6 +11,47 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
+## [0.3.3] — 2026-05-XX
+
+### Added
+- **Rust CI workflow** (`.github/workflows/rust.yml`): fmt, clippy with `-D warnings`,
+  cross-platform `cargo test -p ncp-runtime` matrix on pinned OS images
+  (`ubuntu-24.04`, `macos-14`, `windows-2022`); separate `wasm-build` job for
+  brick crates targeting `wasm32-unknown-unknown`; per-job `timeout-minutes`;
+  explicit `permissions:` scope (`contents: read`, `actions: write` for cache);
+  `--locked` on every cargo invocation
+- **Smoke integration tests** (`runtime/tests/smoke.rs`): exercise every runnable
+  example graph end-to-end via `RuntimeContext::load` + `.execute` (in-process,
+  no binary spawn); paths derived from `env!("CARGO_MANIFEST_DIR")` for OS-independent
+  resolution; trap-pipeline assertion accepts any non-empty `error_class` to remain
+  robust across Wasmtime version drift
+- **Citation metadata**: `CITATION.cff` (GitHub "Cite this repository" panel) and
+  `.zenodo.json` (Zenodo archive metadata), both bound to concept DOI
+  `10.5281/zenodo.19570209`
+- **Branch protection**: 6 new Rust CI check contexts required alongside the
+  existing DCO + validate + `wasm-digest-check` set; force-push and branch
+  deletion blocked on `main`; web-based commit sign-off enforced
+- **`docs/BRANCH_PROTECTION.md`**: audit trail for the branch-protection ruleset
+  (current required checks, exact `gh api` command sequence used, rollback
+  procedure, schema-fallback note)
+
+### Fixed
+- `docs/ADOPTION_GUIDE.md`: every `ncp` CLI example now includes the required
+  `run` subcommand (previously copy-pasted commands failed with
+  `unrecognized argument`). `ncp-bench` invocations unaffected (positional graph
+  argument, no subcommand)
+
+## [0.3.2] — 2026-04-14
+
+### Added
+- Apache-2.0 + `NOTICE` + DCO + No-CLA governance finalized
+- Zenodo DOI archive (`10.5281/zenodo.19570209`) via Zenodo's GitHub integration —
+  citable prior art for the protocol, reference runtime, and benchmark methodology
+- DCO enforced as required status check on `main` via branch ruleset
+  "Main Protection"
+- `README.md` finalized: DOI / CI / license / release badges, headline benchmark
+  summary, and "Numbers you can quote" framing
+
 ## [0.3.1] — 2026-04-13
 
 ### Added

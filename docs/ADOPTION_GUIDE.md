@@ -29,7 +29,7 @@ git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
 cd neural-computation-protocol
 
 # Run the runtime CLI on a known-good example
-cargo run -p ncp-runtime --bin ncp --   examples/graphs/echo-pipeline/graph.yaml   --input examples/graphs/echo-pipeline/sample.json
+cargo run -p ncp-runtime --bin ncp -- run examples/graphs/echo-pipeline/graph.yaml --input examples/graphs/echo-pipeline/sample.json
 ```
 
 You should see a JSON output printed to stdout.
@@ -60,15 +60,15 @@ This graph models a production pattern:
 
 ```bash
 # Positive: no escalation (fast path)
-cargo run -p ncp-runtime --bin ncp --   examples/graphs/support-routing-stubbed/graph.yaml   --input examples/graphs/support-routing-stubbed/sample-positive.json
+cargo run -p ncp-runtime --bin ncp -- run examples/graphs/support-routing-stubbed/graph.yaml --input examples/graphs/support-routing-stubbed/sample-positive.json
 
 # Negative: escalation (slow path)
-cargo run -p ncp-runtime --bin ncp --   examples/graphs/support-routing-stubbed/graph.yaml   --input examples/graphs/support-routing-stubbed/sample.json
+cargo run -p ncp-runtime --bin ncp -- run examples/graphs/support-routing-stubbed/graph.yaml --input examples/graphs/support-routing-stubbed/sample.json
 ```
 
 Optional: show per-step diagnostics
 ```bash
-cargo run -p ncp-runtime --bin ncp --   examples/graphs/support-routing-stubbed/graph.yaml   --input examples/graphs/support-routing-stubbed/sample.json   --verbose
+cargo run -p ncp-runtime --bin ncp -- run examples/graphs/support-routing-stubbed/graph.yaml --input examples/graphs/support-routing-stubbed/sample.json --verbose
 ```
 
 ---
@@ -82,7 +82,7 @@ Tracing emits JSONL records with:
 - result type
 
 ```bash
-cargo run -p ncp-runtime --bin ncp --   examples/graphs/echo-chain/graph.yaml   --input examples/graphs/echo-chain/sample.json   --trace trace.jsonl
+cargo run -p ncp-runtime --bin ncp -- run examples/graphs/echo-chain/graph.yaml --input examples/graphs/echo-chain/sample.json --trace trace.jsonl
 ```
 
 Inspect:
@@ -124,6 +124,8 @@ If you want to call the runtime from your own Rust app (HTTP server, worker, age
 use the library API (`RuntimeContext`) rather than shelling out to the CLI.
 
 ### Example: run a graph in-process
+
+> **Note:** paths below assume your process working directory is the repo root.
 
 ```rust
 use std::path::Path;
@@ -225,4 +227,3 @@ If you want to contribute something *immediately useful*:
 - Roadmap: `docs/ROADMAP.md`
 - Runtime: `runtime/`
 - Examples: `examples/graphs/`
-
