@@ -1,0 +1,28 @@
+{
+  "title": "Neural Computation Protocol (NCP)",
+  "description": "Composable, auditable micro-agent graphs for agentic AI systems. Route cheap deterministic work to WASM Bricks; escalate only when needed.",
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "upload_type": "software",
+  "creators": [
+    {
+      "name": "Salvadori, Fabio Marcello",
+      "affiliation": "Independent"
+    }
+  ],
+  "keywords": [
+    "agentic AI",
+    "WASM",
+    "deterministic execution",
+    "LLM routing",
+    "workflow orchestration",
+    "sandboxing"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/madeinplutofabio/neural-computation-protocol",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}

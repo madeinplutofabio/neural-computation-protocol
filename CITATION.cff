@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+
+cff-version: 1.2.0
+message: "If you use NCP in research, please cite it."
+title: "Neural Computation Protocol (NCP)"
+abstract: "Composable, auditable micro-agent graphs for agentic AI systems. Route cheap deterministic work to WASM Bricks; escalate only when needed."
+type: software
+authors:
+  - family-names: Salvadori
+    given-names: Fabio Marcello
+license: Apache-2.0
+repository-code: "https://github.com/madeinplutofabio/neural-computation-protocol"
+version: "0.3.2"
+date-released: "2026-04-14"
+doi: "10.5281/zenodo.19570209"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.19570209"
+    description: "Concept DOI (all versions)"
+keywords:
+  - agentic-ai
+  - wasm
+  - deterministic-execution
+  - llm-routing
+  - workflow-orchestration
+  - sandboxing
