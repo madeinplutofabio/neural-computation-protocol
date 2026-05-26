@@ -1,0 +1,194 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# RELEASE WORKFLOW INVARIANTS
+#   - Triggers: push to tags matching 'v*' OR workflow_dispatch with `tag` input.
+#   - workflow_dispatch defaults to publish=false (builds archives as workflow
+#     artifacts only, does NOT create/edit a GitHub Release). Set publish=true
+#     to actually publish. This guards against dispatched runs against existing
+#     tags mutating their already-published Releases.
+#   - `publish` is a `type: choice` (string) input, NOT `type: boolean`, so the
+#     `if:` gate below can use unambiguous `== 'true'` comparison. With a
+#     boolean type, the gate `&& inputs.publish` would be truthy for ANY
+#     non-empty string (including the string 'false'), which is the nightmare
+#     scenario: publish job runs when we think it won't.
+#   - actions/checkout MUST use `ref: ${{ inputs.tag || github.ref }}` so
+#     workflow_dispatch builds the requested tag, NOT main's HEAD.
+#   - Do NOT rebuild brick WASM artifacts during packaging. Use the committed
+#     examples/bricks/**/*.wasm verbatim (already digest-gated by validate.yml's
+#     wasm-digest-check on every PR/push to main).
+#   - Per-OS archive naming: ncp_<tag>_<os_label>_<arch>.<ext>
+#     - linux:   ncp_<tag>_linux_x86_64.tar.gz
+#     - macos:   ncp_<tag>_macos_aarch64.tar.gz
+#     - windows: ncp_<tag>_windows_x86_64.zip
+#   - This workflow's jobs trigger only on push:tags + workflow_dispatch — never
+#     pull_request — so the job names are NOT bound by branch-protection ruleset.
+#   - Pre-release tags (v*-rc.*, v*-alpha.*, v*-beta.*) auto-marked as
+#     GitHub Release prerelease=true; full versions as prerelease=false.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.3.4 or v0.3.4-rc.1)'
+        required: true
+        type: string
+      publish:
+        description: 'Create/update GitHub Release? (false = artifacts only)'
+        required: false
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+        default: 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-build:
+    name: build (${{ matrix.os_label }}-${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            os_label: linux
+            arch: x86_64
+            ext: tar.gz
+            bin: ncp
+          - os: macos-14
+            os_label: macos
+            arch: aarch64
+            ext: tar.gz
+            bin: ncp
+          - os: windows-2022
+            os_label: windows
+            arch: x86_64
+            ext: zip
+            bin: ncp.exe
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.os }}
+
+      - name: Build ncp (release, --locked)
+        run: cargo build -p ncp-runtime --release --locked --bin ncp
+
+      - name: Stage archive contents (Unix)
+        if: matrix.ext == 'tar.gz'
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          STAGE="ncp_${TAG}_${{ matrix.os_label }}_${{ matrix.arch }}"
+          mkdir -p "$STAGE/examples"
+          cp "target/release/${{ matrix.bin }}" "$STAGE/"
+          cp -r examples/graphs "$STAGE/examples/"
+          cp -r examples/bricks "$STAGE/examples/"
+          cp LICENSE NOTICE README.md "$STAGE/"
+          echo "--- $STAGE contents ---"
+          find "$STAGE" -type f | head -50
+          echo "STAGE=$STAGE" >> "$GITHUB_ENV"
+
+      - name: Pack tar.gz (Unix)
+        if: matrix.ext == 'tar.gz'
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          ARCHIVE="ncp_${TAG}_${{ matrix.os_label }}_${{ matrix.arch }}.tar.gz"
+          tar -czf "$ARCHIVE" "$STAGE"
+          ls -la "$ARCHIVE"
+          echo "ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Stage archive contents (Windows)
+        if: matrix.ext == 'zip'
+        shell: pwsh
+        run: |
+          $TAG = "${{ inputs.tag || github.ref_name }}"
+          $STAGE = "ncp_${TAG}_${{ matrix.os_label }}_${{ matrix.arch }}"
+          New-Item -ItemType Directory -Path $STAGE | Out-Null
+          New-Item -ItemType Directory -Path "$STAGE/examples" | Out-Null
+          Copy-Item "target/release/${{ matrix.bin }}" "$STAGE/"
+          Copy-Item -Recurse "examples/graphs" "$STAGE/examples/graphs"
+          Copy-Item -Recurse "examples/bricks" "$STAGE/examples/bricks"
+          Copy-Item "LICENSE","NOTICE","README.md" "$STAGE/"
+          Write-Host "--- $STAGE contents ---"
+          Get-ChildItem -Recurse $STAGE | Select-Object -First 50 FullName
+          "STAGE=$STAGE" | Add-Content -Path $env:GITHUB_ENV
+
+      - name: Pack zip (Windows)
+        if: matrix.ext == 'zip'
+        shell: pwsh
+        run: |
+          $TAG = "${{ inputs.tag || github.ref_name }}"
+          $ARCHIVE = "ncp_${TAG}_${{ matrix.os_label }}_${{ matrix.arch }}.zip"
+          Compress-Archive -Path $env:STAGE -DestinationPath $ARCHIVE
+          Get-Item $ARCHIVE | Format-List
+          "ARCHIVE=$ARCHIVE" | Add-Content -Path $env:GITHUB_ENV
+
+      - name: Upload archive as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ matrix.os_label }}-${{ matrix.arch }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+          retention-days: 90
+
+  release-publish:
+    name: publish (release)
+    needs: release-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Download all archive artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: archive-*
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        shell: bash
+        run: |
+          cd dist
+          ls -la
+          sha256sum ncp_*.tar.gz ncp_*.zip > SHA256SUMS
+          echo "--- SHA256SUMS ---"
+          cat SHA256SUMS
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(inputs.tag || github.ref_name, '-rc.') || contains(inputs.tag || github.ref_name, '-beta.') || contains(inputs.tag || github.ref_name, '-alpha.') }}
+          files: |
+            dist/ncp_*.tar.gz
+            dist/ncp_*.zip
+            dist/SHA256SUMS
