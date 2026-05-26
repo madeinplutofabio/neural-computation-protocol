@@ -9,13 +9,13 @@ End-to-end ceremony for cutting a new NCP version. This is the maintainer-facing
 companion to [`docs/INSTALL.md`](INSTALL.md) (which is adopter-facing).
 
 > **Phase 3A.1 build-out:** this doc is added incrementally across three PRs.
-> - **PR B (this PR)** — Sections 1–6: tag preparation, signed-tag creation,
+> - **PR B** — Sections 1–6: tag preparation, signed-tag creation,
 >   `Release` workflow ceremony, RC test-tag flow.
-> - **PR C** — Section 7: GHCR Docker image publish (added when the Docker
->   workflow lands).
+> - **PR C (this PR)** — Section 7: GHCR Docker image publish, plus the
+>   GHCR cleanup commands folded into Section 6's RC tear-down.
 > - **PR D** — Section 8: `cargo publish` to crates.io (added when the
 >   runtime crate version bumps to 0.3.4).
-> When all three PRs ship, this doc covers the full ceremony.
+> When PR D ships, this doc covers the full ceremony end-to-end.
 
 ---
 
@@ -26,6 +26,7 @@ companion to [`docs/INSTALL.md`](INSTALL.md) (which is adopter-facing).
 | GPG key configured for signed tags | `git config --get user.signingkey` returns a non-empty key ID. Verify the key still works: `echo test \| gpg --clearsign` should prompt for passphrase and produce a signed block. |
 | Push access to `main` + tag push permission | `gh auth status` shows the active account with `repo` scope. |
 | `gh` CLI authenticated | `gh auth status` clean. |
+| GHCR cleanup permission | `gh auth status` should show package scopes before RC cleanup runs `gh api -X DELETE` against GHCR. If missing, run `gh auth refresh -s read:packages -s delete:packages`. Without this, the §6 RC cleanup script will fail with `403` even if `repo` scope is present. |
 | Zenodo integration ON for the repo | Visit https://zenodo.org/account/settings/github/ — toggle for `madeinplutofabio/neural-computation-protocol` is **enabled**. |
 | Working tree clean on latest `main` | `git status -sb` shows `## main...origin/main` with no modifications. |
 
@@ -119,15 +120,44 @@ new RC (`v0.3.4-rc.2`), and re-verify.
 Once the RC verifies clean, delete the RC artifacts before cutting the real tag.
 Leaving an RC tag pullable indefinitely confuses adopters.
 
+> ⚠ **Before running the script below**, confirm your `gh` CLI has GHCR
+> package-delete permission. GHCR package-version deletion requires the
+> `delete:packages` scope (and `read:packages` to look up the version ID).
+> If the `gh api -X DELETE` step returns `403`, refresh the token first:
+> ```bash
+> gh auth refresh -s read:packages -s delete:packages
+> ```
+
 ```bash
 RC="v0.3.4-rc.1"
+
+# Delete the GitHub Release + remote+local git tag
 gh release delete "$RC" --yes
 git push origin --delete "$RC"
 git tag -d "$RC"
-```
 
-> **PR C will extend this section** with `gh api`-based GHCR Docker tag cleanup
-> (each release publishes two GHCR tags; both must be deleted on RC cleanup).
+# Delete BOTH GHCR image tags. docker.yml publishes the RC as `v0.3.4-rc.1`
+# AND `0.3.4-rc.1` (strict-pin: two equivalent forms per release). Leaving
+# either tag pullable indefinitely confuses adopters with a "ghost" RC.
+#
+# --paginate is REQUIRED — GitHub paginates the package-versions endpoint
+# (~30 per page). Without it, after enough releases the target tag may
+# silently fall to page 2+ and the lookup returns nothing, leaving a
+# stale GHCR tag on the registry.
+OWNER=madeinplutofabio
+RC_SEMVER="${RC#v}"   # v0.3.4-rc.1 -> 0.3.4-rc.1
+for ghcr_tag in "$RC" "$RC_SEMVER"; do
+  VERSION_ID=$(gh api --paginate "/users/$OWNER/packages/container/ncp/versions" \
+    --jq ".[] | select(.metadata.container.tags[]? == \"$ghcr_tag\") | .id" \
+    | head -n 1)
+  if [ -n "$VERSION_ID" ]; then
+    echo "Deleting GHCR tag $ghcr_tag (version id $VERSION_ID)"
+    gh api -X DELETE "/users/$OWNER/packages/container/ncp/versions/$VERSION_ID"
+  else
+    echo "GHCR tag $ghcr_tag not found (already cleaned up or never created?)"
+  fi
+done
+```
 
 Then push the real tag:
 
@@ -157,10 +187,91 @@ Section 1's Prerequisites table) — the webhook may have been disabled.
 
 ---
 
-## Sections coming in PR C / PR D
+## 7. GHCR Docker image (auto-published by docker.yml)
 
-- **§7 — GHCR Docker image** (PR C) — `docker.yml` workflow + image tag cleanup.
-- **§8 — `cargo publish` to crates.io** (PR D) — pre-flight `cargo publish --dry-run`, manual publish command, README link audit on crates.io render.
+The `Docker` workflow (`.github/workflows/docker.yml`) fires on the same
+`v*` tag push that triggers the Release workflow. Both run concurrently
+on a single tag push — no separate operator action required.
 
-When all three PRs ship, this doc is the single canonical reference for the
-full release ceremony.
+Each release publishes **two equivalent strict-pin tags** to GHCR:
+- `ghcr.io/madeinplutofabio/ncp:v0.3.4` (matches the git tag verbatim)
+- `ghcr.io/madeinplutofabio/ncp:0.3.4` (semver-canonical form)
+
+Same image digest, two reference forms. No `:latest`, no floating `:0.3`.
+
+### 7.1 Optional: dispatch build-only dry-run for an existing tag
+
+The Docker workflow accepts a `workflow_dispatch` input with `push: false`
+(default) so you can build the image without pushing it to GHCR — useful
+for diagnosing Dockerfile/image-build issues without pushing or mutating
+GHCR. Note: the dispatch checks out the resolved tag, so this only works
+for tags that **already exist** in the repo (re-validating an existing
+tag's build, not pre-tag-push testing).
+
+```bash
+gh workflow run docker.yml \
+  -f tag=v0.3.4 \
+  -f push=false
+```
+
+The image gets built on the runner, build cache populates, but the
+`docker push` step is skipped. Inspect the workflow logs for any build
+errors. Set `push=true` to actually publish.
+
+### 7.2 Post-publish verification
+
+After a real tag push (or after a dispatch with `push=true`):
+
+```bash
+# Pull both tag forms — should resolve to the same image digest
+docker pull ghcr.io/madeinplutofabio/ncp:v0.3.4
+docker pull ghcr.io/madeinplutofabio/ncp:0.3.4
+
+# Confirm both refer to the same image (digest equality)
+docker image inspect --format '{{.Id}}' ghcr.io/madeinplutofabio/ncp:v0.3.4
+docker image inspect --format '{{.Id}}' ghcr.io/madeinplutofabio/ncp:0.3.4
+
+# Functional verify (mirrors docs/INSTALL.md quick-verify)
+docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 --version
+docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 \
+  run examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json
+```
+
+### 7.3 First-publish: GHCR package visibility (ONE-TIME setup)
+
+The first push to a previously-non-existent GHCR namespace creates the
+package as **private** by default. Adopters won't be able to `docker
+pull` until visibility is flipped to public.
+
+After the first successful `v*` tag push that runs docker.yml:
+
+1. Visit https://github.com/madeinplutofabio?tab=packages and click the
+   `ncp` container package.
+2. Click **Package settings** (right sidebar).
+3. Scroll to **Danger Zone → Change visibility → Public**.
+4. Confirm by typing the package name.
+
+Subsequent releases inherit the current visibility — this is a one-time
+step. Verify the package is actually publicly pullable (the behavioral
+test, not a registry-protocol probe — OCI registries can challenge
+even public images with 401+WWW-Authenticate as part of normal auth
+handshake, so HTTP status alone isn't a reliable visibility signal):
+
+```bash
+# Make sure no cached GHCR credentials are in play
+docker logout ghcr.io 2>/dev/null || true
+
+# Anonymous pull — succeeds for public, fails with "denied" for private
+docker pull ghcr.io/madeinplutofabio/ncp:v0.3.4
+```
+
+---
+
+## Section coming in PR D
+
+- **§8 — `cargo publish` to crates.io** (PR D) — pre-flight
+  `cargo publish --dry-run`, manual publish command, README link audit
+  on crates.io render.
+
+When PR D ships, this doc covers the full release ceremony end-to-end.

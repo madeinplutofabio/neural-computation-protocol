@@ -1,0 +1,69 @@
+# .dockerignore
+# Excludes content not needed in the Docker build context for the ncp
+# runtime image. Reduces context size sent to the Docker daemon and
+# prevents accidental baking of unrelated artifacts into the image.
+
+# ── Cargo build artifacts (regenerated in the Dockerfile's builder stage)
+target/
+**/target/
+
+# ── Git
+.git/
+.gitignore
+.gitattributes
+
+# ── Node tooling (the TypeScript validator under tools/ncp-validate is
+#    unrelated to the runtime image build)
+tools/node_modules/
+tools/**/node_modules/
+
+# ── Non-runtime project content (not needed for either build OR the
+#    final image; verified: no include_str!/include_bytes! Rust references
+#    against these paths, Dockerfile doesn't COPY them, safe to exclude)
+.github/
+bench/
+docs/
+spec/
+schemas/
+conformance/
+
+# ── IDE / editor / OS junk
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+.DS_Store
+Thumbs.db
+
+# ── Local secrets / credentials (defence-in-depth; should never be in repo
+#    in the first place, but we exclude here so a maintainer's accidentally-
+#    placed local credential file isn't sent to the Docker daemon)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/
+id_rsa
+id_rsa.*
+.cargo/credentials
+.cargo/credentials.toml
+.npmrc
+
+# ── Local-only planning artifacts (gitignored at the repo level, but
+#    may exist on a maintainer's working tree and would otherwise be
+#    sent to the Docker daemon)
+NCP_IMPLEMENTATION_PLAN.md
+NCP_CONTEXT_BRIEF.md
+
+# ── Release-ceremony scratch files (used locally during release prep;
+#    never belong in the image)
+RELEASE_NOTES_*.md
+SHA256SUMS
+ncp_*.tar.gz
+ncp_*.zip
+ncp_*.sha256
