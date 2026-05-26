@@ -11,6 +11,28 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
+## [0.3.4] — 2026-MM-DD
+
+### Added
+- **`docs/INSTALL.md`**: install matrix for adopters — GitHub Releases archives,
+  Docker (GHCR), `cargo install` from crates.io, and build-from-source — each
+  with per-OS commands and checksum verification. Architecture coverage table
+  at top makes Apple Silicon vs Intel + Linux x86_64 vs aarch64 self-service
+- **`runtime/Cargo.toml`** crates.io publish metadata: `description`,
+  `repository`, `homepage`, `readme = "../README.md"`, `keywords` (`wasm`,
+  `agentic-ai`, `graph`, `deterministic`, `ncp`), `categories` (`wasm`,
+  `command-line-utilities`, `asynchronous`), and explicit `include` array.
+  Verified end-to-end via `cargo publish --dry-run --locked` and unpacked-crate
+  `cargo install --path . --bin ncp --locked` (produces working `ncp` binary)
+- **`runtime/LICENSE`** + **`runtime/NOTICE`**: verbatim copies of the
+  repo-root files. Cargo's `include` array silently strips `..` paths, so
+  local copies are needed for Apache 2.0 §4(d) compliance in the published
+  `.crate` (`readme = "../README.md"` continues to work because cargo
+  special-cases the `readme` field)
+- **`README.md`**: top-level "Install" section above "Quick start", linking
+  to `docs/INSTALL.md`. Pre-built install paths are now the default story;
+  building from source is positioned as the developer path
+
 ## [0.3.3] — 2026-05-26
 
 ### Added

@@ -110,6 +110,18 @@ These results are measured end-to-end by cycling a dataset (`--dataset`) so the 
 
 ---
 
+## Install
+
+Three ways to get a working `ncp` CLI — full matrix (per-OS commands, checksums, architecture coverage) in [`docs/INSTALL.md`](docs/INSTALL.md):
+
+- **Download** a release archive: https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest
+- **Docker** (Linux x86_64): `docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 --version`
+- **`cargo install`** (any platform with Rust 1.94+): `cargo install ncp-runtime --bin ncp --locked`
+
+For developers building from source, see [Quick start](#quick-start-runtime) below.
+
+---
+
 ## Quick start (runtime)
 
 Prereqs: **Rust 1.94+**.
