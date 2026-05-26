@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# DOCKER WORKFLOW INVARIANTS
+#   - Triggers: push to tags matching 'v*' OR workflow_dispatch with `tag`
+#     and `push` inputs.
+#   - workflow_dispatch defaults to push=false (builds image but does NOT
+#     push to GHCR). Set push=true to actually publish. Mirrors the
+#     `publish` safety in release.yml and prevents dispatched runs against
+#     existing tags from polluting the GHCR namespace.
+#   - `push` is a `type: choice` (string) input. The `push:` parameter on
+#     docker/build-push-action uses unambiguous `== 'true'` comparison
+#     (same rationale as release.yml's `publish` gate).
+#   - The "Resolve release tag" step validates the tag format AND outputs
+#     it explicitly so docker/metadata-action references the requested
+#     tag, NOT whatever github.ref happens to be. docker/metadata-action
+#     derives tags from GitHub event context by default — on
+#     workflow_dispatch from a branch, that would generate tags like
+#     `main` instead of the user-requested tag.
+#   - The tag-format regex enforces strict semver shape: `-` (NOT `.`)
+#     introduces any pre-release segment. `v0.3.4.rc.1` would otherwise
+#     pass a loose regex but break `type=semver` downstream.
+#   - actions/checkout MUST use the resolved tag (not inputs.tag directly)
+#     so the build sees the tagged source tree.
+#   - Strict-pin tags ONLY: each release publishes exactly TWO equivalent
+#     exact-version tags (e.g. `v0.3.4` AND `0.3.4`). `flavor: latest=false`
+#     disables docker/metadata-action's default auto-latest behavior;
+#     without that flag, an unwanted `:latest` tag would be generated.
+#     NEVER add `type=raw,value=latest` or `type=semver,pattern={{major}}.{{minor}}`.
+#   - Pre-release tags (v*-rc.*, v*-alpha.*, v*-beta.*) produce image tags
+#     like `v0.3.4-rc.1` AND `0.3.4-rc.1`. BOTH must be cleaned up if the
+#     RC is discarded (see docs/PUBLISHING.md section 6 RC cleanup).
+#   - Pushes to ghcr.io/madeinplutofabio/ncp (image namespace inherits
+#     repo visibility).
+#   - This workflow triggers only on push:tags + workflow_dispatch — never
+#     pull_request — so the job name is NOT bound by branch-protection
+#     ruleset.
+
+name: Docker
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (e.g. v0.3.4 or v0.3.4-rc.1)'
+        required: true
+        type: string
+      push:
+        description: 'Push image to GHCR? (false = build only, do not publish)'
+        required: false
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+        default: 'false'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  docker-build-publish:
+    name: build & publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Resolve release tag
+        id: release-tag
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+            echo "::error::Docker release tag must look like v0.3.4 or v0.3.4-rc.1; got: $TAG"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release-tag.outputs.tag }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (strict-pin tags only)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/madeinplutofabio/ncp
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ steps.release-tag.outputs.tag }}
+            type=semver,pattern={{version}},value=${{ steps.release-tag.outputs.tag }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push == 'true') }}
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

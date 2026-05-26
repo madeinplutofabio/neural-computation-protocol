@@ -60,14 +60,33 @@ Each archive contains the `ncp` binary, the `examples/` tree, plus `LICENSE`, `N
 
 ## Option 2 — Docker (Linux x86_64)
 
+Image base: `gcr.io/distroless/cc-debian12:nonroot` (small distroless runtime image; no shell, runs as non-root). The image bakes in `/app/examples/` (WORKDIR = `/app`) so example paths just work — no bind-mount needed.
+
 ```bash
+# Pull
 docker pull ghcr.io/madeinplutofabio/ncp:v0.3.4
+
+# Verify
 docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 --version
+
+# Run the quick-verify example (examples/ are inside the image)
+docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 \
+  run examples/graphs/echo-pipeline/graph.yaml \
+  --input examples/graphs/echo-pipeline/sample.json
 ```
 
-Image base is `gcr.io/distroless/cc-debian12:nonroot` (~25 MB). The image bakes in `/app/examples/` so you can run example graphs without mounting anything. See **Quick verify** below.
+To run your own graph, mount a host directory:
 
-Image tags are strict-pin only — there's no `:latest` and no floating `:0.3` tag. Always specify a full version.
+```bash
+docker run --rm -v "$PWD/my-graphs:/work:ro" -w /work \
+  ghcr.io/madeinplutofabio/ncp:v0.3.4 \
+  run my-graph.yaml --input my-input.json
+```
+
+**Tag conventions** (strict-pin only):
+- Each release publishes **two equivalent** exact-version tags: `v0.3.4` (matches the git tag) and `0.3.4` (semver-canonical). Same image digest.
+- **No `:latest`**, no floating `:0.3` or `:0` — always specify a full version.
+- Platform: **`linux/amd64` only** (Linux aarch64 / multi-arch deferred to [Phase 3C](ROADMAP.md#5-phase-3c--production-profile-hardening-track)).
 
 ---
 
