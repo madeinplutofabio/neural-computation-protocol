@@ -5,6 +5,19 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 default-run = "ncp"
+description = "NCP reference runtime — composable, auditable WASM agent graphs"
+repository = "https://github.com/madeinplutofabio/neural-computation-protocol"
+homepage = "https://github.com/madeinplutofabio/neural-computation-protocol"
+readme = "../README.md"
+keywords = ["wasm", "agentic-ai", "graph", "deterministic", "ncp"]
+categories = ["wasm", "command-line-utilities", "asynchronous"]
+include = [
+    "src/**",
+    "tests/**",
+    "Cargo.toml",
+    "LICENSE",
+    "NOTICE",
+]
 
 [lib]
 name = "ncp_runtime"
