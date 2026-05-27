@@ -11,6 +11,46 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
+## [0.3.5] — 2026-05-27
+
+### Fixed
+- **`README.md`**: converted repo-relative Markdown links and the
+  `NCP-logo.png` image src to absolute `https://github.com/.../blob/main/...`
+  (and `/raw/main/` for the image) URLs. crates.io renders the README as
+  the crate's landing-page docs, and resolves relative links from the
+  *crate's* manifest location (`runtime/`) — not the workspace root.
+  That made every relative link 404 on the v0.3.4 crates.io page (e.g.
+  `docs/INSTALL.md` became `runtime/docs/INSTALL.md`). Absolute URLs
+  render correctly on both crates.io and GitHub. Same-page anchors like
+  `#quick-start-runtime` are intentionally left relative.
+
+### Changed
+- **`runtime/Cargo.toml`** categories: replaced the misleading
+  `asynchronous` (the runtime is synchronous; wasmtime used in blocking
+  mode, no `tokio`/`futures`/`async fn`) with the accepted
+  `artificial-intelligence` category (crates.io's official scope:
+  "machine learning, deep learning, large language models, AI agents,
+  and related tooling" — direct fit for an agent-graph runtime).
+  Final categories: `["artificial-intelligence", "wasm",
+  "command-line-utilities"]`. Validated against the crates.io
+  allowlist via `cargo publish --dry-run --locked --allow-dirty`
+- **`runtime/Cargo.toml`**: crate version bumped `0.3.4` → `0.3.5`.
+  `Cargo.lock` updated to match (only the `ncp-runtime` self-version
+  entry; no transitive dep drift)
+- **`docs/PUBLISHING.md`** §3.1: added a README-content gate to the
+  pre-flight checklist. Unpacks the just-built `.crate` and greps for
+  any bare repo-relative Markdown links or HTML `src=` references that
+  crates.io would rewrite under the crate's subdirectory. Fail-hard
+  with non-zero exit. Catches the exact failure class that bit v0.3.4
+  (where the local dry-run was green but the rendered crates.io README
+  shipped with broken links). Version-derived so the gate doesn't need
+  hand-editing on every release
+- **`README.md`**: Docker quick-install example version pin bumped
+  `v0.3.4` → `v0.3.5` so the rendered crates.io README ships consistent
+  with the released image tag (intentionally not sweeping the equivalent
+  references in `docs/INSTALL.md` — those are deferred to a separate
+  doc-refresh PR post-v0.3.5)
+
 ## [0.3.4] — 2026-05-26
 
 ### Added
