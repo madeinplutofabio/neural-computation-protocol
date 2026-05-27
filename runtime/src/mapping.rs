@@ -117,7 +117,7 @@ pub fn cbor_to_json(value: &CborValue) -> serde_json::Value {
     }
 }
 
-/// Extract output.confidence as Option<f64> from a BrickResult's output.
+/// Extract output.confidence as `Option<f64>` from a BrickResult's output.
 pub fn extract_confidence(value: &CborValue) -> Option<f64> {
     match resolve_path(value, "confidence") {
         Some(CborValue::Float(f)) => Some(f),

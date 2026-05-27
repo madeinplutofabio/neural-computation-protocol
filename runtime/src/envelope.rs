@@ -21,7 +21,7 @@ pub const ROOT_TRIGGER: Trigger<'static> = Trigger {
 ///   carry_state: null
 ///   ctx:         { graph_id, graph_version, node_id, session_id, step, trace_id, trigger }
 ///   graph_refs:  {}
-///   input:       <the user's input value>
+///   input:       `<the user's input value>`
 ///
 /// Input auto-detection:
 ///   - If JSON has top-level "input" key → use its value
