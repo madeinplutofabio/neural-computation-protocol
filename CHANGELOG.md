@@ -11,7 +11,7 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
-## [0.3.4] — 2026-MM-DD
+## [0.3.4] — 2026-05-26
 
 ### Added
 - **`docs/INSTALL.md`**: install matrix for adopters — GitHub Releases archives,
@@ -32,6 +32,34 @@ Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **`README.md`**: top-level "Install" section above "Quick start", linking
   to `docs/INSTALL.md`. Pre-built install paths are now the default story;
   building from source is positioned as the developer path
+- **Release workflow** (`.github/workflows/release.yml`): pushing a `v*` tag
+  produces a GitHub Release with per-OS archives (`linux_x86_64.tar.gz`,
+  `macos_aarch64.tar.gz`, `windows_x86_64.zip`) plus `SHA256SUMS`. Each
+  archive ships the `ncp` binary, `examples/`, `LICENSE`, `NOTICE`,
+  `README.md` (Apache 2.0 §4(d) compliant). `workflow_dispatch` accepts a
+  `tag` input and a `publish` choice (default `false`) for build-only
+  dry-runs against existing tags. Pre-release tags (`v*-rc.*`, `v*-alpha.*`,
+  `v*-beta.*`) auto-marked as GitHub prerelease
+- **`docs/PUBLISHING.md`**: maintainer-facing release ceremony covering
+  prerequisites, release-state confirmation, workflow dry-run, RC tag flow,
+  artifact verification, RC cleanup (including BOTH GHCR tag forms via
+  `gh api --paginate`), Zenodo auto-archive verification, GHCR publish flow
+  (build-only dry-run, post-publish digest-equality verification, ONE-TIME
+  first-publish visibility flip), and crates.io publish flow (early
+  dry-run gate, live publish from the resolved tag, README link audit,
+  clean-host install verification)
+- **Docker image** (`Dockerfile` + `.dockerignore` + `.github/workflows/docker.yml`):
+  two-stage build (`rust:1.94-bookworm` → `gcr.io/distroless/cc-debian12:nonroot`,
+  small distroless final image). Examples baked under `WORKDIR=/app`. Triggers
+  on `v*` tag push + `workflow_dispatch`. Each release publishes BOTH `v0.3.4`
+  (git-tag form) AND `0.3.4` (semver form) to GHCR — same image digest, two
+  equivalent references. No `:latest`, no floating `:0.3`. `linux/amd64`
+  only (multi-arch deferred to Phase 3C)
+
+### Changed
+- **`runtime/Cargo.toml`**: crate version bumped `0.3.3` → `0.3.4` to align
+  with the v0.3.4 release tag. `Cargo.lock` updated to match (only the
+  `ncp-runtime` self-version entry; no transitive dep drift)
 
 ## [0.3.3] — 2026-05-26
 

@@ -8,14 +8,11 @@
 End-to-end ceremony for cutting a new NCP version. This is the maintainer-facing
 companion to [`docs/INSTALL.md`](INSTALL.md) (which is adopter-facing).
 
-> **Phase 3A.1 build-out:** this doc is added incrementally across three PRs.
-> - **PR B** — Sections 1–6: tag preparation, signed-tag creation,
->   `Release` workflow ceremony, RC test-tag flow.
-> - **PR C (this PR)** — Section 7: GHCR Docker image publish, plus the
->   GHCR cleanup commands folded into Section 6's RC tear-down.
-> - **PR D** — Section 8: `cargo publish` to crates.io (added when the
->   runtime crate version bumps to 0.3.4).
-> When PR D ships, this doc covers the full ceremony end-to-end.
+> This doc covers the full release ceremony end-to-end: tag preparation,
+> signed-tag creation, RC test-tag flow, GitHub Release artifacts via the
+> `Release` workflow, GHCR Docker image publish via the `Docker` workflow,
+> and `cargo publish` to crates.io. Built out incrementally across PRs B–D
+> of Phase 3A.1.
 
 ---
 
@@ -67,6 +64,43 @@ When complete, all 3 archive artifacts should be downloadable from the Actions
 run page. Verify the `v0.3.3` GitHub Release page is **unchanged** (no new
 assets). If `publish=false` ever produces assets on the existing Release, that's
 a workflow bug — file an issue.
+
+## 3.1 crates.io publish dry-run (pre-flight gate)
+
+Run this **before tagging** so any crates.io-side blocker (name squat,
+expired token, README-render regression, `categories` allowlist drift,
+`include` array dropping `LICENSE`/`NOTICE`) surfaces while it can still
+be fixed by a tiny follow-up PR — not after `v0.3.4` is tagged and the
+version is already burned.
+
+Run from `main` HEAD (post-PR-D-merge — `runtime/Cargo.toml` already
+shows the upcoming version):
+
+```bash
+# 1. File-listing gate — proves LICENSE + NOTICE + README ship in the
+#    .crate (Apache 2.0 §4(d) compliance + crates.io render). Mirrors
+#    PR A's hard gate.
+cargo package -p ncp-runtime --list > /tmp/ncp-runtime-package-files.txt
+grep -Fx README.md /tmp/ncp-runtime-package-files.txt
+grep -Fx LICENSE /tmp/ncp-runtime-package-files.txt
+grep -Fx NOTICE /tmp/ncp-runtime-package-files.txt
+# Expected: all three commands exit 0.
+
+# 2. Live dry-run against crates.io's validation API. Catches name
+#    squat, expired token, allowlist drift, oversized .crate (10 MB
+#    limit), and packaging metadata regressions.
+cargo publish -p ncp-runtime --dry-run --locked
+```
+
+Both must exit 0 cleanly.
+
+**If the dry-run fails after PR D has merged:** the upcoming version is
+now "tainted" — `runtime/Cargo.toml` claims the version but you can't
+actually publish it. Recovery is a tiny follow-up PR that lands the fix
+on top of the existing version (if the fix is metadata-only and the
+version hasn't been tagged yet), OR bump to the next patch (e.g.
+`0.3.4` → `0.3.5`) if the version slot is unrecoverable. **Either way,
+do not push the release tag until §3.1 is green.**
 
 ## 4. Push a pre-release tag (RC)
 
@@ -268,10 +302,68 @@ docker pull ghcr.io/madeinplutofabio/ncp:v0.3.4
 
 ---
 
-## Section coming in PR D
+## 8. `cargo publish` to crates.io
 
-- **§8 — `cargo publish` to crates.io** (PR D) — pre-flight
-  `cargo publish --dry-run`, manual publish command, README link audit
-  on crates.io render.
+Final irreversible step. Runs after the GitHub Release + GHCR image are
+verified clean (§5–§7). The pre-flight gate in §3.1 already established
+that the publish payload is valid — §8 is the live `cargo publish`.
 
-When PR D ships, this doc covers the full release ceremony end-to-end.
+**Publish from the resolved tag**, not from `main` HEAD. Even one
+commit's drift between tag push and `cargo publish` would ship code on
+crates.io that doesn't match the v-tag's GitHub Release tarball or its
+GHCR image digest:
+
+```bash
+git fetch --tags origin
+git checkout v0.3.4
+cargo publish -p ncp-runtime --locked
+```
+
+`--locked` is correct here — the tag checkout is clean (not "dirty"),
+and `--locked` guarantees `cargo publish` resolves dependencies against
+the exact `Cargo.lock` committed for the release. Do NOT pass
+`--allow-dirty` from a tag checkout; if cargo complains about a dirty
+tree, something is wrong (untracked files, stray edits) — investigate
+before publishing.
+
+### 8.1 Post-publish verification
+
+Clean-host install proves an end-user `cargo install` works against the
+freshly-published crate. Run on a host with no NCP source checkout
+(e.g. a throwaway Docker container):
+
+```bash
+cargo install ncp-runtime --version 0.3.4 --locked
+ncp --version
+# Expected: prints "0.3.4"
+```
+
+Or from a clean Docker container (mirrors the environment most adopters
+will hit):
+
+```bash
+docker run --rm rust:1.94-bookworm bash -c \
+  "cargo install ncp-runtime --version 0.3.4 --locked && ncp --version"
+```
+
+### 8.2 README link audit on crates.io
+
+crates.io renders the `runtime/Cargo.toml`-declared README (`../README.md`)
+as the crate's landing-page docs. Relative links that work on GitHub
+(e.g. `docs/ADOPTION_GUIDE.md`) may 404 on the crates.io renderer
+because there is no `docs/` directory inside the `.crate` package.
+
+1. Open https://crates.io/crates/ncp-runtime/0.3.4
+2. Scroll through the rendered README.
+3. Click every link.
+4. If any 404: ship a tiny follow-up PR converting the broken relative
+   links to absolute `https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/…`
+   URLs. Not a 3A.1 blocker (cosmetic), but the follow-up should land
+   within 1–2 days of publish to avoid lingering broken links.
+
+### 8.3 Scope
+
+This phase publishes **`ncp-runtime` only**. Brick crates
+(`ncp-echo`, `ncp-classifier-stub`) are `cdylib`s targeting
+`wasm32-unknown-unknown` and not useful as host-target deps; they're
+deferred to Phase 3A.4 (SDKs) when the brick-author workflow lands.

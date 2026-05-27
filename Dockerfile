@@ -8,7 +8,7 @@
 #   1. `build`   — full Rust 1.94 toolchain on Debian bookworm; produces a
 #                  static-friendly release binary of the `ncp` bin.
 #   2. final     — distroless Debian 12 with libc + libgcc_s (no shell, no
-#                  package manager, runs as non-root). Image is ~25 MB.
+#                  package manager, runs as non-root). Small distroless final image.
 #
 # Final image layout:
 #   /usr/local/bin/ncp        — the CLI (ENTRYPOINT)
