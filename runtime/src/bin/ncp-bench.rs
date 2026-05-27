@@ -11,7 +11,7 @@
 //!                    Outputs both execute_us and end_to_end_us latencies.
 //!
 //! Optional features:
-//!   --simulate-llm-ms <ms>   Inject sleep after matching nodes (models LLM I/O).
+//!   --simulate-llm-ms `<ms>`   Inject sleep after matching nodes (models LLM I/O).
 //!   --concurrency N          Run N worker threads in parallel; report throughput.
 //!   --cold-start             Measure load + compile time separately.
 //!

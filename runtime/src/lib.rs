@@ -1,3 +1,31 @@
+//! NCP reference runtime.
+//!
+//! `ncp-runtime` provides the reference executor and CLI for the
+//! Neural Computation Protocol: composable, auditable WASM Brick graphs
+//! for agentic AI systems.
+//!
+//! Most users start with the `ncp` CLI:
+//!
+//! ```text
+//! cargo install ncp-runtime --version 0.3.6 --locked
+//! ncp --version
+//! ```
+//!
+//! The runtime loads graph manifests, verifies Brick digests, executes
+//! WASM Bricks through Wasmtime, routes results deterministically, and
+//! emits replayable JSONL traces.
+//!
+//! Useful links:
+//!
+//! - [Project README](https://github.com/madeinplutofabio/neural-computation-protocol)
+//! - [Install guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/INSTALL.md)
+//! - [Adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md)
+//! - [Protocol spec](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/spec/ncp-v0.2.3.md)
+//!
+//! Note: the CLI/runtime is stable enough for evaluation and early
+//! integration. Treat the Rust module API as reference-runtime internals
+//! until the SDK work lands.
+
 pub mod engine;
 pub mod envelope;
 pub mod manifest;

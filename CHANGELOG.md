@@ -11,6 +11,41 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
+## [0.3.6] — 2026-05-27
+
+### Added
+- **`runtime/src/lib.rs`**: crate-level `//!` documentation block —
+  renders as the docs.rs landing page (https://docs.rs/ncp-runtime).
+  Explains what `ncp-runtime` is, shows the install command, summarizes
+  what the runtime does, links to the project README + install guide +
+  adoption guide + protocol spec, and notes the stability boundary
+  (CLI/runtime stable for evaluation; Rust module API treated as
+  reference-runtime internals until the SDK work lands in Phase 3A.4).
+
+### Fixed
+- **docs.rs landing page**: previously lacked crate-level orientation docs
+  (no `//!` documentation in `lib.rs`), so docs.rs only exposed the
+  module surface without explaining what the runtime is or how to start.
+  v0.3.6 adds the landing page block.
+- **rustdoc HTML-tag-interpretation warnings**: 4 doc comments contained
+  bare angle-bracket constructs (`Option<f64>` in `mapping.rs`, `<ms>`
+  in `ncp-bench.rs`, `<the user's input value>` in `envelope.rs`,
+  `<short_name>.wasm` in `resolver.rs`) that rustdoc was interpreting
+  as HTML tag starts. Wrapped each in inline backticks.
+  Verified clean with rustdoc warnings denied:
+  `RUSTDOCFLAGS="-D warnings" cargo doc -p ncp-runtime --no-deps --all-features`.
+
+### Changed
+- **`README.md`** + **`docs/ADOPTION_GUIDE.md`**: badges row gained
+  crates.io + docs.rs + MSRV; Status line refreshed with concrete
+  install-channel links; ADOPTION_GUIDE §0 Prereqs tightened
+  (`Rust 1.94+`); §1 now leads with `cargo install ncp-runtime --locked`
+  (source build demoted to developer path); §9 production-readiness
+  framing updated to "distribution channels are live as of Phase 3A.1".
+- **`runtime/Cargo.toml`**: crate version bumped `0.3.5` → `0.3.6`.
+  `Cargo.lock` updated to match (only the `ncp-runtime` self-version
+  entry; no transitive dep drift).
+
 ## [0.3.5] — 2026-05-27
 
 ### Fixed

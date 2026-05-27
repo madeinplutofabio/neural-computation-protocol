@@ -88,7 +88,7 @@ fn resolve_brick_dir(
 /// Precedence:
 /// 1. manifest.artifact.path if present
 /// 2. Exactly one .wasm file in directory
-/// 3. <short_name>.wasm
+/// 3. `<short_name>.wasm`
 /// 4. Error listing candidates (sorted for determinism)
 fn select_wasm(brick_id: &str, dir: &Path, artifact_path: &Option<PathBuf>) -> Result<PathBuf> {
     // 1. artifact.path
