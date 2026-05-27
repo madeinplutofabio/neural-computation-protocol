@@ -16,13 +16,39 @@ This guide is written for:
 ---
 
 ## 0) Prereqs
-- Rust toolchain (repo uses a pinned workspace rust-version; use a recent stable)
+- Rust 1.94+
 - A Linux environment is ideal for tighter latency tails (benchmarks are better on Linux)
 - No external services required
 
 ---
 
-## 1) Clone + run a graph (3 minutes)
+## 1) Install + run a graph (3 minutes)
+
+The fastest path is `cargo install` from crates.io:
+
+```bash
+cargo install ncp-runtime --locked
+ncp --version
+```
+
+For reproducible version-pinned installs, use the current release commands in [`docs/INSTALL.md`](INSTALL.md).
+
+`ncp-runtime` installs the `ncp` CLI only — the `examples/` tree is not bundled
+inside the crate. To run the example graph below, either clone the repo or
+download a release archive that includes `examples/`:
+<https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest>
+
+Once `examples/` is on disk (extracted archive, cloned repo, or working directory):
+
+```bash
+ncp run examples/graphs/echo-pipeline/graph.yaml --input examples/graphs/echo-pipeline/sample.json
+```
+
+You should see a JSON output printed to stdout.
+
+### Alternative: clone + build from source (developer path)
+
+For contributors / developers working on the runtime itself:
 
 ```bash
 git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
@@ -31,8 +57,6 @@ cd neural-computation-protocol
 # Run the runtime CLI on a known-good example
 cargo run -p ncp-runtime --bin ncp -- run examples/graphs/echo-pipeline/graph.yaml --input examples/graphs/echo-pipeline/sample.json
 ```
-
-You should see a JSON output printed to stdout.
 
 ---
 
@@ -194,9 +218,13 @@ It **does** replace or harden:
 
 ---
 
-## 9) Production readiness (what Phase 2 does and doesn’t guarantee)
+## 9) Production readiness (current scope and what’s next)
 
-Phase 2 reference runtime is a strong base for evaluation and internal pilots:
+The reference runtime’s distribution channels are live as of Phase 3A.1 — available
+through [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest),
+[GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp),
+and [crates.io](https://crates.io/crates/ncp-runtime). It’s a strong base for
+evaluation and internal pilots:
 - deterministic routing + mapping
 - sandboxed WASM invokes
 - trace output and safety budgets
@@ -208,7 +236,11 @@ But **production hardening** typically needs:
 - real LLM adapters + token accounting
 - threat model + security review checklist
 
-Those land in Phase 3/3C and Phase 4.
+Next adoption work focuses on integrations (MCP / LangGraph adapters),
+brick packs, and SDKs (Phase 3A.2–3A.5). Deeper hardening lands in
+Phase 3C, and the production wrapper in Phase 4. See
+[`docs/ROADMAP.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md)
+for the full track breakdown.
 
 ---
 
