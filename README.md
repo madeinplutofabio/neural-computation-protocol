@@ -4,7 +4,7 @@
 -->
 
 <p align="center">
-  <img src="NCP-logo.png" alt="NCP Logo" width="200" />
+  <img src="https://github.com/madeinplutofabio/neural-computation-protocol/raw/main/NCP-logo.png" alt="NCP Logo" width="200" />
 </p>
 
 <h1 align="center">NCP — Neural Computation Protocol</h1>
@@ -20,7 +20,7 @@
 
 ---
 
-**Docs:** [Adoption guide](docs/ADOPTION_GUIDE.md) · [Benchmarks](BENCHMARK.md) · [Cost model](COST_MODEL.md) · [Roadmap](docs/ROADMAP.md) · [Spec](spec/ncp-v0.2.3.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+**Docs:** [Adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md) · [Benchmarks](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) · [Cost model](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md) · [Roadmap](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md) · [Spec](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/spec/ncp-v0.2.3.md) · [Contributing](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/CONTRIBUTING.md) · [Security](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/SECURITY.md)
 
 **Status:** Protocol v0.2.3 + validator are stable. The Phase 2 runtime is a reference implementation (fast, deterministic, benchmarked). Phase 3 focuses on integrations (MCP/LangGraph) and distribution.
 
@@ -73,7 +73,7 @@ If you ship “agentic” workflows in production and your **latency or LLM bill
 
 ## Benchmarks
 
-Benchmarks are in [`BENCHMARK.md`](BENCHMARK.md) with full methodology, raw JSON, and reproduction commands.
+Benchmarks are in [`BENCHMARK.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) with full methodology, raw JSON, and reproduction commands.
 
 **In practice:** if you can keep ~90% of requests off the LLM, your average latency and cost drop ~10×. The benchmark suite proves this curve end-to-end (mixed datasets + simulated 200ms LLM).
 
@@ -106,16 +106,16 @@ We measure a synthetic mixed workload where an LLM call costs **200ms** (simulat
 
 These results are measured end-to-end by cycling a dataset (`--dataset`) so the latency distribution includes both fast-path and slow-path requests in one run.
 
-**Cost follows the same curve**: if you avoid LLM calls, you avoid LLM spend. See [`COST_MODEL.md`](COST_MODEL.md).
+**Cost follows the same curve**: if you avoid LLM calls, you avoid LLM spend. See [`COST_MODEL.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md).
 
 ---
 
 ## Install
 
-Three ways to get a working `ncp` CLI — full matrix (per-OS commands, checksums, architecture coverage) in [`docs/INSTALL.md`](docs/INSTALL.md):
+Three ways to get a working `ncp` CLI — full matrix (per-OS commands, checksums, architecture coverage) in [`docs/INSTALL.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/INSTALL.md):
 
 - **Download** a release archive: https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest
-- **Docker** (Linux x86_64): `docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 --version`
+- **Docker** (Linux x86_64): `docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.5 --version`
 - **`cargo install`** (any platform with Rust 1.94+): `cargo install ncp-runtime --bin ncp --locked`
 
 For developers building from source, see [Quick start](#quick-start-runtime) below.
@@ -206,7 +206,7 @@ docs/            Roadmap and design notes
 
 ## Roadmap
 
-High-level roadmap lives in [`docs/ROADMAP.md`](docs/ROADMAP.md).
+High-level roadmap lives in [`docs/ROADMAP.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md).
 
 If you’re evaluating NCP today:
 - Phase 1 (Spec + Validator): ✅ complete

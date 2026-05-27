@@ -1,6 +1,6 @@
 [package]
 name = "ncp-runtime"
-version = "0.3.4"
+version = "0.3.5"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -10,7 +10,7 @@ repository = "https://github.com/madeinplutofabio/neural-computation-protocol"
 homepage = "https://github.com/madeinplutofabio/neural-computation-protocol"
 readme = "../README.md"
 keywords = ["wasm", "agentic-ai", "graph", "deterministic", "ncp"]
-categories = ["wasm", "command-line-utilities", "asynchronous"]
+categories = ["artificial-intelligence", "wasm", "command-line-utilities"]
 include = [
     "src/**",
     "tests/**",

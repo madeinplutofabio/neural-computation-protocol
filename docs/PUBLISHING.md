@@ -69,17 +69,18 @@ a workflow bug — file an issue.
 
 Run this **before tagging** so any crates.io-side blocker (name squat,
 expired token, README-render regression, `categories` allowlist drift,
-`include` array dropping `LICENSE`/`NOTICE`) surfaces while it can still
-be fixed by a tiny follow-up PR — not after `v0.3.4` is tagged and the
-version is already burned.
+`include` array dropping `LICENSE`/`NOTICE`, or repo-relative Markdown
+links that would 404 on the rendered crates.io page) surfaces while it
+can still be fixed by a tiny follow-up PR — not after the release tag
+is pushed and the version is already burned.
 
-Run from `main` HEAD (post-PR-D-merge — `runtime/Cargo.toml` already
-shows the upcoming version):
+Run from `main` HEAD with the upcoming version already in
+`runtime/Cargo.toml` (version-bump PR merged):
 
 ```bash
 # 1. File-listing gate — proves LICENSE + NOTICE + README ship in the
 #    .crate (Apache 2.0 §4(d) compliance + crates.io render). Mirrors
-#    PR A's hard gate.
+#    the original PR A hard gate.
 cargo package -p ncp-runtime --list > /tmp/ncp-runtime-package-files.txt
 grep -Fx README.md /tmp/ncp-runtime-package-files.txt
 grep -Fx LICENSE /tmp/ncp-runtime-package-files.txt
@@ -90,15 +91,48 @@ grep -Fx NOTICE /tmp/ncp-runtime-package-files.txt
 #    squat, expired token, allowlist drift, oversized .crate (10 MB
 #    limit), and packaging metadata regressions.
 cargo publish -p ncp-runtime --dry-run --locked
+
+# 3. README-content gate — proves the README inside the .crate does not
+#    contain repo-relative links that crates.io will rewrite under
+#    runtime/. Catches the v0.3.4-class regression where the local
+#    dry-run was green but the rendered crates.io README shipped with
+#    broken links.
+VERSION=$(grep '^version' runtime/Cargo.toml | sed -E 's/version = "([^"]+)"/\1/')
+CRATE="target/package/ncp-runtime-${VERSION}.crate"
+CHECK_DIR="/tmp/ncp-crate-render-check"
+
+cargo package -p ncp-runtime --locked
+
+rm -rf "$CHECK_DIR"
+mkdir -p "$CHECK_DIR"
+tar xzf "$CRATE" -C "$CHECK_DIR"
+
+README="$CHECK_DIR/ncp-runtime-${VERSION}/README.md"
+
+# Markdown links that must be absolute GitHub URLs in the published README.
+# The (\./)? prefix catches both bare relative (docs/...) and dot-prefixed
+# relative (./docs/...) forms, so future link drift can't slip past.
+if grep -nE '\]\((\./)?(docs/|spec/|BENCHMARK\.md|COST_MODEL\.md|CONTRIBUTING\.md|SECURITY\.md|LICENSE|NOTICE)' "$README"; then
+  echo "ERROR: published README still contains bare repo-relative Markdown links"
+  exit 1
+fi
+
+# HTML image/link sources that must not remain repo-relative.
+if grep -nE 'src="(NCP-logo\.png|docs/|spec/)' "$README"; then
+  echo "ERROR: published README still contains bare repo-relative HTML src links"
+  exit 1
+fi
+
+echo "README link gate passed: no bare repo-relative links found in published README"
 ```
 
-Both must exit 0 cleanly.
+All three gates must exit 0 cleanly.
 
-**If the dry-run fails after PR D has merged:** the upcoming version is
-now "tainted" — `runtime/Cargo.toml` claims the version but you can't
-actually publish it. Recovery is a tiny follow-up PR that lands the fix
-on top of the existing version (if the fix is metadata-only and the
-version hasn't been tagged yet), OR bump to the next patch (e.g.
+**If any gate fails after the version-bump PR has merged:** the upcoming
+version is now "tainted" — `runtime/Cargo.toml` claims the version but
+you can't actually publish it. Recovery is a tiny follow-up PR that lands
+the fix on top of the existing version (if the fix is metadata-only and
+the version hasn't been tagged yet), OR bump to the next patch (e.g.
 `0.3.4` → `0.3.5`) if the version slot is unrecoverable. **Either way,
 do not push the release tag until §3.1 is green.**
 
