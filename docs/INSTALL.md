@@ -11,11 +11,11 @@ Three ways to get a working `ncp` CLI in under 5 minutes. Pick the one that fits
 
 | OS / arch | GitHub Release archive | Docker | `cargo install` |
 |---|---|---|---|
-| Linux x86_64 | ✅ `ncp_v0.3.4_linux_x86_64.tar.gz` | ✅ `ghcr.io/madeinplutofabio/ncp:v0.3.4` | ✅ |
+| Linux x86_64 | ✅ `ncp_v0.3.5_linux_x86_64.tar.gz` | ✅ `ghcr.io/madeinplutofabio/ncp:v0.3.5` | ✅ |
 | Linux aarch64 | ❌ ([Phase 3C](ROADMAP.md#5-phase-3c--production-profile-hardening-track)) | ❌ ([Phase 3C](ROADMAP.md#5-phase-3c--production-profile-hardening-track)) | ✅ |
-| macOS aarch64 (Apple Silicon, M1+) | ✅ `ncp_v0.3.4_macos_aarch64.tar.gz` | n/a | ✅ |
+| macOS aarch64 (Apple Silicon, M1+) | ✅ `ncp_v0.3.5_macos_aarch64.tar.gz` | n/a | ✅ |
 | **macOS x86_64 (Intel)** | ❌ ([Phase 3C](ROADMAP.md#5-phase-3c--production-profile-hardening-track)) | n/a | ✅ |
-| Windows x86_64 | ✅ `ncp_v0.3.4_windows_x86_64.zip` | n/a | ✅ |
+| Windows x86_64 | ✅ `ncp_v0.3.5_windows_x86_64.zip` | n/a | ✅ |
 
 **Note for macOS Intel users:** the release archive targets Apple Silicon only. Use `cargo install` (below) or build from source. Multi-arch coverage is on the [roadmap](ROADMAP.md#5-phase-3c--production-profile-hardening-track) for Phase 3C.
 
@@ -34,7 +34,7 @@ Three ways to get a working `ncp` CLI in under 5 minutes. Pick the one that fits
 
    **Windows (PowerShell):**
    ```powershell
-   Get-FileHash -Algorithm SHA256 ncp_v0.3.4_windows_x86_64.zip
+   Get-FileHash -Algorithm SHA256 ncp_v0.3.5_windows_x86_64.zip
    # Compare the output against the line for windows_x86_64 in SHA256SUMS
    ```
 
@@ -42,14 +42,14 @@ Three ways to get a working `ncp` CLI in under 5 minutes. Pick the one that fits
 
    **Linux / macOS:**
    ```bash
-   tar -xzf ncp_v0.3.4_<platform>.tar.gz
-   cd ncp_v0.3.4_<platform>
+   tar -xzf ncp_v0.3.5_<platform>.tar.gz
+   cd ncp_v0.3.5_<platform>
    ```
 
    **Windows:**
    ```powershell
-   Expand-Archive ncp_v0.3.4_windows_x86_64.zip
-   cd ncp_v0.3.4_windows_x86_64
+   Expand-Archive ncp_v0.3.5_windows_x86_64.zip
+   cd ncp_v0.3.5_windows_x86_64
    ```
 
 5. Run a quick verify (see **Quick verify** at the bottom of this doc).
@@ -64,13 +64,13 @@ Image base: `gcr.io/distroless/cc-debian12:nonroot` (small distroless runtime im
 
 ```bash
 # Pull
-docker pull ghcr.io/madeinplutofabio/ncp:v0.3.4
+docker pull ghcr.io/madeinplutofabio/ncp:v0.3.5
 
 # Verify
-docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 --version
+docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.5 --version
 
 # Run the quick-verify example (examples/ are inside the image)
-docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.4 \
+docker run --rm ghcr.io/madeinplutofabio/ncp:v0.3.5 \
   run examples/graphs/echo-pipeline/graph.yaml \
   --input examples/graphs/echo-pipeline/sample.json
 ```
@@ -79,12 +79,12 @@ To run your own graph, mount a host directory:
 
 ```bash
 docker run --rm -v "$PWD/my-graphs:/work:ro" -w /work \
-  ghcr.io/madeinplutofabio/ncp:v0.3.4 \
+  ghcr.io/madeinplutofabio/ncp:v0.3.5 \
   run my-graph.yaml --input my-input.json
 ```
 
 **Tag conventions** (strict-pin only):
-- Each release publishes **two equivalent** exact-version tags: `v0.3.4` (matches the git tag) and `0.3.4` (semver-canonical). Same image digest.
+- Each release publishes **two equivalent** exact-version tags: `v0.3.5` (matches the git tag) and `0.3.5` (semver-canonical). Same image digest.
 - **No `:latest`**, no floating `:0.3` or `:0` — always specify a full version.
 - Platform: **`linux/amd64` only** (Linux aarch64 / multi-arch deferred to [Phase 3C](ROADMAP.md#5-phase-3c--production-profile-hardening-track)).
 
