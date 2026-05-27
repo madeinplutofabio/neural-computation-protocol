@@ -208,24 +208,46 @@ git tag -d "$RC"
 # AND `0.3.4-rc.1` (strict-pin: two equivalent forms per release). Leaving
 # either tag pullable indefinitely confuses adopters with a "ghost" RC.
 #
-# --paginate is REQUIRED — GitHub paginates the package-versions endpoint
-# (~30 per page). Without it, after enough releases the target tag may
-# silently fall to page 2+ and the lookup returns nothing, leaving a
-# stale GHCR tag on the registry.
+# Two cross-platform/API quirks baked into this script:
+#
+# (1) --paginate is REQUIRED. GitHub paginates the package-versions
+#     endpoint (~30 per page). Without it, after enough releases the
+#     target tag may silently fall to page 2+ and the lookup returns
+#     nothing, leaving a stale GHCR tag on the registry.
+#
+# (2) `gh api` paths are written WITHOUT a leading slash
+#     (`users/...`, not `/users/...`). On Windows Git Bash / MSYS, a
+#     leading slash gets rewritten by the shell as a filesystem path
+#     (e.g. `C:/Program Files/Git/users/...`), causing `gh api` to
+#     reject it with `invalid API endpoint`. The no-leading-slash form
+#     is portable across Linux, macOS, and Git Bash on Windows.
 OWNER=madeinplutofabio
 RC_SEMVER="${RC#v}"   # v0.3.4-rc.1 -> 0.3.4-rc.1
 for ghcr_tag in "$RC" "$RC_SEMVER"; do
-  VERSION_ID=$(gh api --paginate "/users/$OWNER/packages/container/ncp/versions" \
+  VERSION_ID=$(gh api --paginate "users/$OWNER/packages/container/ncp/versions" \
     --jq ".[] | select(.metadata.container.tags[]? == \"$ghcr_tag\") | .id" \
     | head -n 1)
   if [ -n "$VERSION_ID" ]; then
     echo "Deleting GHCR tag $ghcr_tag (version id $VERSION_ID)"
-    gh api -X DELETE "/users/$OWNER/packages/container/ncp/versions/$VERSION_ID"
+    gh api -X DELETE "users/$OWNER/packages/container/ncp/versions/$VERSION_ID"
   else
     echo "GHCR tag $ghcr_tag not found (already cleaned up or never created?)"
   fi
 done
 ```
+
+> 💡 **First-publish exception.** If the RC version is currently the only
+> tagged version in the GHCR package, the GHCR delete steps above will fail
+> with `HTTP 400: You cannot delete the last tagged version of a package.
+> You must delete the package instead.` That's because GitHub's API refuses
+> to delete the last tagged version on a package. **Don't** "fix" this by
+> deleting the whole package — that's destructive. Instead: skip the GHCR
+> cleanup, push the real tag (below), wait for the real-tag Docker workflow
+> to publish the real-tag GHCR versions, then re-run **just the GHCR
+> cleanup loop** (the `for` loop). The package now has the real-tag
+> versions, so the RC version is no longer "the last tagged" and the API
+> will allow deletion. Subsequent releases (every release after the first)
+> don't hit this.
 
 Then push the real tag:
 
