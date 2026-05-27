@@ -1,0 +1,41 @@
+[package]
+name = "ncp-mcp-server"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "MCP adapter for NCP — exposes auditable WASM Brick graphs as MCP tools"
+repository = "https://github.com/madeinplutofabio/neural-computation-protocol"
+homepage = "https://github.com/madeinplutofabio/neural-computation-protocol"
+readme = "README.md"
+keywords = ["mcp", "agentic-ai", "wasm", "ncp", "adapter"]
+categories = ["artificial-intelligence", "command-line-utilities"]
+include = [
+    "src/**",
+    "tests/**",
+    "Cargo.toml",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+]
+
+[lib]
+name = "ncp_mcp_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ncp-mcp-server"
+path = "src/main.rs"
+
+[dependencies]
+# Per docs/MCP_ADAPTER.md §9: version + path together. Cargo prefers `path`
+# during workspace development; published crate uses the `version` requirement.
+ncp-runtime = { version = "0.3.6", path = "../../runtime" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+
+# Intentionally NO tokio and NO rmcp in PR B — those land in PR C when the
+# MCP protocol implementation arrives. PR B is plumbing only: graph loading,
+# tool-name derivation, uniqueness validation, trace-dir validation,
+# RuntimeContext Send+Sync compile assertion.

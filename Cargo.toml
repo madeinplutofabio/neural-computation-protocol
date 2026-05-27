@@ -3,6 +3,7 @@ members = [
   "runtime",
   "bricks/echo",
   "bricks/classifier-stub",
+  "crates/ncp-mcp-server",
 ]
 default-members = ["runtime"]
 resolver = "2"

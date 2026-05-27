@@ -60,6 +60,21 @@ a clear error message naming both colliding graph manifests. No
 runtime hash-shortening or silent disambiguation — fail-fast is
 transparent.
 
+### CLI surface
+
+The adapter binary accepts these flags:
+
+| Flag | Required | Default | Purpose |
+|---|---|---|---|
+| `--graph <PATH>` | yes (repeat for multi-graph) | — | Path to an NCP graph manifest. Each occurrence loads one graph; together they map to one MCP tool each. |
+| `--brick-dir <DIR>` | no | `examples/bricks` | Directory containing brick subdirectories. Passed through to `RuntimeContext::load()`. |
+| `--brick-map <FILE>` | no | — | Brick-map file; overrides `--brick-dir` for listed brick IDs. Passed through to `RuntimeContext::load()`. |
+| `--trace-dir <DIR>` | no | — | Directory for per-call trace files. See §12 for full semantics. If absent, traces are dropped (`NullTrace`). |
+
+`--brick-dir` and `--brick-map` mirror the existing `ncp` runtime CLI semantics — adopters who already use the runtime CLI know these flags.
+
+The MCP protocol layer (`initialize` / `tools/list` / `tools/call`) takes no CLI flags; transport is implicit (stdio).
+
 ---
 
 ## 3. Tool-name derivation rule
@@ -91,7 +106,7 @@ mishandle them" was client-rumor, not spec-aligned.
 
 | Condition | Behavior |
 |---|---|
-| Derived name is empty (graph_id had no allowed chars) | startup fail |
+| Derived name is empty (graph_id was empty) | startup fail |
 | Derived name exceeds 128 chars | startup fail |
 | Two loaded graphs derive the same name | startup fail (name both colliding manifests) |
 
