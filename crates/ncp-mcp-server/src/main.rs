@@ -1,3 +1,5 @@
+#![deny(clippy::print_stdout)]
+
 //! Binary entrypoint for `ncp-mcp-server`.
 //!
 //! Thin wrapper that delegates to `ncp_mcp_server::cli::run`. All

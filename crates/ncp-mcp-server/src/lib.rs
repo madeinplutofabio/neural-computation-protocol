@@ -1,3 +1,5 @@
+#![deny(clippy::print_stdout)]
+
 //! # ncp-mcp-server
 //!
 //! A stdio [Model Context Protocol] adapter for [NCP] — exposes auditable
@@ -46,5 +48,8 @@ pub mod cli;
 
 #[doc(hidden)]
 pub mod naming;
+
+#[doc(hidden)]
+pub mod server;
 
 mod send_sync_check;

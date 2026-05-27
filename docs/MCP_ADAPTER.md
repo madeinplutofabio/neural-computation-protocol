@@ -70,6 +70,7 @@ The adapter binary accepts these flags:
 | `--brick-dir <DIR>` | no | `examples/bricks` | Directory containing brick subdirectories. Passed through to `RuntimeContext::load()`. |
 | `--brick-map <FILE>` | no | — | Brick-map file; overrides `--brick-dir` for listed brick IDs. Passed through to `RuntimeContext::load()`. |
 | `--trace-dir <DIR>` | no | — | Directory for per-call trace files. See §12 for full semantics. If absent, traces are dropped (`NullTrace`). |
+| `--check` | no | `false` | Validate startup, print the loaded-tool summary to stderr, then exit without constructing the tokio runtime or starting the MCP server. |
 
 `--brick-dir` and `--brick-map` mirror the existing `ncp` runtime CLI semantics — adopters who already use the runtime CLI know these flags.
 
@@ -227,6 +228,34 @@ is set, the server canonicalizes the trace directory at startup
 (creating it if missing); `trace_path` is therefore an absolute path
 to `<canonical-trace-dir>/<trace_id>.jsonl` when emitted. See §11 for
 the full trace-dir lifecycle.
+
+### Empty terminal results — adapter-synthesized Failure
+
+If `RuntimeContext::execute()` returns `Ok(ExecutionReport)` with an
+empty `terminals` vector, the adapter MUST NOT report Success.
+Reporting Success would tell the MCP host that the tool completed
+normally when in fact no graph output was produced. The current
+runtime should not emit empty terminals under normal operation
+(every loop exit path either pushes a terminal or returns `Err`),
+but the adapter defends against it as a forward-compatibility
+invariant.
+
+In this case the adapter returns:
+
+| Field | Value |
+|---|---|
+| `structuredContent.result_type` | `"Failure"` |
+| `structuredContent.output_json` | `null` |
+| `structuredContent.terminal_results` | `[]` |
+| `structuredContent.error.class` | `"NO_TERMINAL_RESULTS"` |
+| `structuredContent.error.message` | `"Graph execution completed without terminal results"` |
+| `isError` | `true` |
+
+This is the only case where a top-level `error` object appears
+inside `structuredContent`. Per-terminal errors live in
+`terminal_results[i].error` (per the Failure-only example below);
+the top-level `error` is reserved for adapter-level signaling when
+the per-terminal channel has nothing to say.
 
 ### Example — Success (single terminal, common case)
 
@@ -395,49 +424,53 @@ the graph could produce a result. These get JSON-RPC error responses
 | Graph-load failure at startup | startup failure (process exits non-zero); never reaches RPC layer |
 | Trace-setup failure BEFORE graph execution begins | JSON-RPC error on the tools/call |
 
-### Class C — Hybrid case: trace-write failure mid-execution (PR C implementation requirement)
+### Class C — Trace I/O failure: v0 limitation (honest contract)
 
-A specific edge case: the graph executed and produced a valid
-`ExecutionReport`, but writing the trace file failed mid-way (disk
-full, permission revoked, etc).
+A specific edge case: trace I/O fails (disk full, permission
+revoked, path race, etc). What v0 detects depends on *when* the
+failure happens.
 
-**Implementation requirement for PR C:** implement a trace sink that
-records trace-write failures *without* aborting graph execution after
-execution has started. If the graph returns a valid result but trace
-writing failed, the adapter:
+**Detected (becomes a JSON-RPC error per Class B above):**
+- `--trace-dir` validation failure at startup (not a directory,
+  cannot create) → startup failure; never reaches the RPC layer.
+- Trace-writer construction failure for a specific `tools/call`
+  (e.g. the adapter cannot create/open the intended
+  `<trace_id>.jsonl` path using the runtime's public trace-writer
+  API) → JSON-RPC error on that call, BEFORE the graph runs.
 
-- Returns a SUCCESSFUL `tools/call` response containing the valid
-  graph result.
-- Sets `isError: true`.
-- Adds a `trace_error` field to `structuredContent` describing what
-  went wrong.
+**NOT detected in v0 (silent — graph result returns as if tracing
+succeeded):**
+- Mid-execution trace-write failure. The `TraceSink::emit_*` methods
+  in the current runtime API return `()`, not `Result<(), _>`. A
+  write that fails after the first record has been emitted cannot
+  be surfaced to the adapter without a runtime API change. The
+  adapter has no signal to attach a trace error to the response.
+- Trace-file close/flush failure at the end of execution. Same
+  reason: the sink has no fallible-completion contract in v0.
 
-```json
-{
-  "structuredContent": {
-    "result_type": "Success",
-    "output_json": { ... },
-    "trace_id": "...",
-    "trace_path": "/path/to/incomplete.jsonl",
-    "terminal_results": [ ... ],
-    "trace_error": {
-      "class": "TRACE_WRITE_FAILED",
-      "message": "..."
-    }
-  },
-  "isError": true
-}
-```
+**v0 contract for `tools/call` responses:** the `trace_path` field
+in `structuredContent` points at the file the adapter *intended* to
+write. If the file exists and is complete, great. If it is
+truncated, missing records, or was never written past the open
+syscall, the adapter cannot tell. Adopters who need strong trace
+durability guarantees should treat `trace_path` as best-effort in
+v0 and verify the file contents out-of-band.
 
-This is the only case where `result_type: "Success"` ships alongside
-`isError: true`. The `trace_error` field's presence is the
-disambiguator.
+**Future fix (out of scope for v0, requires runtime API change):**
+one of:
+- Make `TraceSink::emit_*` fallible (returns `Result<(), TraceError>`),
+  and define how the runtime propagates per-record write failures
+  without aborting execution.
+- Introduce a writer-backed trace sink whose drop/flush surfaces
+  accumulated I/O errors to the embedder via a side-channel
+  (`Arc<Mutex<Option<TraceError>>>` or equivalent).
+- Either path lets a future adapter version re-introduce a trace
+  error field and `isError: true` for the mid-execution case
+  described in earlier drafts of this design doc.
 
-**If the existing `TraceSink` implementation propagates errors out of
-`execute()`,** PR C wraps it in a non-failing adapter shim that
-captures the trace error into a side channel and resumes the
-execution flow. That shim is the PR C implementation deliverable for
-this case.
+Until that runtime API arrives, the adapter does NOT manufacture
+synthetic trace errors, and `result_type: "Success"` always ships
+with `isError: false`.
 
 ---
 
@@ -843,18 +876,20 @@ both complete, no result loss).
 
 For each `tools/call` invocation:
 - Allocate a new `trace_id` (UUID v4) at the start of the call.
-- Open `<canonical-trace-dir>/<trace_id>.jsonl` with
-  exclusive-create semantics (`OpenOptions::new().write(true).create_new(true)`)
-  where the OS supports it. Filename collision is statistically
-  impossible (UUID v4) but `create_new` makes any collision a hard
-  failure rather than silent overwrite.
+- Construct a runtime trace writer for
+  `<canonical-trace-dir>/<trace_id>.jsonl` using the runtime's public
+  trace-writer API. Filename collision is statistically negligible
+  because `trace_id` is UUID v4. v0 does not promise atomic
+  exclusive-create semantics unless the runtime trace-writer API itself
+  provides them.
 - Stream JSONL trace records as the graph executes (same format as
   the existing `runtime/src/trace.rs` machinery — the adapter wraps
   it, doesn't reinvent).
 - On success: `trace_path` field in the response is the absolute
   path to the file.
-- On write failure mid-execution: see §6 Class C (PR C builds the
-  non-failing trace shim).
+- On write failure mid-execution: not detectable by the adapter in
+  v0 — see §6 Class C for the honest limitation and the runtime
+  API change required to fix it.
 
 ### Why per-call files (not a single shared file)
 

@@ -35,7 +35,26 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 serde_json = "1"
 
-# Intentionally NO tokio and NO rmcp in PR B — those land in PR C when the
-# MCP protocol implementation arrives. PR B is plumbing only: graph loading,
-# tool-name derivation, uniqueness validation, trace-dir validation,
-# RuntimeContext Send+Sync compile assertion.
+# Pre-allocate trace IDs in the adapter so the SAME id is used for the
+# trace file path (`<trace-dir>/<trace_id>.jsonl`) and the MCP `tools/call`
+# response. `ExecutionReport` does not echo the runtime-generated trace id
+# back, so the adapter must own the value before execution. v4 (random)
+# suffices — no need for v7/timestamp ordering in v0.
+uuid = { version = "1", features = ["v4"] }
+
+# MCP stdio protocol layer (PR C). Per docs/MCP_ADAPTER.md §10 SDK verification:
+# rmcp v1.7 with default-features = false excludes compile-time tool macros so
+# runtime-loaded graphs can be exposed through a manual ServerHandler.
+rmcp = { version = "1.7", default-features = false, features = ["server", "transport-io"] }
+
+# Tokio runtime for the MCP server.
+# - rt-multi-thread: built manually in cli.rs; --check exits before this runtime
+#   is constructed.
+# - io-std: explicit because the stdio transport path depends on async stdio.
+tokio = { version = "1", features = ["rt-multi-thread", "io-std"] }
+
+[dev-dependencies]
+# Test-only async support. Keep macros out of the published runtime dependency
+# surface; tests can still use #[tokio::test]. `process` and `io-util` are
+# needed by tests/mcp_protocol.rs for subprocess spawning + stdio framing.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "process", "io-util"] }

@@ -13,10 +13,19 @@
 //! - `--trace-dir` pointing at a non-existent directory creates it,
 //!   exit 0, stdout empty.
 //!
-//! Every test asserts stdout is EMPTY because PR B has no MCP protocol
-//! traffic yet — the binary should write only to stderr. This catches
-//! stdout pollution early, before PR C's full process-level JSON-RPC
-//! test (per docs/MCP_ADAPTER.md §7 logging discipline).
+//! Every test passes `--check` so the binary validates startup (loads
+//! graphs, derives tool names, validates uniqueness, validates
+//! `--trace-dir`) and exits BEFORE constructing the tokio runtime or
+//! starting the MCP stdio service. This keeps the tests focused on the
+//! startup-validation surface PR B added, without depending on the MCP
+//! protocol implementation that lands in PR C.
+//!
+//! Every test also asserts stdout is EMPTY. In `--check` mode there is
+//! no MCP traffic, so the binary writes only to stderr; this catches
+//! stdout pollution from the load/validate code paths early. The full
+//! process-level JSON-RPC stdout-discipline test lives in
+//! `tests/mcp_protocol.rs` (PR C file 8) and exercises the running
+//! server.
 //!
 //! All tests construct paths relative to `CARGO_MANIFEST_DIR` so they work
 //! regardless of the test runner's CWD.
@@ -95,6 +104,7 @@ fn assert_stderr_contains(output: &Output, needle: &str) {
 #[test]
 fn one_graph_loads_and_prints_tool_name() {
     let output = run_binary(&[
+        "--check",
         "--graph",
         echo_pipeline_graph().to_str().unwrap(),
         "--brick-dir",
@@ -119,6 +129,7 @@ fn one_graph_loads_and_prints_tool_name() {
 #[test]
 fn two_distinct_graphs_load_both_names_printed() {
     let output = run_binary(&[
+        "--check",
         "--graph",
         echo_pipeline_graph().to_str().unwrap(),
         "--graph",
@@ -151,6 +162,7 @@ fn two_colliding_graphs_fail_with_clear_error() {
     let path_str = path.to_str().unwrap();
 
     let output = run_binary(&[
+        "--check",
         "--graph",
         path_str,
         "--graph",
@@ -180,6 +192,7 @@ fn trace_dir_pointing_at_existing_file_errors() {
     std::fs::write(&target, b"hello").expect("failed to create test file");
 
     let output = run_binary(&[
+        "--check",
         "--graph",
         echo_pipeline_graph().to_str().unwrap(),
         "--brick-dir",
@@ -211,6 +224,7 @@ fn trace_dir_pointing_at_non_existent_path_is_created() {
     assert!(!target.exists(), "test setup: target should not exist yet");
 
     let output = run_binary(&[
+        "--check",
         "--graph",
         echo_pipeline_graph().to_str().unwrap(),
         "--brick-dir",
