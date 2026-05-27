@@ -174,11 +174,11 @@ This section reflects the latest released state. Keep it honest and specific; up
 **Deliverables**
 - `ncp-mcp-server` that exposes: **one graph = one MCP tool**
 - Multi-graph support: `--graph a.yaml --graph b.yaml`
-- Transports: stdio (Claude Desktop / CLI hosts) + SSE (web / server hosts)
-- Example: Claude Desktop config + end-to-end test
+- Transports: stdio (MCP desktop / CLI hosts) + SSE (web / server hosts)
+- Example: MCP desktop-host config + end-to-end test
 
 **Exit criteria**
-- A user can "drop a graph into Claude Desktop" as a tool with no glue code
+- A user can drop a graph into an MCP-compatible desktop host as a tool with no glue code
 
 ### 3A.3 LangGraph wrapper (Python)
 
