@@ -942,6 +942,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ncp-mcp-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ncp-runtime",
+ "serde_json",
+]
+
+[[package]]
 name = "ncp-runtime"
 version = "0.3.6"
 dependencies = [
