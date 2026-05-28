@@ -15,14 +15,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=crates.io" /></a>&nbsp;<a href="https://docs.rs/ncp-runtime"><img alt="docs.rs" src="https://img.shields.io/docsrs/ncp-runtime" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/rust-toolchain.toml"><img alt="MSRV" src="https://img.shields.io/crates/msrv/ncp-runtime" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>&nbsp;<a href="https://doi.org/10.5281/zenodo.19570209"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570209.svg?v=1" alt="DOI"></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" /></a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="ncp-runtime on crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=ncp-runtime" /></a>&nbsp;<a href="https://crates.io/crates/ncp-mcp-server"><img alt="ncp-mcp-server on crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=ncp-mcp-server" /></a>&nbsp;<a href="https://docs.rs/ncp-runtime"><img alt="docs.rs" src="https://img.shields.io/docsrs/ncp-runtime" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/rust-toolchain.toml"><img alt="MSRV" src="https://img.shields.io/crates/msrv/ncp-runtime" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>&nbsp;<a href="https://doi.org/10.5281/zenodo.19570209"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570209.svg?v=1" alt="DOI"></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" /></a>
 </p>
 
 ---
 
 **Docs:** [Adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md) · [Benchmarks](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) · [Cost model](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md) · [Roadmap](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md) · [Spec](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/spec/ncp-v0.2.3.md) · [Contributing](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/CONTRIBUTING.md) · [Security](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/SECURITY.md)
 
-**Status:** Protocol v0.2.3 + validator are stable. Reference runtime is available via [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest), [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp), and [crates.io](https://crates.io/crates/ncp-runtime) (Phase 3A.1 complete). Phase 3 now focuses on integrations (MCP/LangGraph adapters) and adoption.
+**Status:** Protocol v0.2.3 + validator are stable. Reference runtime is available via [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest), [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp), and [crates.io](https://crates.io/crates/ncp-runtime) (Phase 3A.1 complete). [`ncp-mcp-server v0.1.0`](https://crates.io/crates/ncp-mcp-server) is live on crates.io (Phase 3A.2 complete). Next adoption work: LangGraph wrapper + SDKs.
 
 ## What is NCP?
 
@@ -163,6 +163,59 @@ cargo run -p ncp-runtime --release --bin ncp-bench -- \
 
 ---
 
+## Use NCP from an MCP-compatible host
+
+Install the MCP adapter:
+
+```bash
+cargo install ncp-mcp-server --locked
+```
+
+Validate a graph before wiring it into a host:
+
+```bash
+ncp-mcp-server \
+  --graph /absolute/path/to/graph.yaml \
+  --brick-dir /absolute/path/to/bricks \
+  --trace-dir /absolute/path/to/traces \
+  --check
+```
+
+Run the adapter as a stdio MCP server:
+
+```bash
+ncp-mcp-server \
+  --graph /absolute/path/to/graph.yaml \
+  --brick-dir /absolute/path/to/bricks \
+  --trace-dir /absolute/path/to/traces
+```
+
+Minimal host config shape:
+
+```json
+{
+  "mcpServers": {
+    "ncp-my-graph": {
+      "command": "/absolute/path/to/ncp-mcp-server",
+      "args": [
+        "--graph",
+        "/absolute/path/to/graph.yaml",
+        "--brick-dir",
+        "/absolute/path/to/bricks",
+        "--trace-dir",
+        "/absolute/path/to/traces"
+      ]
+    }
+  }
+}
+```
+
+Each `--graph` becomes one MCP tool. The host sends a `tools/call`; NCP runs the graph; the adapter returns `structuredContent` plus a text mirror; and, when `--trace-dir` is set, each call writes a `<trace_id>.jsonl` trace.
+
+For ready-to-customize examples, see [examples/mcp/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp).
+
+---
+
 ## Specification + tooling
 
 - **Protocol version:** v0.2.3
@@ -194,8 +247,10 @@ node dist/cli.js graph ../../examples/graphs/echo-chain/graph.yaml
 spec/            Protocol specification (Markdown + PDF releases)
 schemas/         JSON Schema for all NCP structures
 runtime/         Reference runtime (Rust) + bench harness
+crates/          Adapter crates (ncp-mcp-server: stdio MCP adapter)
 bricks/          Reference brick implementations (Rust -> WASM)
 examples/        Brick + graph manifests, fixtures, and demo graphs
+examples/mcp/    MCP host config snippet, smoke recipes, CI smoke script
 bench/           Datasets + machine-readable results (Windows + Linux)
 tools/           Validator CLI (ncp-validate)
 conformance/     Test vectors for runtime implementors
