@@ -18,7 +18,7 @@ update this file in the same PR.
 
 ---
 
-## Current required status checks (as of v0.3.3 release hygiene)
+## Current required status checks (as of Phase 3A.2-D — `mcp-smoke` added)
 
 Branch ruleset name: **Main Protection**
 Target: `refs/heads/main`
@@ -37,6 +37,7 @@ Required checks bound in `rules[].parameters.required_status_checks[].context`:
 | `test (ubuntu-24.04)` | `.github/workflows/rust.yml` — `test` job, matrix `os: ubuntu-24.04` |
 | `test (macos-14)` | `.github/workflows/rust.yml` — `test` job, matrix `os: macos-14` |
 | `test (windows-2022)` | `.github/workflows/rust.yml` — `test` job, matrix `os: windows-2022` |
+| `mcp-smoke` | `.github/workflows/rust.yml` — `mcp-smoke` job |
 | `wasm-build` | `.github/workflows/rust.yml` — `wasm-build` job |
 
 Other rules on the same ruleset:
