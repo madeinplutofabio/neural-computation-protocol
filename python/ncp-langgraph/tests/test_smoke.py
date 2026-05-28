@@ -30,14 +30,22 @@ def test_package_imports() -> None:
     assert ncp_langgraph.__version__ != ""
 
 
-def test_version_matches_skeleton() -> None:
-    """`__version__` is the locked v0.1.0.dev0 skeleton string.
+def test_version_matches_package_release() -> None:
+    """``__version__`` matches the locked v0.1.0 package release string
+    AND matches the installed package metadata version.
 
-    PR F flips this to ``"0.1.0"`` as part of the publish bump; this
-    assertion is the regression sentinel that prevents an accidental
-    version bump during PR B / C / D / E.
+    Regression sentinel that catches drift between the three version
+    sources: ``pyproject.toml`` (wheel metadata),
+    ``src/ncp_langgraph/_version.py`` (runtime ``__version__``), and
+    the value this assertion pins. The metadata-parity assertion in
+    particular catches the pre-publish ceremony's biggest risk: a
+    wheel whose runtime ``__version__`` disagrees with the version
+    encoded in its own metadata. CI runs this every push.
     """
-    assert ncp_langgraph.__version__ == "0.1.0.dev0"
+    import importlib.metadata as md
+
+    assert ncp_langgraph.__version__ == "0.1.0"
+    assert md.version("ncp-langgraph") == ncp_langgraph.__version__
 
 
 def test_public_surface_exports() -> None:

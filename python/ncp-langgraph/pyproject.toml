@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ncp-langgraph"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "LangGraph adapter for NCP: invoke NCP graphs as LangGraph nodes via ncp-mcp-server subprocess."
 readme = "README.md"
 requires-python = ">=3.10"

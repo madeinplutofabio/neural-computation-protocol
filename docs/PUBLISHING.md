@@ -570,3 +570,320 @@ This publishes **`ncp-mcp-server` only**. No GitHub Release artifacts
 for the adapter in v0.1.0. If binary-archive or container distribution
 demand surfaces later, an adapter-scoped release workflow
 (triggered by `ncp-mcp-server-v*` tags) can be added then.
+
+---
+
+## Python adapter publish (`ncp-langgraph`)
+
+PyPI-first publish flow for the LangGraph adapter package. Phase 3A.3
+ships `ncp-langgraph v0.1.0` to PyPI ONLY -- **no GitHub Release, no
+GHCR image, no Zenodo archive**. The runtime publish ceremony
+(sections 1-8 above) does NOT apply. PR F prepares the version bump +
+`CHANGELOG.md` flip; the ceremony below runs out-of-band after PR F
+merges and PR G is drafted, CI-green, and review-approved.
+
+### Why a distinct flow
+
+Same tag-pattern hazard as `ncp-mcp-server`: a bare `v*` tag would
+fire `release.yml` + `docker.yml`, producing GitHub Release + Docker
+artifacts under a Python-package version label -- broken provenance,
+wasted CI. The Python-package tag pattern is crate-name-prefixed for
+the same reason.
+
+**Python-package tags MUST NOT start with `v`.** Use the
+`ncp-langgraph-v*` pattern.
+
+### Tag pattern (LOCKED)
+
+| Crate / Package | Tag pattern | Workflows that fire on push |
+|---|---|---|
+| `ncp-runtime` | `v0.3.6`, `v0.3.7-rc.1`, etc. | `release.yml` + `docker.yml` (correct -- runtime release) |
+| `ncp-mcp-server` | `ncp-mcp-server-v0.1.0`, `ncp-mcp-server-v0.1.0-rc.1`, etc. | **None** (correct -- crates.io-first) |
+| `ncp-langgraph` | `ncp-langgraph-v0.1.0`, `ncp-langgraph-v0.1.0-rc.1`, etc. | **None** (correct -- PyPI-first) |
+
+### Pre-flight gates (required from clean main)
+
+From an up-to-date `main` checkout, against the version PR F bumped to
+(`0.1.0`). **All `python -m <tool>` invocations in this section and
+in the release ceremony below assume the release venv created in the
+first block is currently active.** Do NOT deactivate between
+pre-flight gates and ceremony steps.
+
+```bash
+# Release venv: clean Python environment with the package's [dev]
+# extras installed so the python -m <tool> discipline below resolves
+# ruff, mypy, build, twine, pytest from this venv (not from whatever
+# the release machine happens to have on PATH). `build` and `twine`
+# are also listed explicitly so the ceremony stays robust if the
+# [dev] extra ever drops them.
+python -m venv /tmp/ncp-lg-release
+. /tmp/ncp-lg-release/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e "python/ncp-langgraph[dev]" build twine
+
+# Version-parity guard: runtime __version__ MUST match the installed
+# package metadata version. Directly catches pyproject.toml /
+# _version.py / test_smoke.py drift before the publish gates run.
+python - <<'PY'
+import importlib.metadata as md
+
+import ncp_langgraph
+
+assert ncp_langgraph.__version__ == "0.1.0"
+assert md.version("ncp-langgraph") == "0.1.0"
+print("runtime and package metadata versions match")
+PY
+
+# Build the MCP adapter binary that integration tests need:
+cargo build -p ncp-mcp-server --release --locked
+
+# Package gates:
+cd python/ncp-langgraph
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy --strict src
+NCP_MCP_SERVER=../../target/release/ncp-mcp-server python -m pytest
+
+# Build + verify the wheel:
+rm -rf dist/
+python -m build
+
+# PEP 561 marker MUST travel inside the wheel because the package
+# advertises `Typing :: Typed`:
+python - <<'PY'
+from pathlib import Path
+import zipfile
+
+wheel = next(Path("dist").glob("*.whl"))
+with zipfile.ZipFile(wheel) as z:
+    names = set(z.namelist())
+assert "ncp_langgraph/py.typed" in names
+print("py.typed present in wheel")
+PY
+
+python -m twine check dist/*
+cd ../..
+```
+
+All must exit 0. `python -m twine check` is the PyPI-rendering analog
+of the crates.io README link audit in §3.1; it validates `README.md`
+will render correctly on the PyPI landing page and that the wheel +
+sdist metadata are well-formed.
+
+### TestPyPI distribution-filename immutability (CRITICAL)
+
+**TestPyPI is a one-shot rehearsal. PyPI and TestPyPI distribution
+filenames are immutable once uploaded.**
+
+Once `ncp-langgraph 0.1.0` is uploaded to TestPyPI under the RC
+rehearsal, **the `ncp_langgraph-0.1.0-*.whl` and
+`ncp-langgraph-0.1.0.tar.gz` filenames are permanently reserved**.
+The same applies to real PyPI. Project deletion does NOT free the
+filenames.
+
+If the TestPyPI upload succeeds but verification (ceremony step 4)
+fails, the ONLY safe path is **fix-forward with a version bump**:
+
+- Diagnose the issue and fix the bug or metadata.
+- **Open a follow-up version-fix PR** that updates `pyproject.toml`,
+  `src/ncp_langgraph/_version.py`, `tests/test_smoke.py`, and
+  `python/ncp-langgraph/CHANGELOG.md` together. Bump the package
+  version: `0.1.1` if the fix is functional (bugfix, behavior
+  change); `0.1.0.post1` if the fix is purely metadata
+  (README / classifiers / long_description that doesn't change
+  wheel contents semantically). All three version sources MUST move
+  in lockstep -- the version-parity guard in pre-flight catches
+  drift before publish but not silently retag-then-publish.
+- After the PR merges, rebuild from scratch:
+  `rm -rf dist/ && python -m build`.
+- Upload the NEW version to TestPyPI for a fresh rehearsal.
+- Do NOT push the broken `0.1.0` to real PyPI. The real-PyPI publish
+  should use the same NEW version number that succeeded on TestPyPI.
+
+When you reach a clean rehearsal under the new version, retag with
+the matching tag (`ncp-langgraph-v0.1.1` or whatever the new version
+is) and proceed to ceremony step 5+ with that new version.
+
+### PyPI publishing credentials (first-publish bootstrap)
+
+For v0.1.0 (the **first** publish of `ncp-langgraph`), the PyPI
+project does NOT yet exist. This rules out project-scoped tokens
+(they require an existing project) and rules out a long-lived
+project-scoped token created before publish. Two viable paths:
+
+- **Preferred (long-term):** [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+  via GitHub Actions OIDC. Supports pending publishers for new
+  projects. Issues short-lived API tokens automatically per run.
+  Set this up for v0.2.0+; configuring it for v0.1.0 adds a CI
+  workflow that PR F does not include in scope.
+- **Manual first-publish (v0.1.0 path):** use a one-time
+  **account-scoped** PyPI API token, revoke it immediately after
+  publish. Once the project exists, create **project-scoped**
+  credentials (or migrate to Trusted Publishing) for v0.2.0+.
+
+Same discipline applies to TestPyPI: account-scoped token for the
+first upload, revoke after, switch to project-scoped or Trusted
+Publishing once the project exists.
+
+### Release ceremony
+
+1. **RC tag and release-commit capture.** From clean `main`:
+   ```bash
+   git tag -s ncp-langgraph-v0.1.0-rc.1 -m "ncp-langgraph v0.1.0 release candidate"
+   git push origin ncp-langgraph-v0.1.0-rc.1
+
+   # Pin the exact commit being released. `git tag -s` creates an
+   # annotated tag object; bare `git rev-parse <tag>` would return
+   # the tag object's SHA, not the commit it points at. `^{commit}`
+   # dereferences to the commit so $RELEASE_COMMIT is guaranteed to
+   # be a commit SHA (which step 6 needs when it creates the real
+   # tag at this commit, even if main advances).
+   RELEASE_COMMIT="$(git rev-parse ncp-langgraph-v0.1.0-rc.1^{commit})"
+   echo "RELEASE_COMMIT=$RELEASE_COMMIT"
+   ```
+
+2. **Verify NO runtime workflows fire.** Success signal of the
+   tag-pattern discipline. Check each runtime workflow specifically
+   so unrelated CI activity can't hide the wrong-tag signal:
+   ```bash
+   gh run list --workflow release.yml --limit 10
+   gh run list --workflow docker.yml --limit 10
+   ```
+   No runs should appear for the RC tag (`ncp-langgraph-v0.1.0-rc.1`)
+   or for `$RELEASE_COMMIT`. If any runtime workflow fires: **STOP**
+   -- the tag pattern was wrong. Abort the publish, delete the tag,
+   fix the pattern, and re-tag with the correct `ncp-langgraph-v*`
+   form before retrying.
+
+3. **Build the RC against the tagged commit** (not `main`, which may
+   have advanced) and upload to TestPyPI. **Stay on the tag through
+   verification (step 4)**; do NOT `git checkout main` between this
+   step and step 5:
+   ```bash
+   git fetch --tags origin
+   git checkout ncp-langgraph-v0.1.0-rc.1
+   cd python/ncp-langgraph
+   rm -rf dist/
+   python -m build
+   python -m twine check dist/*
+   python -m twine upload --repository testpypi dist/*
+   cd ../..
+   ```
+
+   **Note on version numbers:** the package version stays `0.1.0` for
+   both the RC and real-tag paths. The `-rc.1` label is the GIT TAG
+   suffix, not the package version. TestPyPI and PyPI are separate
+   indexes -- uploading `ncp-langgraph 0.1.0` to TestPyPI does NOT
+   prevent uploading `ncp-langgraph 0.1.0` to real PyPI later. Do
+   NOT add an `rc1` suffix to the package version itself.
+
+4. **TestPyPI verification** from a clean venv (still on the RC tag
+   from step 3). Install runtime dependencies from real PyPI FIRST,
+   then `--no-deps` install the `ncp-langgraph` wheel from TestPyPI.
+   This proves the TestPyPI wheel installs while keeping dependency
+   resolution scoped to real PyPI (avoids the dependency-confusion
+   hazard of `--extra-index-url`):
+   ```bash
+   python -m venv /tmp/ncp-lg-rc
+   /tmp/ncp-lg-rc/bin/python -m pip install --upgrade pip
+   /tmp/ncp-lg-rc/bin/python -m pip install "langgraph>=1.0.0,<2.0.0"
+   /tmp/ncp-lg-rc/bin/python -m pip install \
+     --index-url https://test.pypi.org/simple/ \
+     --no-deps \
+     ncp-langgraph==0.1.0
+   # Then run examples/langgraph/lead_qualification_agent.py against
+   # a real ncp-mcp-server install on PATH. The example script we
+   # run lives at the RC commit, which matches the wheel we just
+   # uploaded:
+   cargo install ncp-mcp-server --version 0.1.0 --locked
+   /tmp/ncp-lg-rc/bin/python examples/langgraph/lead_qualification_agent.py
+   ```
+
+   Expected: example runs to completion with a `Success` `result_type`
+   in the printed state. If this step FAILS, see the immutability
+   warning above and fix-forward with a version bump.
+
+5. **Return to main and clean the RC tag** (no GitHub Release to
+   delete; no GHCR images):
+   ```bash
+   git checkout main
+   git push origin --delete ncp-langgraph-v0.1.0-rc.1
+   git tag -d ncp-langgraph-v0.1.0-rc.1
+   ```
+   TestPyPI artifacts are immutable but ignored once real PyPI carries
+   the canonical 0.1.0.
+
+6. **Create the real tag at the captured release commit.** Pointing
+   at `$RELEASE_COMMIT` (not `main` HEAD) guarantees the real tag is
+   the same commit that the RC tested, even if `main` has advanced:
+   ```bash
+   git tag -s ncp-langgraph-v0.1.0 "$RELEASE_COMMIT" -m "ncp-langgraph v0.1.0"
+   git push origin ncp-langgraph-v0.1.0
+   ```
+
+7. **Again verify NO runtime workflows fire** for the real tag.
+   Same per-workflow check as step 2:
+   ```bash
+   gh run list --workflow release.yml --limit 10
+   gh run list --workflow docker.yml --limit 10
+   ```
+   No runs should appear for `ncp-langgraph-v0.1.0` or for
+   `$RELEASE_COMMIT`. Same STOP condition as step 2.
+
+8. **Publish to real PyPI.** Use the first-publish token approach
+   from the credentials section above (account-scoped, revoke
+   immediately after publish).
+
+   Build + publish against the tagged commit. **Stay on the tag
+   through verification (step 9)**:
+   ```bash
+   git checkout ncp-langgraph-v0.1.0
+   cd python/ncp-langgraph
+   rm -rf dist/
+   python -m build
+   python -m twine upload dist/*
+   cd ../..
+   ```
+
+9. **Post-publish verification** (still on the real tag from step 8).
+
+   Visit, in a browser:
+   - https://pypi.org/project/ncp-langgraph/0.1.0/ -- README renders,
+     no broken links
+   - https://pypi.org/project/ncp-langgraph/ -- package page shows
+     v0.1.0 as latest
+
+   Clean-venv install from a fresh toolchain:
+   ```bash
+   python -m venv /tmp/ncp-lg-verify
+   /tmp/ncp-lg-verify/bin/python -m pip install --no-cache-dir ncp-langgraph==0.1.0
+   ```
+
+   Then run `examples/langgraph/lead_qualification_agent.py`
+   end-to-end against a real `cargo install ncp-mcp-server` binary on
+   `PATH`. The example script we run lives at the real-tag commit,
+   which matches the wheel just published.
+
+10. **Return to main:**
+    ```bash
+    git checkout main
+    ```
+
+11. **Merge PR G immediately.** Per the no-stale-window discipline,
+    PR G was drafted, CI-green, and review-approved BEFORE this
+    ceremony started (between PR F's merge and step 1's RC tag push).
+    Now that the post-publish verification (step 9) confirms
+    `pip install ncp-langgraph==0.1.0` works, click merge on PR G.
+    Front-door docs are now consistent with PyPI within minutes of
+    publish, not hours/days.
+
+12. **Governance closure (out-of-band).** After PR G merges, add
+    `langgraph-test` to the required-check set per
+    `docs/BRANCH_PROTECTION.md` "Adding new required checks". This
+    is the final step that fully closes Phase 3A.3.
+
+### Scope
+
+This publishes **`ncp-langgraph` only**, to PyPI. No GitHub Release
+artifacts, no GHCR Docker image, no Zenodo archive. Matches the
+`ncp-mcp-server` adapter publish scope.
