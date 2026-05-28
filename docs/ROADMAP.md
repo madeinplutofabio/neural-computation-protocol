@@ -187,6 +187,8 @@ This section reflects the latest released state. Keep it honest and specific; up
 
 ### 3A.3 LangGraph wrapper (Python)
 
+**Status:** In progress (Phase 3A.3). Design locked in [`docs/LANGGRAPH_ADAPTER.md`](LANGGRAPH_ADAPTER.md); implementation in flight.
+
 **Deliverables**
 - Python package that exposes an `NCPNode` usable inside LangGraph
 - Example workflow: triage via NCP → escalate to LLM

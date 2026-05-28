@@ -214,6 +214,8 @@ Each `--graph` becomes one MCP tool. The host sends a `tools/call`; NCP runs the
 
 For ready-to-customize examples, see [examples/mcp/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp).
 
+For the in-development LangGraph wrapper (Phase 3A.3), see [`docs/LANGGRAPH_ADAPTER.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/LANGGRAPH_ADAPTER.md).
+
 ---
 
 ## Specification + tooling
