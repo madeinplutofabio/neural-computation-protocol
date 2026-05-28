@@ -10,7 +10,17 @@ Scope (per docs/MCP_ADAPTER.md): happy-path only. The full unit-of-PR-C
 protocol surface (unknown-tool errors, malformed-JSON errors,
 concurrent dispatch) is covered by `tests/mcp_protocol.rs`. This
 smoke verifies the adopter path: build → start → handshake →
-tools/list → tools/call → verify §5 response shape end-to-end.
+tools/list → tools/call → verify §5 response shape end-to-end → close
+stdin → assert the subprocess exits cleanly.
+
+The post-dialog exit-status gate is mandatory: rmcp's graceful-shutdown
+drain path (`rmcp/src/service.rs:1061`) requires the tokio time driver,
+and a missing `.enable_time()` panics the server only on stdin EOF —
+AFTER the last response has been sent. The dialog-only assertions
+would print SMOKE OK and miss the panic. This script asserts a clean
+exit code before printing SMOKE OK; if the subprocess exits non-zero
+after stdin close, the smoke fails with a clear message and the
+stderr tail. Mirrors `tests/mcp_protocol.rs::graceful_shutdown_does_not_panic`.
 
 Dependencies: Python stdlib only — subprocess, json, sys, pathlib,
 tempfile, threading.
@@ -356,21 +366,55 @@ def main() -> None:
 
     success = False
     try:
+        # 1. Run the JSON-RPC dialog and assert §5 response shape.
         run_smoke(proc, timeout_state)
-        print("SMOKE OK")
-        success = True
-    finally:
-        timer.cancel()
+
+        # 2. Graceful-shutdown gate: close stdin, wait for the child
+        # to exit on its own, assert a clean exit code. Without this
+        # gate, the script would print SMOKE OK as soon as the dialog
+        # succeeded — even if the server then panicked on stdin EOF
+        # in rmcp's drain path (rmcp/src/service.rs:1061, which
+        # requires the tokio time driver). The Phase 3A.2-E real-host
+        # validation gate caught that exact bug; this in-script gate
+        # is the regression sentinel against re-introduction. Mirrors
+        # tests/mcp_protocol.rs::graceful_shutdown_does_not_panic.
         if proc.stdin is not None:
             try:
                 proc.stdin.close()
             except (BrokenPipeError, OSError):
                 pass
         try:
-            proc.wait(timeout=5)
+            returncode = proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
+            fail(
+                "subprocess did not exit within 10s after stdin EOF "
+                "(graceful shutdown stalled)"
+            )
+        if returncode != 0:
+            fail(
+                f"subprocess exited non-zero after graceful shutdown: "
+                f"returncode={returncode}"
+            )
+
+        print("SMOKE OK")
+        success = True
+    finally:
+        timer.cancel()
+        # If the child is still alive here, it's because run_smoke or
+        # the graceful-shutdown gate raised before completing. Clean
+        # up the runaway process; the stderr tail from fail() already
+        # surfaced diagnostics.
+        if proc.poll() is None:
+            if proc.stdin is not None:
+                try:
+                    proc.stdin.close()
+                except (BrokenPipeError, OSError):
+                    pass
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
         try:
             stderr_log.close()
         except OSError:

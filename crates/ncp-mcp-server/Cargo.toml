@@ -51,7 +51,15 @@ rmcp = { version = "1.7", default-features = false, features = ["server", "trans
 # - rt-multi-thread: built manually in cli.rs; --check exits before this runtime
 #   is constructed.
 # - io-std: explicit because the stdio transport path depends on async stdio.
-tokio = { version = "1", features = ["rt-multi-thread", "io-std"] }
+# - time: rmcp's graceful-shutdown drain path (rmcp/src/service.rs:1061) uses
+#   `tokio::time::timeout` to bound the drain. Without the time driver enabled
+#   on the runtime, the server panics on stdin EOF. Caught by the Phase 3A.2-E
+#   real-host validation gate against the MCP Python SDK; CI smoke previously
+#   masked it because tests/mcp_protocol.rs kills the subprocess instead of
+#   closing stdin gracefully. Declared as a direct dep here so any future
+#   reader can see why the time driver is required, even though rmcp pulls
+#   the feature transitively.
+tokio = { version = "1", features = ["rt-multi-thread", "io-std", "time"] }
 
 [dev-dependencies]
 # Test-only async support. Keep macros out of the published runtime dependency
