@@ -658,7 +658,7 @@ Each cell empirically verified by building a throwaway crate
 |---|---|---|---|
 | 1 | Crate name + features | ✅ pass | Above Cargo.toml clause builds clean. Features excluded: `macros`, `client`, `auth*`, all reqwest variants. |
 | 2 | Minimal stdio server example compiles | ✅ pass | `cargo check` exits 0 with zero warnings after fixing two deprecation warnings (see implementation notes below). |
-| 3 | Dependency tree size | ⚠ acceptable | **55 unique transitive crates** (`cargo tree --prefix none \| sort -u`). Includes tokio (multi-thread + io-std + macros), serde + serde_json, schemars, async-trait, futures, anyhow + procs. Non-trivial but unavoidable for a tokio MCP server — and justifies the §8 separate-crate decision. |
+| 3 | Dependency tree size | ⚠ acceptable | **55 unique transitive crates** (`cargo tree --prefix none \| sort -u`). Includes tokio (`rt-multi-thread + io-std + time` for normal deps; `macros + time + process + io-util` additionally for dev deps), serde + serde_json, schemars, async-trait, futures, anyhow + procs. Non-trivial but unavoidable for a tokio MCP server — and justifies the §8 separate-crate decision. |
 | 4 | Stdout/stderr behavior | ✅ pass (at API level) | `eprintln!` cleanly to stderr in the throwaway; `rmcp::transport::stdio()` owns stdin/stdout exclusively for protocol. Full process-level test under JSON-RPC load happens in PR C (§7). |
 | 5 | Compatibility with response shape (structuredContent + text mirror) | ✅ pass | Sample `CallToolResult` serialization produced exactly the MCP-spec-compliant wire shape: `{ "content": [{"type":"text","text":"..."}], "structuredContent": {...}, "isError": false }`. |
 | 6 | Dynamic tool registration without macros | ✅ pass | Manual `ServerHandler` impl with runtime-constructed `Vec<Tool>` compiles and dispatches. Zero `#[tool]` / `#[tool_router]` / `#[tool_handler]` macros used. `list_tools()` returns the runtime vector; `call_tool()` dispatches by name. |
@@ -703,9 +703,39 @@ renames to camelCase on the wire to match the MCP spec:
 | `input_schema` | `inputSchema` |
 | `output_schema` | `outputSchema` |
 
-**Tokio features needed:** `rt-multi-thread` (the async runtime),
-`macros` (the `#[tokio::main]` attribute), `io-std` (stdin/stdout
-access for rmcp's `transport-io`).
+**Tokio features and runtime drivers required (normal deps).**
+Three normal-deps features are required and the runtime builder
+must enable matching drivers:
+
+- `rt-multi-thread` — the multi-thread async runtime, built
+  manually in `cli.rs` (no `#[tokio::main]` — `fn main` is sync
+  so `--check` can exit before runtime construction).
+- `io-std` — `tokio::io::stdin` / `stdout` access for rmcp's
+  `transport-io` feature. `tokio::io::stdin`/`stdout` use
+  `spawn_blocking` internally rather than the reactor, so the I/O
+  driver does NOT need to be enabled with `.enable_io()`.
+- `time` — required by rmcp's graceful-shutdown drain path
+  (`rmcp/src/service.rs:1061` calls `tokio::time::timeout` to
+  bound the response drain on `QuitReason::Closed` /
+  `Cancelled`). The runtime builder MUST call `.enable_time()`
+  to activate the timer driver, even though no adapter code
+  directly uses `tokio::time`. Without it, the server panics on
+  every stdin EOF — the panic surfaces only on graceful client
+  shutdown, NOT during the request/response dialog. Earlier
+  PR C subprocess tests killed the child in `Server::Drop`, so
+  they did not exercise rmcp's graceful EOF drain path. The
+  PR D Python smoke also closed stdin, but originally printed
+  `SMOKE OK` before checking the server exit status, so it did
+  not catch the panic either. The Phase 3A.2-E MCP Python SDK
+  validation exposed the bug before publish. Regression
+  sentinels: `tests/mcp_protocol.rs::graceful_shutdown_does_not_panic`
+  (closes stdin, asserts clean exit) and the post-dialog
+  exit-status gate in `examples/mcp/ci_smoke.py` (added in the
+  same fix PR).
+
+Dev-deps additionally pull in `macros`, `time`, `process`, and
+`io-util` for tests. These dev-only features do not affect the
+adapter's normal `cargo install` dependency surface.
 
 **SDK version pin.** `rmcp = "1.7"` is a semver requirement (caret
 implied — picks any 1.x ≥ 1.7, blocks 2.0), NOT an exact pin. The

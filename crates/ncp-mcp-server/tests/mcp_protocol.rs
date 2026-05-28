@@ -99,7 +99,13 @@ fn unique_temp_dir(test_name: &str) -> PathBuf {
 /// never leave orphan processes.
 struct Server {
     child: Child,
-    stdin: ChildStdin,
+    // `Option` so close_stdin() can `take()` the value and drop the
+    // pipe in place (closes stdin to the child, sending EOF). Required
+    // by graceful_shutdown_does_not_panic, which can't destructure
+    // Server because Server implements Drop. All non-graceful-shutdown
+    // tests still expect stdin to be Some — `send_frame`/`send_raw`
+    // unwrap with `.expect("stdin already closed")`.
+    stdin: Option<ChildStdin>,
     stdout: BufReader<ChildStdout>,
     next_id: i64,
 }
@@ -129,7 +135,7 @@ impl Server {
         let stdout = child.stdout.take().expect("piped stdout");
         Server {
             child,
-            stdin,
+            stdin: Some(stdin),
             stdout: BufReader::new(stdout),
             next_id: 1,
         }
@@ -145,11 +151,12 @@ impl Server {
     /// over stdio uses LF-delimited framing regardless of host OS.
     async fn send_frame(&mut self, frame: &Value) {
         let line = format!("{}\n", frame);
-        timeout(RPC_TIMEOUT, self.stdin.write_all(line.as_bytes()))
+        let stdin = self.stdin.as_mut().expect("stdin already closed");
+        timeout(RPC_TIMEOUT, stdin.write_all(line.as_bytes()))
             .await
             .expect("timed out writing to subprocess stdin")
             .expect("write to subprocess stdin failed");
-        timeout(RPC_TIMEOUT, self.stdin.flush())
+        timeout(RPC_TIMEOUT, stdin.flush())
             .await
             .expect("timed out flushing subprocess stdin")
             .expect("flush of subprocess stdin failed");
@@ -158,11 +165,12 @@ impl Server {
     /// Write raw bytes verbatim to stdin (for malformed-input tests
     /// that intentionally do not produce a serialized `Value`).
     async fn send_raw(&mut self, bytes: &[u8]) {
-        timeout(RPC_TIMEOUT, self.stdin.write_all(bytes))
+        let stdin = self.stdin.as_mut().expect("stdin already closed");
+        timeout(RPC_TIMEOUT, stdin.write_all(bytes))
             .await
             .expect("timed out writing raw bytes to subprocess stdin")
             .expect("raw write to subprocess stdin failed");
-        timeout(RPC_TIMEOUT, self.stdin.flush())
+        timeout(RPC_TIMEOUT, stdin.flush())
             .await
             .expect("timed out flushing subprocess stdin")
             .expect("flush of subprocess stdin failed");
@@ -219,6 +227,29 @@ impl Server {
         });
         self.send_frame(&initialized).await;
         response
+    }
+
+    /// Close stdin to signal EOF to the child. After this, the child
+    /// should enter its graceful shutdown path (per rmcp service.rs
+    /// `QuitReason::Closed`). Caller should `wait_for_exit` to confirm
+    /// the child terminated cleanly.
+    ///
+    /// Sync (no `.await`) because dropping the `ChildStdin` closes the
+    /// pipe file descriptor immediately — no async work required.
+    fn close_stdin(&mut self) {
+        self.stdin.take();
+    }
+
+    /// Wait for the child to exit on its own. Does NOT call
+    /// `start_kill` — killing would mask a graceful-shutdown panic.
+    /// On timeout, panics; the Drop impl on Server will still
+    /// `start_kill` the runaway child as last-resort cleanup.
+    async fn wait_for_exit(&mut self, dur: Duration) -> std::process::ExitStatus {
+        match timeout(dur, self.child.wait()).await {
+            Ok(Ok(status)) => status,
+            Ok(Err(e)) => panic!("failed to wait for child: {e}"),
+            Err(_) => panic!("child did not exit within {dur:?}"),
+        }
     }
 }
 
@@ -535,4 +566,58 @@ async fn concurrent_calls_complete_independently() {
 
     drop(server); // explicit; otherwise Drop kills the child anyway.
     let _ = std::fs::remove_dir_all(&trace_dir);
+}
+
+/// Graceful shutdown (stdin EOF) must NOT panic the server.
+///
+/// rmcp enters a drain path on `QuitReason::Closed` (rmcp/src/service.rs
+/// line ~1061) that calls `tokio::time::timeout` to bound the response
+/// drain. Without `.enable_time()` on the runtime, the server panics
+/// every time a client disconnects gracefully.
+///
+/// The other tests in this file kill the subprocess via `start_kill`
+/// in `Server::Drop` and never reach the drain path — that's why CI
+/// passed for PR C / PR D despite this bug. This test instead closes
+/// stdin and waits for the child to exit naturally, asserting a clean
+/// exit status. If `.enable_time()` is ever removed from `cli.rs`, the
+/// child panics during drain and this test fails.
+///
+/// Discovered by the Phase 3A.2-E real-host validation gate against
+/// the MCP Python SDK 1.27.1 (whose stdio client closes stdin
+/// gracefully at session end).
+#[tokio::test(flavor = "multi_thread")]
+async fn graceful_shutdown_does_not_panic() {
+    let mut server = Server::spawn(None).await;
+    server.initialize().await;
+
+    // One tools/call so the drain has in-flight task state to flush
+    // (mirrors a typical session at disconnect time).
+    let id = server.next_id();
+    let req = json!({
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": "tools/call",
+        "params": {
+            "name": "org.ncp-examples.echo-pipeline",
+            "arguments": {"shutdown_test": true},
+        },
+    });
+    server.send_frame(&req).await;
+    let resp = server.read_frame().await;
+    assert!(
+        resp.get("error").is_none(),
+        "tools/call before shutdown errored: {resp}"
+    );
+
+    // Close stdin → server reads EOF → enters rmcp's drain path.
+    server.close_stdin();
+
+    // Wait for the child to exit on its own (NOT via start_kill).
+    let status = server.wait_for_exit(Duration::from_secs(15)).await;
+    assert!(
+        status.success(),
+        "server did not exit cleanly on stdin EOF (likely a panic in the \
+         graceful-drain path of rmcp; ensure `.enable_time()` is called on \
+         the tokio runtime builder in cli.rs). status: {status:?}"
+    );
 }

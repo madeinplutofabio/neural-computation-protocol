@@ -162,10 +162,22 @@ pub fn run() -> Result<()> {
         return Ok(());
     }
 
-    // No `.enable_all()` / `.enable_io()`: v0 is stdio-only and does not use
-    // tokio timers or the reactor-backed I/O driver. `tokio::io::stdin/stdout`
-    // works with the `io-std` feature; PR C keeps runtime drivers minimal.
+    // Runtime drivers enabled (kept minimal, NOT `.enable_all()`):
+    // - `.enable_time()`: required by rmcp's graceful-shutdown drain
+    //   path (rmcp/src/service.rs:1061), which calls
+    //   `tokio::time::timeout` to bound the response drain on
+    //   `QuitReason::Closed` / `Cancelled`. Without it, the server
+    //   panics on every stdin EOF — caught by the Phase 3A.2-E
+    //   real-host validation gate against the MCP Python SDK; see
+    //   `tests/mcp_protocol.rs::graceful_shutdown_does_not_panic`
+    //   for the regression test.
+    // - I/O driver intentionally NOT enabled. `tokio::io::stdin`/
+    //   `stdout` (provided by the `io-std` feature) use
+    //   `spawn_blocking` internally rather than the reactor, so
+    //   `.enable_io()` would also pull in the `net` feature for no
+    //   gain. v0 is stdio-only.
     let rt = tokio::runtime::Builder::new_multi_thread()
+        .enable_time()
         .build()
         .context("failed to build tokio runtime")?;
 
