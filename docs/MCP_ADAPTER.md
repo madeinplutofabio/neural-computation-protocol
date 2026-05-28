@@ -76,6 +76,15 @@ The adapter binary accepts these flags:
 
 The MCP protocol layer (`initialize` / `tools/list` / `tools/call`) takes no CLI flags; transport is implicit (stdio).
 
+### Adopter resources
+
+| Resource | Purpose |
+|---|---|
+| [MCP example README](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/mcp/README.md) | Adopter-facing landing page for the MCP example directory. |
+| [Generic host config snippet](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/mcp/desktop-host-config.example.json) | MCP-host config snippet to substitute absolute paths into. |
+| [Manual echo-pipeline smoke test](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/mcp/echo-pipeline-mcp-smoke.md) | Manual stdio dialog walk-through for verifying a build. |
+| [CI smoke script](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/mcp/ci_smoke.py) | Automated stdlib-only Python driver that the `mcp-smoke` CI job runs; usable locally. |
+
 ---
 
 ## 3. Tool-name derivation rule
