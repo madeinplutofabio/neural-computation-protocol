@@ -606,7 +606,33 @@ adapter tag push to confirm no runtime workflows fired.
 
 ---
 
-## 15. Out of scope (deferred)
+## 15. Examples
+
+Adopter-facing examples live in
+[`examples/langgraph/`](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/langgraph).
+
+The v0.1.0 example is a lead-qualification workflow shape: a LangGraph
+`StateGraph` with one `NCPNode`. It is currently stubbed on the bundled
+`echo-pipeline` NCP graph until issue
+[#29](https://github.com/madeinplutofabio/neural-computation-protocol/issues/29)
+ships the real `examples/graphs/lead-qualification/` graph.
+
+Substitution is documented inline in the example script (`TODO(#29)`
+comment in the module docstring) and in
+[`examples/langgraph/README.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/langgraph/README.md).
+
+Run end-to-end from a workspace clone:
+
+```bash
+cargo install ncp-mcp-server --version 0.1.0 --locked
+python -m pip install -e python/ncp-langgraph
+python -m pip install -r examples/langgraph/requirements.txt
+python examples/langgraph/lead_qualification_agent.py
+```
+
+Expected output: the final LangGraph state dict with `company_url`, `target_icp`, `qualification`, and `ncp_trace`.
+
+## 16. Out of scope (deferred)
 
 Tracked items that v0.1.0 explicitly does NOT ship:
 
