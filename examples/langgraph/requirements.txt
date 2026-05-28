@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Python dependencies for examples/langgraph/lead_qualification_agent.py.
+#
+# Note: ncp-langgraph is intentionally NOT listed here. It must be
+# installed separately because Phase 3A.3 PR E lands before PyPI
+# publish (PR F), and the editable workspace install is `0.1.0.dev0`
+# which would not satisfy a `>=0.1.0` pin. Install it explicitly:
+#
+#   # Pre-publish (from workspace clone):
+#   python -m pip install -e python/ncp-langgraph
+#
+#   # Post-publish:
+#   python -m pip install ncp-langgraph
+#
+# Also note: `cargo install ncp-mcp-server --version 0.1.0 --locked`
+# is a separate prerequisite (the Rust binary that ncp-langgraph
+# spawns); it is not a pip dependency. The version is pinned so the
+# example stays reproducible against ncp-langgraph v0.1.x.
+
+langgraph>=1.0.0,<2.0.0
