@@ -102,6 +102,75 @@ jobs:
       - run: python3 examples/mcp/ci_smoke.py
 
   # ──────────────────────────────────────────────────────────────────────
+  # LANGGRAPH TEST JOB: builds the ncp-mcp-server release binary, installs
+  # the ncp-langgraph Python package with its [dev] extras (ruff, mypy,
+  # pytest, build, twine), and runs the package-local gates:
+  #   - ruff check  (lint)
+  #   - ruff format --check  (format gate)
+  #   - mypy --strict src  (type gate)
+  #   - pytest  (smoke tests; NCP_MCP_SERVER is exported for PR C+
+  #     integration tests once they land)
+  #   - python -m build + wheel py.typed check + twine check
+  #     (verifies the PEP 561 marker survives the wheel build and
+  #     that PyPI metadata + README render correctly)
+  #
+  # Every Python tool is invoked via `python -m <tool>` so it binds to
+  # the interpreter set up by actions/setup-python@v5, not to whatever
+  # the runner image's system Python ships on PATH. This prevents the
+  # failure mode where a system-installed ruff/mypy/pytest silently runs
+  # against the wrong site-packages.
+  #
+  # Python is PINNED to 3.10 via actions/setup-python@v5 so the
+  # `requires-python = ">=3.10"` claim in pyproject.toml is tested at
+  # the floor of the supported range, not at whatever the runner image
+  # ships by default.
+  #
+  # ADVISORY ONLY in PR B. This job becomes a required check only AFTER
+  # Phase 3A.3 PR G merges (per docs/BRANCH_PROTECTION.md "Adding new
+  # required checks"). Until then, future PRs can technically merge with
+  # langgraph-test failing.
+  # ──────────────────────────────────────────────────────────────────────
+  langgraph-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: Swatinem/rust-cache@v2
+        with: { key: langgraph-test }
+      - name: Build ncp-mcp-server release binary
+        run: cargo build -p ncp-mcp-server --release --locked
+      - name: Install ncp-langgraph with [dev] extras
+        working-directory: python/ncp-langgraph
+        run: python -m pip install -e ".[dev]"
+      - name: Lint (ruff check)
+        working-directory: python/ncp-langgraph
+        run: python -m ruff check .
+      - name: Format check (ruff format)
+        working-directory: python/ncp-langgraph
+        run: python -m ruff format --check .
+      - name: Type check (mypy --strict over src/)
+        working-directory: python/ncp-langgraph
+        run: python -m mypy --strict src
+      - name: Pytest
+        working-directory: python/ncp-langgraph
+        env:
+          NCP_MCP_SERVER: ${{ github.workspace }}/target/release/ncp-mcp-server
+        run: python -m pytest
+      - name: Build wheel + verify py.typed marker + twine check
+        working-directory: python/ncp-langgraph
+        run: |
+          rm -rf dist/
+          python -m build
+          python -c "import zipfile, pathlib; w=next(pathlib.Path('dist').glob('*.whl')); names=set(zipfile.ZipFile(w).namelist()); assert 'ncp_langgraph/py.typed' in names, names; print('py.typed present in wheel')"
+          python -m twine check dist/*
+
+  # ──────────────────────────────────────────────────────────────────────
   # WASM JOB: build & lint the brick crates for wasm32-unknown-unknown.
   # Brick crates are LIBRARY targets that can only compile to WASM.
   # If you find yourself moving these into the host matrix, STOP — they
