@@ -142,7 +142,12 @@ For more end-to-end tutorials (tracing, the hybrid-routing demo, embedding `ncp`
 MCP tools over stdio. Install it independently of `ncp-runtime`:
 
 ```bash
+# Latest published version
 cargo install ncp-mcp-server --locked
+
+# Or pin to a specific version for reproducibility
+cargo install ncp-mcp-server --version 0.1.0 --locked
+
 ncp-mcp-server --version
 ```
 

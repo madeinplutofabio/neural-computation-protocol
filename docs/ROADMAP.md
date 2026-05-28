@@ -160,6 +160,8 @@ This section reflects the latest released state. Keep it honest and specific; up
 
 ### 3A.1 Packaging & install paths (first)
 
+**Status:** ✅ Complete (shipped 2026-05-27 — `ncp-runtime v0.3.6` on [crates.io](https://crates.io/crates/ncp-runtime), [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest), [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp)).
+
 **Deliverables**
 - Prebuilt binaries for linux/darwin/windows (x86_64 + aarch64 where applicable)
 - `cargo install` story is stable (pick final bin name now: `ncp`)
@@ -170,6 +172,8 @@ This section reflects the latest released state. Keep it honest and specific; up
 - New user: install → run a reference graph → view trace in < 10 minutes
 
 ### 3A.2 MCP adapter (highest leverage wedge)
+
+**Status:** ✅ Complete (shipped 2026-05-28 — [`ncp-mcp-server v0.1.0`](https://crates.io/crates/ncp-mcp-server) on crates.io).
 
 **Deliverables**
 - `ncp-mcp-server` that exposes: **one graph = one MCP tool**

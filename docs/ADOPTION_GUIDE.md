@@ -60,7 +60,53 @@ cargo run -p ncp-runtime --bin ncp -- run examples/graphs/echo-pipeline/graph.ya
 
 ---
 
-## 2) Understand the moving parts (2 minutes)
+## 2) Expose a graph as an MCP tool (3 minutes)
+
+If your agent host supports MCP, you can expose an NCP graph as a stdio MCP tool with `ncp-mcp-server`.
+
+Install:
+
+```bash
+cargo install ncp-mcp-server --locked
+```
+
+Validate startup without launching the server:
+
+```bash
+ncp-mcp-server \
+  --graph /absolute/path/to/graph.yaml \
+  --brick-dir /absolute/path/to/bricks \
+  --trace-dir /absolute/path/to/traces \
+  --check
+```
+
+Run as an MCP server:
+
+```bash
+ncp-mcp-server \
+  --graph /absolute/path/to/graph.yaml \
+  --brick-dir /absolute/path/to/bricks \
+  --trace-dir /absolute/path/to/traces
+```
+
+Practical flow:
+
+```
+MCP-compatible host
+→ tools/call
+→ ncp-mcp-server
+→ NCP graph execution
+→ structuredContent response
+→ optional JSONL trace file
+```
+
+Use this when an agent repeats a workflow often enough that it should not re-plan the same steps in the LLM conversation every time. Good fits include lead qualification, support-ticket routing, document triage, content research pipelines, code-change risk review, and data normalization before an agent acts.
+
+For host config examples and smoke-test recipes, see [`examples/mcp/README.md`](../examples/mcp/README.md).
+
+---
+
+## 3) Understand the moving parts (2 minutes)
 
 - **Brick**: a sandboxed WASM module that implements the NCP ABI (`alloc/free/invoke`).
 - **Graph**: nodes (bricks) + edges (routing + mapping).
@@ -76,7 +122,7 @@ Key folders:
 
 ---
 
-## 3) Run the “hybrid routing” demo (5 minutes)
+## 4) Run the “hybrid routing” demo (5 minutes)
 
 This graph models a production pattern:
 - Fast deterministic gate (classifier)
@@ -97,7 +143,7 @@ cargo run -p ncp-runtime --bin ncp -- run examples/graphs/support-routing-stubbe
 
 ---
 
-## 4) Turn on tracing (3 minutes)
+## 5) Turn on tracing (3 minutes)
 
 Tracing emits JSONL records with:
 - per-step provenance (trigger edge/node/step)
@@ -116,7 +162,7 @@ head -n 5 trace.jsonl
 
 ---
 
-## 5) Benchmarks you can cite (5 minutes)
+## 6) Benchmarks you can cite (5 minutes)
 
 ### 5.1 Pure runtime overhead
 ```bash
@@ -142,7 +188,7 @@ cargo run --release -p ncp-runtime --bin ncp-bench --   examples/graphs/support-
 
 ---
 
-## 6) Embed NCP in a Rust service (10 minutes)
+## 7) Embed NCP in a Rust service (10 minutes)
 
 If you want to call the runtime from your own Rust app (HTTP server, worker, agent framework),
 use the library API (`RuntimeContext`) rather than shelling out to the CLI.
@@ -183,7 +229,7 @@ fn main() -> anyhow::Result<()> {
 
 ---
 
-## 7) How teams typically adopt NCP (the realistic path)
+## 8) How teams typically adopt NCP (the realistic path)
 
 ### Step A — Start with a “gate + escalate” graph
 - deterministic validator (schema, regex, keyword, rules)
@@ -201,7 +247,7 @@ fn main() -> anyhow::Result<()> {
 
 ---
 
-## 8) Where NCP fits vs common agent stacks
+## 9) Where NCP fits vs common agent stacks
 
 NCP is not trying to replace:
 - planners, memory systems, multi-agent messaging, orchestration UIs
@@ -218,13 +264,15 @@ It **does** replace or harden:
 
 ---
 
-## 9) Production readiness (current scope and what’s next)
+## 10) Production readiness (current scope and what’s next)
 
 The reference runtime’s distribution channels are live as of Phase 3A.1 — available
 through [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest),
 [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp),
-and [crates.io](https://crates.io/crates/ncp-runtime). It’s a strong base for
-evaluation and internal pilots:
+and [crates.io](https://crates.io/crates/ncp-runtime). The MCP adapter is live as
+of Phase 3A.2 — install with `cargo install ncp-mcp-server --locked` (see
+[crates.io](https://crates.io/crates/ncp-mcp-server)). Together they’re a
+strong base for evaluation and internal pilots:
 - deterministic routing + mapping
 - sandboxed WASM invokes
 - trace output and safety budgets
@@ -236,15 +284,15 @@ But **production hardening** typically needs:
 - real LLM adapters + token accounting
 - threat model + security review checklist
 
-Next adoption work focuses on integrations (MCP / LangGraph adapters),
-brick packs, and SDKs (Phase 3A.2–3A.5). Deeper hardening lands in
-Phase 3C, and the production wrapper in Phase 4. See
+Next adoption work focuses on the LangGraph wrapper, brick packs, and
+SDKs (Phase 3A.3–3A.5; the MCP adapter shipped as Phase 3A.2). Deeper
+hardening lands in Phase 3C, and the production wrapper in Phase 4. See
 [`docs/ROADMAP.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md)
 for the full track breakdown.
 
 ---
 
-## 10) Next contribution opportunities (high-leverage)
+## 11) Next contribution opportunities (high-leverage)
 
 If you want to contribute something *immediately useful*:
 - Add a new deterministic brick (PII scrubber, validator, router gate)

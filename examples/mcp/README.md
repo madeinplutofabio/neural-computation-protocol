@@ -29,11 +29,18 @@ and that graph becomes a callable tool with no glue code.
 
 ---
 
-## Quick start (source install)
+## Quick start
 
-> `ncp-mcp-server` is not yet on crates.io (Phase 3A.2-E ships
-> `cargo install ncp-mcp-server --locked`). Until then, build it
-> from source in a workspace checkout.
+### Install from crates.io
+
+```bash
+cargo install ncp-mcp-server --locked
+ncp-mcp-server --version
+```
+
+### Source install (fallback)
+
+For pre-release builds or workspace development:
 
 ```bash
 # 1. Clone the workspace
