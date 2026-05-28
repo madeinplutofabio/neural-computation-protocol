@@ -4,6 +4,12 @@ node_modules/
 # Build output
 dist/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
 # TypeScript cache
 *.tsbuildinfo
 
