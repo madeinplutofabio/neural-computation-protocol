@@ -14,4 +14,4 @@ PR F bumps this from ``"0.1.0.dev0"`` to ``"0.1.0"`` as part of the
 publish ceremony (mirrors the bump in ``pyproject.toml``).
 """
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
