@@ -1,0 +1,14 @@
+{
+  "_comment": "Generic MCP-compatible-host config snippet. Substitute absolute paths under `command` and `args` before pasting into your host's config file. See examples/mcp/README.md for full instructions.",
+  "mcpServers": {
+    "ncp-echo-pipeline": {
+      "command": "/absolute/path/to/ncp-mcp-server",
+      "args": [
+        "--graph",
+        "/absolute/path/to/neural-computation-protocol/examples/graphs/echo-pipeline/graph.yaml",
+        "--brick-dir",
+        "/absolute/path/to/neural-computation-protocol/examples/bricks"
+      ]
+    }
+  }
+}

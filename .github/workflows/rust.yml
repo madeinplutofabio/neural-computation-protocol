@@ -78,6 +78,30 @@ jobs:
       - run: cargo test -p ncp-runtime --all-targets --locked
 
   # ──────────────────────────────────────────────────────────────────────
+  # MCP SMOKE JOB: build the ncp-mcp-server release binary and drive it
+  # through a real MCP stdio dialog against the echo-pipeline example
+  # graph. Validates the adopter path end-to-end with a stdlib-only
+  # Python driver. See examples/mcp/ci_smoke.py for the assertion list
+  # and docs/MCP_ADAPTER.md §5 for the response-shape contract.
+  #
+  # This job is NOT yet bound to branch protection. Adding it to the
+  # required-check set is a separate ruleset edit per
+  # docs/BRANCH_PROTECTION.md "Adding new required checks" section.
+  # ──────────────────────────────────────────────────────────────────────
+  mcp-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+        with: { key: mcp-smoke }
+      - run: cargo build -p ncp-mcp-server --release --locked
+      - run: python3 examples/mcp/ci_smoke.py
+
+  # ──────────────────────────────────────────────────────────────────────
   # WASM JOB: build & lint the brick crates for wasm32-unknown-unknown.
   # Brick crates are LIBRARY targets that can only compile to WASM.
   # If you find yourself moving these into the host matrix, STOP — they
