@@ -23,6 +23,7 @@ Public API:
   :class:`NCPTimeoutError`, :class:`NCPAmbiguousToolError`.
 """
 
+from ncp_langgraph._version import __version__
 from ncp_langgraph.node import NCPNode
 from ncp_langgraph.subprocess_runner import call_ncp_graph
 from ncp_langgraph.types import (
@@ -33,8 +34,6 @@ from ncp_langgraph.types import (
     NCPTimeoutError,
     RunnerResult,
 )
-
-__version__ = "0.1.0.dev0"
 
 __all__ = [
     "NCPNode",
