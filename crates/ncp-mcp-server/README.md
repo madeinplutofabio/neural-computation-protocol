@@ -5,6 +5,10 @@
 
 # ncp-mcp-server
 
+<p>
+  <a href="https://crates.io/crates/ncp-mcp-server"><img alt="crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=crates.io" /></a>&nbsp;<a href="https://docs.rs/ncp-mcp-server"><img alt="docs.rs" src="https://img.shields.io/docsrs/ncp-mcp-server" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/rust-toolchain.toml"><img alt="MSRV" src="https://img.shields.io/crates/msrv/ncp-mcp-server" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
+</p>
+
 A stdio [Model Context Protocol](https://modelcontextprotocol.io) adapter for
 [NCP](https://github.com/madeinplutofabio/neural-computation-protocol) —
 exposes auditable WASM Brick graphs as MCP tools that any MCP-compatible host
@@ -16,14 +20,12 @@ No glue code, no protocol translation in your app.
 
 ## Install
 
-From crates.io, after `v0.1.0` is published later in Phase 3A.2:
-
 ```bash
 cargo install ncp-mcp-server --locked
 ncp-mcp-server --version
 ```
 
-Until then, install from source:
+Source install fallback (latest unreleased main):
 
 ```bash
 git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
@@ -31,16 +33,44 @@ cd neural-computation-protocol
 cargo install --path crates/ncp-mcp-server --locked
 ```
 
-Requires Rust 1.94+.
+Requires Rust **1.94+**.
 
-## Quick example
+## Wiring into an MCP-compatible host
 
-Multi-graph support from day one — repeat `--graph` for each graph:
+MCP-compatible desktop hosts and MCP-compatible CLI hosts typically read a
+JSON config that lists external MCP servers. The shape is documented by the
+MCP specification and used in common across hosts:
+
+```json
+{
+  "mcpServers": {
+    "ncp-echo-pipeline": {
+      "command": "/absolute/path/to/ncp-mcp-server",
+      "args": [
+        "--graph",
+        "/absolute/path/to/your/graph.yaml",
+        "--brick-dir",
+        "/absolute/path/to/your/bricks"
+      ]
+    }
+  }
+}
+```
+
+Paths MUST be absolute. The host's working directory at launch time varies
+across hosts.
+
+For a ready-to-customize example, a manual stdio dialog smoke recipe, and
+the CI smoke script that gates every PR, see the
+[MCP example directory](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp).
+
+## Quick example (multi-graph)
 
 ```bash
 ncp-mcp-server \
   --graph path/to/triage-graph.yaml \
   --graph path/to/extract-graph.yaml \
+  --brick-dir path/to/bricks \
   --trace-dir /tmp/ncp-mcp-traces
 ```
 
@@ -52,6 +82,7 @@ per-call execution traces, when `--trace-dir` is set, land in
 ## Documentation
 
 - [Design doc](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/MCP_ADAPTER.md) — binding architectural decisions for this adapter
+- [Examples](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp) — host config snippet, manual smoke recipe, CI smoke script
 - [NCP project README](https://github.com/madeinplutofabio/neural-computation-protocol) — what NCP is and why
 - [NCP install guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/INSTALL.md) — runtime + adapter install paths
 - [NCP adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md) — how to use NCP in your stack

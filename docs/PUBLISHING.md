@@ -423,3 +423,150 @@ This phase publishes **`ncp-runtime` only**. Brick crates
 (`ncp-echo`, `ncp-classifier-stub`) are `cdylib`s targeting
 `wasm32-unknown-unknown` and not useful as host-target deps; they're
 deferred to Phase 3A.4 (SDKs) when the brick-author workflow lands.
+
+---
+
+## Adapter publish (`ncp-mcp-server`)
+
+Crates.io-first publish flow for the MCP adapter crate. Phase 3A.2-E
+ships `ncp-mcp-server v0.1.0` to crates.io ONLY — **no GitHub Release,
+no GHCR image, no Zenodo archive**. The runtime publish ceremony
+(sections 1–8 above) does NOT apply to the adapter.
+
+### Why a distinct flow
+
+The existing `release.yml` and `docker.yml` workflows fire on
+`push: tags: ['v*']`. An adapter tag starting with `v` (e.g.
+`v0.1.0`) would trigger both workflows — wrong: they would publish a
+GitHub Release labeled with the adapter version but containing
+**runtime** binaries, and try to build/push a Docker image of the
+**runtime** workspace under the adapter tag. Broken provenance, wasted
+CI.
+
+**Adapter tags MUST NOT start with `v`.** Use the crate-name-prefixed
+pattern instead. This is the standard multi-crate Cargo workspace
+convention (compare `tokio-1.x.y`, `hyper-vX.Y.Z`).
+
+### Tag pattern (LOCKED)
+
+| Crate | Tag pattern | Workflows that fire on push |
+|---|---|---|
+| `ncp-runtime` | `v0.3.6`, `v0.3.7-rc.1`, etc. | `release.yml` + `docker.yml` (correct — runtime release) |
+| `ncp-mcp-server` | `ncp-mcp-server-v0.1.0`, `ncp-mcp-server-v0.1.0-rc.1`, etc. | **None** (correct — adapter is crates.io-first) |
+
+### Pre-flight gates (required from clean main)
+
+From an up-to-date `main` checkout:
+
+```bash
+cargo fmt --all -- --check
+cargo build -p ncp-mcp-server --locked
+cargo clippy -p ncp-mcp-server --locked --all-targets -- -D warnings
+cargo test -p ncp-mcp-server --locked
+RUSTDOCFLAGS="-D warnings" cargo doc -p ncp-mcp-server --no-deps --all-features
+cargo package -p ncp-mcp-server --list
+cargo publish -p ncp-mcp-server --dry-run --locked
+```
+
+All must exit 0. The `cargo package --list` step confirms the `.crate`
+contains `LICENSE`, `NOTICE`, `README.md`, and `CHANGELOG.md`
+(Apache 2.0 §4(d) compliance + the crates.io landing page).
+`cargo publish --dry-run` catches name squat, expired token, allowlist
+drift, and packaging metadata regressions.
+
+### README no-bare-link audit
+
+crates.io renders the crate-local `README.md` from inside the `.crate`
+archive. Relative paths that work on GitHub (`docs/...`, `examples/...`)
+will 404 because there is no `docs/` or `examples/` directory inside
+the `.crate`. The crate README was authored with absolute GitHub URLs;
+re-verify before publish by unpacking the `.crate` and grepping for
+bare repo-relative links (mirror the runtime gate in §3.1).
+
+### Release ceremony
+
+1. **RC tag.** From clean `main`:
+   ```bash
+   git tag -s ncp-mcp-server-v0.1.0-rc.1 -m "ncp-mcp-server v0.1.0 release candidate"
+   git push origin ncp-mcp-server-v0.1.0-rc.1
+   ```
+
+2. **Verify NO runtime workflows fire.** This is the success signal of
+   the tag-pattern discipline:
+   ```bash
+   gh run list --limit 10
+   ```
+   No `Release` or `Docker` workflow runs should appear for the RC tag.
+   If any runtime workflow fires:
+   **STOP** — the tag pattern was wrong. Abort the publish, delete
+   the tag, fix the pattern, and re-tag with the correct
+   `ncp-mcp-server-v*` form before retrying.
+
+3. **Verify the RC against the tagged commit** (not `main`, which may
+   have advanced):
+   ```bash
+   git fetch --tags origin
+   git checkout ncp-mcp-server-v0.1.0-rc.1
+   cargo publish -p ncp-mcp-server --dry-run --locked
+   # manual smoke: examples/mcp/echo-pipeline-mcp-smoke.md
+   git checkout main
+   ```
+   Adapter tags intentionally fire no Release/Docker workflows, so
+   this manual checkout-and-verify is the ONLY verification step.
+   Without it, the RC tag is just a label.
+
+4. **Clean the RC tag** (no GitHub Release to delete; no GHCR images):
+   ```bash
+   git push origin --delete ncp-mcp-server-v0.1.0-rc.1
+   git tag -d ncp-mcp-server-v0.1.0-rc.1
+   ```
+
+5. **Push the real tag** from clean `main`:
+   ```bash
+   git tag -s ncp-mcp-server-v0.1.0 -m "ncp-mcp-server v0.1.0"
+   git push origin ncp-mcp-server-v0.1.0
+   ```
+
+6. **Again verify NO runtime workflows fire** for the real tag:
+   ```bash
+   gh run list --limit 10
+   ```
+   Same STOP condition as step 2.
+
+7. **Publish to crates.io.** Use the lowest-privilege crates.io token
+   capable of publishing the new `ncp-mcp-server` crate, with a short
+   expiration such as 1 day. Revoke it immediately after publish.
+
+   Then publish against the tagged commit:
+   ```bash
+   git checkout ncp-mcp-server-v0.1.0
+   cargo publish -p ncp-mcp-server --locked
+   git checkout main
+   ```
+
+8. **Post-publish verification.**
+
+   Visit, in a browser:
+   - https://docs.rs/ncp-mcp-server/0.1.0 — docs.rs landing page
+     renders (no empty-Modules page)
+   - https://crates.io/crates/ncp-mcp-server/0.1.0 — crates.io page
+     renders the README with no broken links
+
+   Install path from a clean toolchain:
+   ```bash
+   cargo install ncp-mcp-server --locked
+   ncp-mcp-server --version    # expect: 0.1.0
+   ```
+
+   Audit every link in the rendered crates.io README. If any 404, ship
+   a tiny follow-up PR converting the broken link to an absolute
+   `https://github.com/.../blob/main/...` URL. Not a blocker for
+   v0.1.0 (cosmetic), but address within 1–2 days.
+
+### Scope
+
+This publishes **`ncp-mcp-server` only**. No GitHub Release artifacts
+(per-OS archives, SHA256SUMS) and no GHCR Docker image are produced
+for the adapter in v0.1.0. If binary-archive or container distribution
+demand surfaces later, an adapter-scoped release workflow
+(triggered by `ncp-mcp-server-v*` tags) can be added then.

@@ -136,6 +136,29 @@ For more end-to-end tutorials (tracing, the hybrid-routing demo, embedding `ncp`
 
 ---
 
+## Install the MCP adapter
+
+`ncp-mcp-server` is a separate published crate that exposes NCP graphs as
+MCP tools over stdio. Install it independently of `ncp-runtime`:
+
+```bash
+cargo install ncp-mcp-server --locked
+ncp-mcp-server --version
+```
+
+Source install fallback:
+
+```bash
+git clone https://github.com/madeinplutofabio/neural-computation-protocol.git
+cd neural-computation-protocol
+cargo install --path crates/ncp-mcp-server --locked
+```
+
+For host configuration and smoke-test examples, see
+[`examples/mcp/README.md`](../examples/mcp/README.md).
+
+---
+
 ## Next steps
 
 - **Adopting NCP in your stack:** [`docs/ADOPTION_GUIDE.md`](ADOPTION_GUIDE.md)
