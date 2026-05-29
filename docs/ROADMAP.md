@@ -187,7 +187,7 @@ This section reflects the latest released state. Keep it honest and specific; up
 
 ### 3A.3 LangGraph wrapper (Python)
 
-**Status:** In progress (Phase 3A.3). Design locked in [`docs/LANGGRAPH_ADAPTER.md`](LANGGRAPH_ADAPTER.md); implementation in flight.
+**Status:** ✅ Complete (shipped 2026-05-29, [`ncp-langgraph v0.1.0`](https://pypi.org/project/ncp-langgraph/0.1.0/) on PyPI). Design locked in [`docs/LANGGRAPH_ADAPTER.md`](LANGGRAPH_ADAPTER.md); publish ceremony documented in [`docs/PUBLISHING.md`](PUBLISHING.md) "Python adapter publish (`ncp-langgraph`)".
 
 **Deliverables**
 - Python package that exposes an `NCPNode` usable inside LangGraph

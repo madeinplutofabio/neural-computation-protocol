@@ -15,14 +15,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="ncp-runtime on crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=ncp-runtime" /></a>&nbsp;<a href="https://crates.io/crates/ncp-mcp-server"><img alt="ncp-mcp-server on crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=ncp-mcp-server" /></a>&nbsp;<a href="https://docs.rs/ncp-runtime"><img alt="docs.rs" src="https://img.shields.io/docsrs/ncp-runtime" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/rust-toolchain.toml"><img alt="MSRV" src="https://img.shields.io/crates/msrv/ncp-runtime" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>&nbsp;<a href="https://doi.org/10.5281/zenodo.19570209"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570209.svg?v=1" alt="DOI"></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" /></a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="ncp-runtime on crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=ncp-runtime" /></a>&nbsp;<a href="https://crates.io/crates/ncp-mcp-server"><img alt="ncp-mcp-server on crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=ncp-mcp-server" /></a>&nbsp;<a href="https://pypi.org/project/ncp-langgraph/"><img alt="ncp-langgraph on PyPI" src="https://img.shields.io/pypi/v/ncp-langgraph?logo=python&label=ncp-langgraph" /></a>&nbsp;<a href="https://docs.rs/ncp-runtime"><img alt="docs.rs" src="https://img.shields.io/docsrs/ncp-runtime" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/rust-toolchain.toml"><img alt="MSRV" src="https://img.shields.io/crates/msrv/ncp-runtime" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>&nbsp;<a href="https://doi.org/10.5281/zenodo.19570209"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19570209.svg?v=1" alt="DOI"></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/madeinplutofabio/neural-computation-protocol?style=social" /></a>
 </p>
 
 ---
 
 **Docs:** [Adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md) · [Benchmarks](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) · [Cost model](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md) · [Roadmap](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md) · [Spec](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/spec/ncp-v0.2.3.md) · [Contributing](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/CONTRIBUTING.md) · [Security](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/SECURITY.md)
 
-**Status:** Protocol v0.2.3 + validator are stable. Reference runtime is available via [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest), [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp), and [crates.io](https://crates.io/crates/ncp-runtime) (Phase 3A.1 complete). [`ncp-mcp-server v0.1.0`](https://crates.io/crates/ncp-mcp-server) is live on crates.io (Phase 3A.2 complete). Next adoption work: LangGraph wrapper + SDKs.
+**Status:** Protocol v0.2.3 + validator are stable. Reference runtime is available via [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest), [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp), and [crates.io](https://crates.io/crates/ncp-runtime) (Phase 3A.1 complete). [`ncp-mcp-server v0.1.0`](https://crates.io/crates/ncp-mcp-server) is live on crates.io (Phase 3A.2 complete). [`ncp-langgraph v0.1.0`](https://pypi.org/project/ncp-langgraph/0.1.0/) is live on PyPI (Phase 3A.3 complete). Next adoption work: brick packs + SDKs.
 
 ## What is NCP?
 
@@ -214,7 +214,56 @@ Each `--graph` becomes one MCP tool. The host sends a `tools/call`; NCP runs the
 
 For ready-to-customize examples, see [examples/mcp/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp).
 
-For the in-development LangGraph wrapper (Phase 3A.3), see [`docs/LANGGRAPH_ADAPTER.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/LANGGRAPH_ADAPTER.md).
+---
+
+## Use NCP from LangGraph (Python)
+
+If your agent stack is Python and uses [LangGraph](https://github.com/langchain-ai/langgraph), wrap any NCP graph as a LangGraph node with `ncp-langgraph`. The adapter spawns `ncp-mcp-server` under the hood; you write idiomatic LangGraph `StateGraph` code.
+
+Install both:
+
+```bash
+cargo install ncp-mcp-server --version 0.1.0 --locked
+python -m pip install ncp-langgraph
+```
+
+Minimal LangGraph integration:
+
+```python
+from typing import Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+
+from ncp_langgraph import NCPNode
+
+
+class State(TypedDict, total=False):
+    company_url: str
+    qualification: dict[str, Any]
+    ncp_trace: dict[str, Any]
+
+
+qualify_lead = NCPNode.from_subprocess(
+    graph="/abs/path/to/lead-qualification.yaml",
+    brick_dir="/abs/path/to/bricks",
+    output_key="qualification",
+    timeout=30.0,
+)
+
+builder = StateGraph(State)
+builder.add_node("qualify_lead", qualify_lead)
+builder.add_edge(START, "qualify_lead")
+builder.add_edge("qualify_lead", END)
+compiled = builder.compile()
+
+result = compiled.invoke({"company_url": "https://example.com"})
+# result["qualification"] -- the NCP graph's output_json
+# result["ncp_trace"]     -- {"result_type", "trace_id", "trace_path"}
+```
+
+`NCPNode.__call__` returns a partial state update; LangGraph merges it according to your `StateGraph`'s schema + reducers. State is not mutated.
+
+For ready-to-run examples, see [examples/langgraph/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/langgraph). For the full design contract (locked signature, exception model, v0.1.0 limitations), see [`docs/LANGGRAPH_ADAPTER.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/LANGGRAPH_ADAPTER.md).
 
 ---
 

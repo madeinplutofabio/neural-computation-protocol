@@ -106,6 +106,57 @@ For host config examples and smoke-test recipes, see [`examples/mcp/README.md`](
 
 ---
 
+## Use NCP graphs in LangGraph workflows
+
+If your agent stack is Python and uses [LangGraph](https://github.com/langchain-ai/langgraph), the `ncp-langgraph` adapter lets you wrap an NCP graph as a LangGraph node directly. Same NCP graph, no glue code; you write idiomatic LangGraph `StateGraph` code.
+
+Install both:
+
+```bash
+cargo install ncp-mcp-server --version 0.1.0 --locked
+python -m pip install ncp-langgraph
+```
+
+Minimal integration:
+
+```python
+from typing import Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+
+from ncp_langgraph import NCPNode
+
+
+class State(TypedDict, total=False):
+    company_url: str
+    qualification: dict[str, Any]
+    ncp_trace: dict[str, Any]
+
+
+qualify_lead = NCPNode.from_subprocess(
+    graph="/abs/path/to/graph.yaml",
+    brick_dir="/abs/path/to/bricks",
+    output_key="qualification",
+    timeout=30.0,
+)
+
+builder = StateGraph(State)
+builder.add_node("qualify_lead", qualify_lead)
+builder.add_edge(START, "qualify_lead")
+builder.add_edge("qualify_lead", END)
+compiled = builder.compile()
+
+result = compiled.invoke({"company_url": "https://example.com"})
+```
+
+`NCPNode.__call__` returns a partial state update; LangGraph merges it according to your `StateGraph`'s schema + reducers. State is not mutated.
+
+Use this when an agent repeats a workflow often enough that it should not re-plan the same steps in the LLM conversation every time. Good fits include lead qualification, support-ticket routing, document triage, content research pipelines, code-change risk review, and data normalization before an agent acts. (Same use-case family as the MCP integration above; pick whichever surface your stack already has.)
+
+For ready-to-run examples, see [`examples/langgraph/README.md`](../examples/langgraph/README.md). For the binding design contract, see [`docs/LANGGRAPH_ADAPTER.md`](LANGGRAPH_ADAPTER.md).
+
+---
+
 ## 3) Understand the moving parts (2 minutes)
 
 - **Brick**: a sandboxed WASM module that implements the NCP ABI (`alloc/free/invoke`).
@@ -266,13 +317,15 @@ It **does** replace or harden:
 
 ## 10) Production readiness (current scope and what’s next)
 
-The reference runtime’s distribution channels are live as of Phase 3A.1 — available
+The reference runtime's distribution channels are live as of Phase 3A.1, available
 through [GitHub Releases](https://github.com/madeinplutofabio/neural-computation-protocol/releases/latest),
 [GHCR](https://github.com/madeinplutofabio/neural-computation-protocol/pkgs/container/ncp),
 and [crates.io](https://crates.io/crates/ncp-runtime). The MCP adapter is live as
-of Phase 3A.2 — install with `cargo install ncp-mcp-server --locked` (see
-[crates.io](https://crates.io/crates/ncp-mcp-server)). Together they’re a
-strong base for evaluation and internal pilots:
+of Phase 3A.2, install with `cargo install ncp-mcp-server --version 0.1.0 --locked`
+(see [crates.io](https://crates.io/crates/ncp-mcp-server)). The LangGraph adapter
+is live as of Phase 3A.3, install with `python -m pip install ncp-langgraph` (see
+[PyPI](https://pypi.org/project/ncp-langgraph/0.1.0/)). Together they're a strong
+base for evaluation and internal pilots:
 - deterministic routing + mapping
 - sandboxed WASM invokes
 - trace output and safety budgets
@@ -284,9 +337,10 @@ But **production hardening** typically needs:
 - real LLM adapters + token accounting
 - threat model + security review checklist
 
-Next adoption work focuses on the LangGraph wrapper, brick packs, and
-SDKs (Phase 3A.3–3A.5; the MCP adapter shipped as Phase 3A.2). Deeper
-hardening lands in Phase 3C, and the production wrapper in Phase 4. See
+Next adoption work focuses on brick packs and SDKs (Phase 3A.4–3A.5; the
+MCP adapter shipped as Phase 3A.2 and the LangGraph adapter as Phase
+3A.3). Deeper hardening lands in Phase 3C, and the production wrapper in
+Phase 4. See
 [`docs/ROADMAP.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md)
 for the full track breakdown.
 

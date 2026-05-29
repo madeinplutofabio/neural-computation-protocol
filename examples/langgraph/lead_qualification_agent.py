@@ -36,8 +36,7 @@ REQUIREMENTS
   echo-pipeline graph + bricks via relative paths from this file.
 - ``cargo install ncp-mcp-server --version 0.1.0 --locked`` (or build
   from source).
-- ``pip install -e python/ncp-langgraph`` (or
-  ``pip install ncp-langgraph`` once published to PyPI in PR F).
+- ``python -m pip install ncp-langgraph``.
 - See ``examples/langgraph/requirements.txt`` for the Python deps.
 """
 

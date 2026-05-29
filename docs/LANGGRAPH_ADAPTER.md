@@ -625,7 +625,7 @@ Run end-to-end from a workspace clone:
 
 ```bash
 cargo install ncp-mcp-server --version 0.1.0 --locked
-python -m pip install -e python/ncp-langgraph
+python -m pip install ncp-langgraph
 python -m pip install -r examples/langgraph/requirements.txt
 python examples/langgraph/lead_qualification_agent.py
 ```

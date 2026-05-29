@@ -7,7 +7,7 @@
 
 This directory shows how to drop an [NCP] graph into a
 [LangGraph] workflow using
-[`ncp-langgraph`](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/python/ncp-langgraph),
+[`ncp-langgraph`](https://pypi.org/project/ncp-langgraph/),
 the Python adapter that wraps `ncp-mcp-server` as a LangGraph node.
 
 **One NCP graph = one LangGraph node.**
@@ -62,15 +62,6 @@ The version is pinned to keep this example reproducible against
 spawns as a subprocess.
 
 ### 2. Install the Python adapter
-
-Until `ncp-langgraph` v0.1.0 is published to PyPI in Phase 3A.3 PR F,
-install editable from a workspace clone:
-
-```bash
-python -m pip install -e python/ncp-langgraph
-```
-
-After publish, the same package will be installable from PyPI directly:
 
 ```bash
 python -m pip install ncp-langgraph
