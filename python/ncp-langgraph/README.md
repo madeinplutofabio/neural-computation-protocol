@@ -7,6 +7,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![PyPI](https://img.shields.io/pypi/v/ncp-langgraph.svg)](https://pypi.org/project/ncp-langgraph/)
 
 LangGraph adapter for the [Neural Computation Protocol (NCP)](https://github.com/madeinplutofabio/neural-computation-protocol).
 
@@ -71,17 +72,14 @@ against a known `ncp-mcp-server` release.
 
 ### 2. The Python adapter (this package)
 
-Until v0.1.0 is published to PyPI in Phase 3A.3 PR F, install editable
-from a workspace clone:
-
-```bash
-python -m pip install -e python/ncp-langgraph
-```
-
-After publish:
-
 ```bash
 python -m pip install ncp-langgraph
+```
+
+Or pin to a specific version for reproducibility:
+
+```bash
+python -m pip install ncp-langgraph==0.1.0
 ```
 
 `ncp-langgraph` does NOT bundle the `ncp-mcp-server` binary in v0.1.0.
@@ -109,10 +107,9 @@ pass its absolute path via `NCPNode.from_subprocess(binary=...)`.
 - **Subprocess invocation only.** PyO3 direct binding and Streamable
   HTTP transport are deferred (see
   [`docs/LANGGRAPH_ADAPTER.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/LANGGRAPH_ADAPTER.md) §11
-  and future-work issues
+  and future-work issue
   [#34](https://github.com/madeinplutofabio/neural-computation-protocol/issues/34)
-  and
-  [#36](https://github.com/madeinplutofabio/neural-computation-protocol/issues/36)).
+  for Streamable HTTP).
 
 ## License
 
