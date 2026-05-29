@@ -1,0 +1,256 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Publish ncp-langgraph to PyPI via OIDC Trusted Publishing.
+#
+# Triggered on tags matching the Phase 3A.3 locked pattern `ncp-langgraph-v*`.
+# The `validate-tag` job enforces the exact tag form and routes:
+#
+#   - `ncp-langgraph-vX.Y.Z-rc.N` -> publish to TestPyPI (rehearsal)
+#   - `ncp-langgraph-vX.Y.Z`      -> publish to real PyPI (canonical)
+#
+# Any other tag form (e.g. `ncp-langgraph-v0.1.0-rc1` with a missing
+# dot) fails fast in `validate-tag` and NEVER reaches a publish job.
+#
+# No tokens. Uses PyPI Trusted Publishing via OIDC. Pending publishers
+# must be configured on PyPI and TestPyPI BEFORE the first tag push.
+#
+# Pending publisher settings:
+#
+#   PyPI (https://pypi.org/manage/account/publishing/)
+#     project name      : ncp-langgraph
+#     owner             : madeinplutofabio
+#     repository name   : neural-computation-protocol
+#     workflow filename : publish-langgraph.yml
+#     environment       : pypi
+#
+#   TestPyPI (https://test.pypi.org/manage/account/publishing/)
+#     project name      : ncp-langgraph
+#     owner             : madeinplutofabio
+#     repository name   : neural-computation-protocol
+#     workflow filename : publish-langgraph.yml
+#     environment       : testpypi
+#
+# Recommended GitHub environment protection rules:
+#   - `pypi`: require manual approval, so the real publish is a
+#     deliberate UI click after the RC rehearsal passes.
+#   - `testpypi`: no approval gate; RC tag pushes auto-publish.
+
+name: Publish ncp-langgraph
+
+on:
+  push:
+    tags:
+      - "ncp-langgraph-v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-ncp-langgraph-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-tag:
+    name: Validate publish tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      publish_target: ${{ steps.validate.outputs.publish_target }}
+      package_version: ${{ steps.validate.outputs.package_version }}
+    steps:
+      - id: validate
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+
+          if [[ "$TAG" =~ ^ncp-langgraph-v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+            echo "publish_target=testpypi" >> "$GITHUB_OUTPUT"
+            echo "package_version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "$TAG" =~ ^ncp-langgraph-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "publish_target=pypi" >> "$GITHUB_OUTPUT"
+            echo "package_version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "::error::Invalid ncp-langgraph publish tag: $TAG"
+          echo "::error::Expected ncp-langgraph-vX.Y.Z or ncp-langgraph-vX.Y.Z-rc.N"
+          exit 1
+
+  preflight:
+    name: Preflight (lint, type, full tests)
+    needs: validate-tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install package + dev extras
+        working-directory: python/ncp-langgraph
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Verify runtime/package metadata version parity
+        working-directory: python/ncp-langgraph
+        run: |
+          python - <<'PYEOF'
+          import importlib.metadata as md
+          import ncp_langgraph
+
+          assert ncp_langgraph.__version__ == "0.1.0"
+          assert md.version("ncp-langgraph") == ncp_langgraph.__version__
+          print("runtime and package metadata versions match")
+          PYEOF
+
+      - name: ruff check
+        working-directory: python/ncp-langgraph
+        run: python -m ruff check .
+
+      - name: ruff format --check
+        working-directory: python/ncp-langgraph
+        run: python -m ruff format --check .
+
+      - name: mypy --strict src
+        working-directory: python/ncp-langgraph
+        run: python -m mypy --strict src
+
+      - name: Build ncp-mcp-server for integration tests
+        run: cargo build -p ncp-mcp-server --release --locked
+
+      - name: pytest with real ncp-mcp-server binary
+        working-directory: python/ncp-langgraph
+        env:
+          NCP_MCP_SERVER: ${{ github.workspace }}/target/release/ncp-mcp-server
+        run: python -m pytest
+
+  build:
+    name: Build sdist + wheel
+    needs: [validate-tag, preflight]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build tooling
+        working-directory: python/ncp-langgraph
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build sdist + wheel
+        working-directory: python/ncp-langgraph
+        run: |
+          rm -rf dist/
+          python -m build
+
+      - name: twine check
+        working-directory: python/ncp-langgraph
+        run: python -m twine check dist/*
+
+      - name: Verify py.typed in wheel (PEP 561)
+        working-directory: python/ncp-langgraph
+        run: |
+          python - <<'PYEOF'
+          import sys
+          import zipfile
+          from pathlib import Path
+
+          wheel = next(Path("dist").glob("*.whl"))
+          with zipfile.ZipFile(wheel) as z:
+              names = set(z.namelist())
+
+          if "ncp_langgraph/py.typed" not in names:
+              print(f"::error::py.typed missing from {wheel.name}")
+              sys.exit(1)
+
+          print(f"py.typed present in {wheel.name}")
+          PYEOF
+
+      - name: Verify tag/wheel version parity
+        working-directory: python/ncp-langgraph
+        env:
+          EXPECTED_VERSION: ${{ needs.validate-tag.outputs.package_version }}
+        run: |
+          set -euo pipefail
+
+          WHEEL_FILE="$(ls dist/*.whl)"
+          WHEEL_VERSION="$(basename "$WHEEL_FILE" | sed -E 's|ncp_langgraph-([^-]+)-.*|\1|')"
+
+          echo "Expected version: $EXPECTED_VERSION"
+          echo "Wheel version:    $WHEEL_VERSION"
+
+          if [ "$EXPECTED_VERSION" != "$WHEEL_VERSION" ]; then
+            echo "::error::Tag/wheel version mismatch: tag expects '$EXPECTED_VERSION' but wheel is '$WHEEL_VERSION'"
+            exit 1
+          fi
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: python/ncp-langgraph/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-testpypi:
+    name: Publish to TestPyPI (RC)
+    needs: [validate-tag, build]
+    if: needs.validate-tag.outputs.publish_target == 'testpypi'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/ncp-langgraph/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI via OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: false
+          print-hash: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [validate-tag, build]
+    if: needs.validate-tag.outputs.publish_target == 'pypi'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ncp-langgraph/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI via OIDC
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: false
+          print-hash: true

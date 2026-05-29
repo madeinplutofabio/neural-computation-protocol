@@ -609,6 +609,14 @@ in the release ceremony below assume the release venv created in the
 first block is currently active.** Do NOT deactivate between
 pre-flight gates and ceremony steps.
 
+The publish workflow [`.github/workflows/publish-langgraph.yml`](../.github/workflows/publish-langgraph.yml)
+re-runs an equivalent gate set in CI before any upload happens, but
+local pre-flight is still required: the cheapest place to catch a
+metadata or tooling regression is BEFORE the tag is pushed, because
+PyPI/TestPyPI distribution filenames are permanently reserved on
+first upload (see "TestPyPI distribution-filename immutability"
+below).
+
 ```bash
 # Release venv: clean Python environment with the package's [dev]
 # extras installed so the python -m <tool> discipline below resolves
@@ -704,26 +712,48 @@ When you reach a clean rehearsal under the new version, retag with
 the matching tag (`ncp-langgraph-v0.1.1` or whatever the new version
 is) and proceed to ceremony step 5+ with that new version.
 
-### PyPI publishing credentials (first-publish bootstrap)
+### Pending publisher configuration (one-time setup)
 
-For v0.1.0 (the **first** publish of `ncp-langgraph`), the PyPI
-project does NOT yet exist. This rules out project-scoped tokens
-(they require an existing project) and rules out a long-lived
-project-scoped token created before publish. Two viable paths:
+`ncp-langgraph` publishes via **PyPI Trusted Publishing** (OIDC).
+No API tokens. Authentication happens between GitHub Actions and
+PyPI on every workflow run; nothing long-lived ever exists.
 
-- **Preferred (long-term):** [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
-  via GitHub Actions OIDC. Supports pending publishers for new
-  projects. Issues short-lived API tokens automatically per run.
-  Set this up for v0.2.0+; configuring it for v0.1.0 adds a CI
-  workflow that PR F does not include in scope.
-- **Manual first-publish (v0.1.0 path):** use a one-time
-  **account-scoped** PyPI API token, revoke it immediately after
-  publish. Once the project exists, create **project-scoped**
-  credentials (or migrate to Trusted Publishing) for v0.2.0+.
+The publish authority for tags matching `ncp-langgraph-v*` is the
+workflow at [`.github/workflows/publish-langgraph.yml`](../.github/workflows/publish-langgraph.yml).
+Tag -> workflow -> upload. The local pre-flight gates above are a
+pre-tag verification step, not the publish channel.
 
-Same discipline applies to TestPyPI: account-scoped token for the
-first upload, revoke after, switch to project-scoped or Trusted
-Publishing once the project exists.
+**Before the first ceremony**, configure a pending publisher on each
+index. PyPI's pending-publisher form lets you point at a project
+that does not exist yet; the first valid OIDC publish creates the
+project. **Pending publishers do NOT reserve the project name** --
+configure them close to the ceremony and run the ceremony promptly,
+or someone else could squat the name in the gap.
+
+**PyPI** (https://pypi.org/manage/account/publishing/):
+
+| Field             | Value                              |
+|-------------------|------------------------------------|
+| PyPI project name | `ncp-langgraph`                    |
+| Owner             | `madeinplutofabio`                 |
+| Repository name   | `neural-computation-protocol`      |
+| Workflow filename | `publish-langgraph.yml`            |
+| Environment       | `pypi`                             |
+
+**TestPyPI** (https://test.pypi.org/manage/account/publishing/):
+same form, identical fields except set `Environment` to `testpypi`.
+
+**Recommended environment protection rules** (configure once on
+GitHub at `Settings -> Environments`):
+
+- `pypi`: enable "Required reviewers" with yourself as the
+  reviewer. Real publishes then require a deliberate UI click after
+  the RC rehearsal passes -- a self-approve gate that prevents
+  accidental real-PyPI uploads from a stray tag push.
+- `testpypi`: no protection rules. RC tag pushes auto-publish.
+
+For all post-v0.1.0 releases, this configuration is reused; no per-
+release token rotation, no revoke discipline, no manual `twine upload`.
 
 ### Release ceremony
 
@@ -742,6 +772,13 @@ Publishing once the project exists.
    echo "RELEASE_COMMIT=$RELEASE_COMMIT"
    ```
 
+   **Note on version numbers:** the package version in
+   `python/ncp-langgraph/pyproject.toml` stays `0.1.0` for both the
+   RC and real-tag paths. The `-rc.1` suffix is the GIT TAG suffix,
+   not the package version. The publish workflow validates this by
+   stripping the RC suffix from the tag and requiring the wheel version
+   to match `0.1.0`. Do NOT change the package version to `0.1.0rc1`.
+
 2. **Verify NO runtime workflows fire.** Success signal of the
    tag-pattern discipline. Check each runtime workflow specifically
    so unrelated CI activity can't hide the wrong-tag signal:
@@ -755,30 +792,31 @@ Publishing once the project exists.
    fix the pattern, and re-tag with the correct `ncp-langgraph-v*`
    form before retrying.
 
-3. **Build the RC against the tagged commit** (not `main`, which may
-   have advanced) and upload to TestPyPI. **Stay on the tag through
-   verification (step 4)**; do NOT `git checkout main` between this
-   step and step 5:
+3. **Watch the publish workflow upload the RC to TestPyPI.** Pushing
+   the RC tag in step 1 fires the `Publish ncp-langgraph` workflow.
+   Tail it:
    ```bash
-   git fetch --tags origin
-   git checkout ncp-langgraph-v0.1.0-rc.1
-   cd python/ncp-langgraph
-   rm -rf dist/
-   python -m build
-   python -m twine check dist/*
-   python -m twine upload --repository testpypi dist/*
-   cd ../..
+   gh run list --workflow publish-langgraph.yml --limit 5
+
+   RUN_ID="$(gh run list \
+     --workflow publish-langgraph.yml \
+     --limit 1 \
+     --json databaseId \
+     --jq '.[0].databaseId')"
+
+   gh run watch "$RUN_ID" --exit-status
    ```
 
-   **Note on version numbers:** the package version stays `0.1.0` for
-   both the RC and real-tag paths. The `-rc.1` label is the GIT TAG
-   suffix, not the package version. TestPyPI and PyPI are separate
-   indexes -- uploading `ncp-langgraph 0.1.0` to TestPyPI does NOT
-   prevent uploading `ncp-langgraph 0.1.0` to real PyPI later. Do
-   NOT add an `rc1` suffix to the package version itself.
+   Job sequence: `validate-tag` -> `preflight` -> `build` ->
+   `publish-testpypi`.
 
-4. **TestPyPI verification** from a clean venv (still on the RC tag
-   from step 3). Install runtime dependencies from real PyPI FIRST,
+   If `validate-tag`, `preflight`, or `build` fails, the wheel was NOT
+   uploaded; you can fix-forward without a version bump. If
+   `publish-testpypi` fails AFTER the upload action ran successfully,
+   the filename IS reserved and you must bump.
+
+4. **TestPyPI verification** from a clean venv. Install runtime
+   dependencies from real PyPI FIRST,
    then `--no-deps` install the `ncp-langgraph` wheel from TestPyPI.
    This proves the TestPyPI wheel installs while keeping dependency
    resolution scoped to real PyPI (avoids the dependency-confusion
@@ -792,9 +830,9 @@ Publishing once the project exists.
      --no-deps \
      ncp-langgraph==0.1.0
    # Then run examples/langgraph/lead_qualification_agent.py against
-   # a real ncp-mcp-server install on PATH. The example script we
-   # run lives at the RC commit, which matches the wheel we just
-   # uploaded:
+   # a real ncp-mcp-server install on PATH. The example script lives
+   # at the release-work clone's HEAD which matches the RC commit at
+   # the moment the RC tag was pushed:
    cargo install ncp-mcp-server --version 0.1.0 --locked
    /tmp/ncp-lg-rc/bin/python examples/langgraph/lead_qualification_agent.py
    ```
@@ -803,10 +841,10 @@ Publishing once the project exists.
    in the printed state. If this step FAILS, see the immutability
    warning above and fix-forward with a version bump.
 
-5. **Return to main and clean the RC tag** (no GitHub Release to
-   delete; no GHCR images):
+5. **Clean the RC tag** (no GitHub Release to delete; no GHCR
+   images). The ceremony never checked out the RC tag locally under
+   Trusted Publishing, so there's no main checkout to return to:
    ```bash
-   git checkout main
    git push origin --delete ncp-langgraph-v0.1.0-rc.1
    git tag -d ncp-langgraph-v0.1.0-rc.1
    ```
@@ -830,22 +868,33 @@ Publishing once the project exists.
    No runs should appear for `ncp-langgraph-v0.1.0` or for
    `$RELEASE_COMMIT`. Same STOP condition as step 2.
 
-8. **Publish to real PyPI.** Use the first-publish token approach
-   from the credentials section above (account-scoped, revoke
-   immediately after publish).
-
-   Build + publish against the tagged commit. **Stay on the tag
-   through verification (step 9)**:
+8. **Watch the publish workflow upload the real release to PyPI.**
+   Pushing the real tag in step 6 fires the `Publish ncp-langgraph`
+   workflow again. Tail it:
    ```bash
-   git checkout ncp-langgraph-v0.1.0
-   cd python/ncp-langgraph
-   rm -rf dist/
-   python -m build
-   python -m twine upload dist/*
-   cd ../..
+   gh run list --workflow publish-langgraph.yml --limit 5
+
+   RUN_ID="$(gh run list \
+     --workflow publish-langgraph.yml \
+     --limit 1 \
+     --json databaseId \
+     --jq '.[0].databaseId')"
+
+   gh run watch "$RUN_ID" --exit-status
    ```
 
-9. **Post-publish verification** (still on the real tag from step 8).
+   This time the routing sends the artifact to the `publish-pypi`
+   job. If you enabled the recommended **Required reviewers**
+   protection on the `pypi` environment, the job pauses and asks
+   for approval -- go to the workflow run page in the browser,
+   review the build output (artifacts, hashes), and click
+   `Approve and deploy`. The OIDC upload to PyPI then runs.
+
+   No tokens. No manual `twine upload`. The pending publisher
+   configuration from earlier authorizes this exact workflow file
+   running in this exact repo for this exact environment.
+
+9. **Post-publish verification.**
 
    Visit, in a browser:
    - https://pypi.org/project/ncp-langgraph/0.1.0/ -- README renders,
@@ -861,12 +910,15 @@ Publishing once the project exists.
 
    Then run `examples/langgraph/lead_qualification_agent.py`
    end-to-end against a real `cargo install ncp-mcp-server` binary on
-   `PATH`. The example script we run lives at the real-tag commit,
-   which matches the wheel just published.
+   `PATH`. The example script lives at the release-work clone's HEAD
+   which matches the real-tag commit (no local tag switching needed
+   under Trusted Publishing).
 
-10. **Return to main:**
+10. **Confirm you're still on main.** Trusted Publishing means no
+    local tag checkout was required during the ceremony -- you
+    should have remained on `main` throughout. Verify:
     ```bash
-    git checkout main
+    git branch --show-current   # expect: main
     ```
 
 11. **Merge PR G immediately.** Per the no-stale-window discipline,
