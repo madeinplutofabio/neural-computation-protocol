@@ -601,21 +601,27 @@ the same reason.
 | `ncp-mcp-server` | `ncp-mcp-server-v0.1.0`, `ncp-mcp-server-v0.1.0-rc.1`, etc. | **None** (correct -- crates.io-first) |
 | `ncp-langgraph` | `ncp-langgraph-v0.1.0`, `ncp-langgraph-v0.1.0-rc.1`, etc. | **None** (correct -- PyPI-first) |
 
-### Pre-flight gates (required from clean main)
-
-From an up-to-date `main` checkout, against the version PR F bumped to
-(`0.1.0`). **All `python -m <tool>` invocations in this section and
-in the release ceremony below assume the release venv created in the
-first block is currently active.** Do NOT deactivate between
-pre-flight gates and ceremony steps.
+### Pre-flight sanity check (recommended before tagging)
 
 The publish workflow [`.github/workflows/publish-langgraph.yml`](../.github/workflows/publish-langgraph.yml)
-re-runs an equivalent gate set in CI before any upload happens, but
-local pre-flight is still required: the cheapest place to catch a
-metadata or tooling regression is BEFORE the tag is pushed, because
-PyPI/TestPyPI distribution filenames are permanently reserved on
-first upload (see "TestPyPI distribution-filename immutability"
-below).
+is the publish authority: it re-runs the same gate set (version
+parity + ruff + ruff format + mypy --strict + integration tests
+against a real `ncp-mcp-server` binary + twine check + py.typed
+PEP 561 marker + tag/wheel version parity) and refuses to upload
+if any gate fails. **The local block below is NOT the publish gate.**
+
+Running it before tagging is recommended (catches regressions
+earlier and cheaper than waiting for the CI cycle), but skipping it
+is acceptable -- CI will block any actual publish on a regression.
+You cannot, however, replace a successfully uploaded broken wheel
+under the same version because PyPI/TestPyPI distribution filenames
+are permanently reserved on first upload (see "TestPyPI distribution-
+filename immutability" below).
+
+From an up-to-date `main` checkout, against the version PR F bumped
+to (`0.1.0`). **All `python -m <tool>` invocations in this section
+assume the release venv created in the first block is currently
+active.**
 
 ```bash
 # Release venv: clean Python environment with the package's [dev]
@@ -673,10 +679,11 @@ python -m twine check dist/*
 cd ../..
 ```
 
-All must exit 0. `python -m twine check` is the PyPI-rendering analog
-of the crates.io README link audit in §3.1; it validates `README.md`
-will render correctly on the PyPI landing page and that the wheel +
-sdist metadata are well-formed.
+If you run this sanity check, all commands must exit 0. `python -m
+twine check` is the PyPI-rendering analog of the crates.io README
+link audit in §3.1; it validates `README.md` will render correctly
+on the PyPI landing page and that the wheel + sdist metadata are
+well-formed.
 
 ### TestPyPI distribution-filename immutability (CRITICAL)
 
