@@ -164,6 +164,34 @@ For host configuration and smoke-test examples, see
 
 ---
 
+## Install the LangGraph adapter
+
+`ncp-langgraph` is a separate published Python package that lets you
+wrap any NCP graph as a LangGraph node. It spawns `ncp-mcp-server`
+under the hood, so install both:
+
+```bash
+# 1. The NCP MCP adapter binary (Rust crate)
+cargo install ncp-mcp-server --version 0.1.0 --locked
+
+# 2. The Python adapter (this package)
+python -m pip install ncp-langgraph
+
+# Or pin to a specific version for reproducibility
+python -m pip install ncp-langgraph==0.1.0
+```
+
+`ncp-langgraph` does NOT bundle the `ncp-mcp-server` binary; the
+binary is distributed separately as a Rust crate. Keep it on `PATH`
+or pass its absolute path via `NCPNode.from_subprocess(binary=...)`.
+
+For end-to-end examples (LangGraph `StateGraph` with one `NCPNode`),
+see [`examples/langgraph/README.md`](../examples/langgraph/README.md).
+For the binding design contract, see
+[`docs/LANGGRAPH_ADAPTER.md`](LANGGRAPH_ADAPTER.md).
+
+---
+
 ## Next steps
 
 - **Adopting NCP in your stack:** [`docs/ADOPTION_GUIDE.md`](ADOPTION_GUIDE.md)
