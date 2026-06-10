@@ -44,8 +44,9 @@ Instead of “LLM for everything”, you build a graph that:
 
 ```mermaid
 flowchart LR
-  Host["MCP-compatible host"] -->|tools/call| Server["ncp-mcp-server v0.1.0"]
-  Server -->|dispatches graph| Runtime["ncp-runtime v0.3.6"]
+  Host["MCP-compatible host"] -->|tools/call| Server["ncp-mcp-server"]
+  LangGraph["LangGraph (Python via ncp-langgraph)"] -->|spawns over stdio| Server
+  Server -->|invokes| Runtime["ncp-runtime"]
   Manifest["Graph Manifest"] --> Runtime
   Runtime -->|executes| BrickA["Brick (WASM)"]
   Runtime -->|executes| BrickB["Brick (WASM)"]
