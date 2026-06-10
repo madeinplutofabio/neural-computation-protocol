@@ -42,6 +42,19 @@ Instead of “LLM for everything”, you build a graph that:
 | **Graph** | Bricks connected by typed edges with routing policies (success/error), threshold gating, and field mapping. |
 | **Runtime** | The executor: sandboxes Bricks, enforces resource limits, routes signals deterministically, and produces traces. |
 
+```mermaid
+flowchart LR
+  Host["MCP-compatible host"] -->|tools/call| Server["ncp-mcp-server v0.1.0"]
+  Server -->|dispatches graph| Runtime["ncp-runtime v0.3.6"]
+  Manifest["Graph Manifest"] --> Runtime
+  Runtime -->|executes| BrickA["Brick (WASM)"]
+  Runtime -->|executes| BrickB["Brick (WASM)"]
+  BrickA --> Runtime
+  BrickB --> Runtime
+  Runtime --> Trace["Trace"]
+  Runtime --> Results["Results"]
+```
+
 **Core insight:** Bricks are commodity (reusable, swappable). Graphs are product (your topology + thresholds + weights).
 
 ---
