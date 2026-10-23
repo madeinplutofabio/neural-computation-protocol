@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Deterministic lead-qualification reference graph (issue #29).
+# Composes an offline fictional-company lookup with ICP qualification.
+# Both Bricks return Success for completed business decisions;
+# invalid inputs produce Failure(INVALID_INPUT).
+#
+# The lookup-to-qualify edge maps only the seven downstream inputs.
+# on_success is required for the runtime to dispatch the second Brick.
+#
+# Version identifiers below are synthetic, repository-local example
+# pins, not content-derived digests.
+
+graph_id: org.ncp-examples.lead-qualification
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
+
+nodes:
+  - node_id: lookup
+    brick: { brick_id: org.ncp-examples.company-profile-lookup, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+  - node_id: qualify
+    brick: { brick_id: org.ncp-examples.icp-qualifier, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges:
+  - edge_id: lookup_to_qualify
+    source_node: lookup
+    target_node: qualify
+    mapping:
+      - from: output.company_name
+        to: input.company_name
+      - from: output.industry
+        to: input.industry
+      - from: output.segment
+        to: input.segment
+      - from: output.audience
+        to: input.audience
+      - from: output.profile_found
+        to: input.profile_found
+      - from: output.target_icp
+        to: input.target_icp
+      - from: output.notes
+        to: input.notes
+    on_success:
+      weight: 1.0
