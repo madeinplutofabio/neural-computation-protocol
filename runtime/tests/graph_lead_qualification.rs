@@ -587,9 +587,13 @@ fn removing_notes_edge_mapping_causes_qualifier_to_reject_incomplete_input() {
     //   lookup emits Failure(INVALID_INPUT)).
     use std::fs;
     let temp = tempfile::tempdir().expect("tempdir");
-    let orig_graph = fs::read_to_string(graph_path()).expect("read graph.yaml");
+    let orig_graph = fs::read_to_string(graph_path())
+        .expect("read graph.yaml")
+        .replace("\r\n", "\n");
     // Delete the two YAML lines for the notes mapping. Fixed indentation
     // in the locked graph.yaml makes this a safe string replacement.
+    // Line endings are normalized to LF above so this works on Windows CI,
+    // where git may check out YAML files with CRLF endings.
     let notes_mapping_block = "      - from: output.notes\n        to: input.notes\n";
     assert!(
         orig_graph.contains(notes_mapping_block),
