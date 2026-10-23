@@ -997,6 +997,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ncp-icp-qualifier"
+version = "0.1.0"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
 name = "ncp-mcp-server"
 version = "0.1.0"
 dependencies = [
