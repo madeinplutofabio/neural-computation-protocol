@@ -3,6 +3,7 @@ members = [
   "runtime",
   "bricks/echo",
   "bricks/classifier-stub",
+  "bricks/company-profile-lookup",
   "crates/ncp-mcp-server",
 ]
 default-members = ["runtime"]
