@@ -983,7 +983,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ncp-company-profile-lookup"
+version = "0.1.0"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
 name = "ncp-echo"
+version = "0.1.0"
+dependencies = [
+ "minicbor",
+]
+
+[[package]]
+name = "ncp-icp-qualifier"
 version = "0.1.0"
 dependencies = [
  "minicbor",
@@ -1016,6 +1030,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2",
+ "tempfile",
  "uuid",
  "wasmtime",
 ]

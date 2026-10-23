@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ICP Qualifier Input",
+  "description": "Input for the icp-qualifier Brick, received via edge mapping from company-profile-lookup. All seven fields correspond to edge-mapped source paths. The conditional invariant on profile_found mirrors the upstream Brick's output contract: profile_found: true requires nonempty fact strings; profile_found: false requires all facts to be null.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "company_name",
+    "industry",
+    "segment",
+    "audience",
+    "profile_found",
+    "target_icp",
+    "notes"
+  ],
+  "properties": {
+    "company_name": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "Fictional display name from the upstream Brick's catalog lookup. Null when profile_found is false. Not a real-company fact."
+    },
+    "industry": {
+      "type": ["string", "null"],
+      "maxLength": 64,
+      "description": "Canonical industry label from the upstream catalog. Null when profile_found is false."
+    },
+    "segment": {
+      "type": ["string", "null"],
+      "maxLength": 32,
+      "description": "Canonical market-segment label from the upstream catalog. Null when profile_found is false."
+    },
+    "audience": {
+      "type": ["string", "null"],
+      "maxLength": 32,
+      "description": "Canonical audience label from the upstream catalog. Null when profile_found is false."
+    },
+    "profile_found": {
+      "type": "boolean",
+      "description": "True iff the upstream Brick resolved the hostname against its catalog. See the if/then/else block below: true requires the four fact fields to be nonempty strings; false requires all four to be null. When false, the qualifier short-circuits to needs_enrichment without interpreting target_icp."
+    },
+    "target_icp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "Target ideal-customer-profile description, propagated unchanged from the graph input through the upstream Brick. The qualifier interprets this against a closed supported-vocabulary (see SUPPORTED_ICP_VOCABULARY.md). Unrecognized connecting words are ignored. If supported descriptors do not span all three dimensions (industry, segment, audience), the Brick returns needs_enrichment."
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "maxLength": 1024,
+      "description": "Optional notes propagated unchanged from the graph input. v0.1: not used in scoring; reserved for future deterministic rules."
+    }
+  },
+  "if": {
+    "properties": {
+      "profile_found": { "const": true }
+    },
+    "required": ["profile_found"]
+  },
+  "then": {
+    "properties": {
+      "company_name": { "type": "string", "minLength": 1 },
+      "industry":     { "type": "string", "minLength": 1 },
+      "segment":      { "type": "string", "minLength": 1 },
+      "audience":     { "type": "string", "minLength": 1 }
+    }
+  },
+  "else": {
+    "properties": {
+      "company_name": { "const": null },
+      "industry":     { "const": null },
+      "segment":      { "const": null },
+      "audience":     { "const": null }
+    }
+  }
+}

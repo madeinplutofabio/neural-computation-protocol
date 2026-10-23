@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ICP Qualifier Output",
+  "description": "Terminal output of the icp-qualifier Brick. Returns a completed business decision as Success regardless of outcome. The allOf block below enforces three cross-field invariants: next_action=qualified requires icp_match=true + a numeric score strictly greater than 0.5 and up to 1; next_action=not_qualified requires icp_match=false + a numeric score from 0 up to and including 0.5; next_action=needs_enrichment requires icp_match=null + score=null. The 0.5 boundary expresses a strict-majority contract (>0.5 means majority of recognized dimensions match); it is not an implementation-specific arithmetic value and remains correct under future weighted or N-dimension scoring.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "company_name",
+    "industry",
+    "icp_match",
+    "score",
+    "reasons",
+    "next_action"
+  ],
+  "properties": {
+    "company_name": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "Echo of input.company_name from the upstream catalog lookup. Not a verified real-company fact. Null when the upstream profile was not found."
+    },
+    "industry": {
+      "type": ["string", "null"],
+      "maxLength": 64,
+      "description": "Echo of input.industry from the upstream catalog. Null when the upstream profile was not found."
+    },
+    "icp_match": {
+      "type": ["boolean", "null"],
+      "description": "Qualification decision: true=matches target ICP, false=does not match, null=insufficient evidence to decide. See the allOf block below for the invariant tying icp_match to next_action."
+    },
+    "score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Documented 0-1 rule-based ICP compatibility score. Null when the decision is needs_enrichment (insufficient evidence). This is NOT a statistical confidence estimate; it is a rule-based measure of how well the resolved profile satisfies the recognized target-ICP dimensions."
+    },
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "description": "Human-readable explanations in a stable deterministic order (industry, segment, audience, then any applicable qualification-limitation reason). Always at least one entry; capped at five."
+    },
+    "next_action": {
+      "type": "string",
+      "enum": ["qualified", "not_qualified", "needs_enrichment"],
+      "description": "Business-decision verdict. 'qualified' and 'not_qualified' are completed decisions over a known profile with sufficiently interpretable ICP. 'needs_enrichment' means either the company profile is not in the catalog or the target ICP does not provide recognized descriptors spanning all three dimensions."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "next_action": { "const": "qualified" } },
+        "required": ["next_action"]
+      },
+      "then": {
+        "properties": {
+          "company_name": { "type": "string", "minLength": 1 },
+          "industry":     { "type": "string", "minLength": 1 },
+          "icp_match":    { "const": true },
+          "score":        { "type": "number", "exclusiveMinimum": 0.5, "maximum": 1 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "next_action": { "const": "not_qualified" } },
+        "required": ["next_action"]
+      },
+      "then": {
+        "properties": {
+          "company_name": { "type": "string", "minLength": 1 },
+          "industry":     { "type": "string", "minLength": 1 },
+          "icp_match":    { "const": false },
+          "score":        { "type": "number", "minimum": 0, "maximum": 0.5 }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "next_action": { "const": "needs_enrichment" } },
+        "required": ["next_action"]
+      },
+      "then": {
+        "properties": {
+          "icp_match": { "const": null },
+          "score":     { "const": null }
+        }
+      }
+    }
+  ]
+}

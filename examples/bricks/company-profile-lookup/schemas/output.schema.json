@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Company Profile Lookup Output",
+  "description": "Output of the company-profile-lookup Brick. All eight fields are always present on Success. Facts resolved from the catalog are nonempty strings when profile_found is true; null when profile_found is false. The if/then/else block below enforces this cross-field invariant at the schema layer; the Brick implementation enforces it at runtime.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "company_url_normalized",
+    "profile_found",
+    "company_name",
+    "industry",
+    "segment",
+    "audience",
+    "target_icp",
+    "notes"
+  ],
+  "properties": {
+    "company_url_normalized": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 253,
+      "description": "Normalized hostname: lowercased ASCII, with any leading 'www.' and single trailing dot stripped, scheme and path removed. 253 is the DNS hostname length cap; the Brick additionally validates DNS-label syntax."
+    },
+    "profile_found": {
+      "type": "boolean",
+      "description": "True iff the normalized hostname matched a catalog entry. See the if/then/else block below: true requires the four fact fields to be nonempty strings; false requires all four to be null."
+    },
+    "company_name": {
+      "type": ["string", "null"],
+      "maxLength": 256,
+      "description": "Fictional display name from the catalog. Null when profile_found is false. For v0.1 the catalog contains three fictional profiles under IETF-reserved example.com subdomains; this is not a real-company fact."
+    },
+    "industry": {
+      "type": ["string", "null"],
+      "maxLength": 64,
+      "description": "Canonical industry label from the catalog. Null when profile_found is false."
+    },
+    "segment": {
+      "type": ["string", "null"],
+      "maxLength": 32,
+      "description": "Canonical market-segment label from the catalog. Null when profile_found is false."
+    },
+    "audience": {
+      "type": ["string", "null"],
+      "maxLength": 32,
+      "description": "Canonical audience label from the catalog. Null when profile_found is false."
+    },
+    "target_icp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "Passthrough of input.target_icp, unchanged. Carried through this Brick so the downstream qualifier can interpret it after edge mapping."
+    },
+    "notes": {
+      "type": ["string", "null"],
+      "maxLength": 1024,
+      "description": "Passthrough of input.notes, unchanged. When input.notes was absent or null, this is null -- always present in output so the edge mapping never encounters a missing source path."
+    }
+  },
+  "if": {
+    "properties": {
+      "profile_found": { "const": true }
+    },
+    "required": ["profile_found"]
+  },
+  "then": {
+    "properties": {
+      "company_name": { "type": "string", "minLength": 1 },
+      "industry":     { "type": "string", "minLength": 1 },
+      "segment":      { "type": "string", "minLength": 1 },
+      "audience":     { "type": "string", "minLength": 1 }
+    }
+  },
+  "else": {
+    "properties": {
+      "company_name": { "const": null },
+      "industry":     { "const": null },
+      "segment":      { "const": null },
+      "audience":     { "const": null }
+    }
+  }
+}

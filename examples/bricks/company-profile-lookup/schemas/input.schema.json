@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Company Profile Lookup Input",
+  "description": "Input for the company-profile-lookup Brick. Supplies a company URL or domain and a target ICP for downstream qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "company_url",
+    "target_icp"
+  ],
+  "properties": {
+    "company_url": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "description": "Company URL or domain. The Brick accepts HTTP(S) URLs and bare domains, performs strict deterministic hostname normalization, and never performs network access."
+    },
+    "target_icp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "Free-text ideal-customer-profile description, passed through unchanged. The downstream qualifier requires recognized descriptors for industry, segment, and audience. Unrecognized connecting words are ignored. See SUPPORTED_ICP_VOCABULARY.md."
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1024,
+      "description": "Optional notes, passed through unchanged and excluded from v0.1 scoring. Omission and explicit null are both accepted."
+    }
+  }
+}

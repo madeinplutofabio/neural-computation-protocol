@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# ICP Qualifier brick.
+# Deterministic rule-based qualification of a resolved company profile
+# against a target ICP, using a closed 9-descriptor vocabulary across
+# industry, segment, and audience. Receives the 7-field edge-mapped
+# projection of company-profile-lookup's output and emits NCP Success
+# with next_action in {qualified, not_qualified, needs_enrichment};
+# all three business outcomes are Success. Invalid input returns
+# NCP Failure(INVALID_INPUT); the parser never silently converts
+# invalid input into a qualification decision.
+
+brick_id: org.ncp-examples.icp-qualifier
+version: 0.1.0
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: []
+status: active
+
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: "sha256:f4c50217733a1c889d6d872e4626da5ffe8d86135061162cd8cfd31fd215eab7"
+  size_bytes: 30177
+
+schemas:
+  input: schemas/input.schema.json
+  output: schemas/output.schema.json
+  carry_state: null
+
+limits:
+  max_ms: 10
+  max_mem_mb: 4
+  max_output_bytes: 4096
+  max_input_bytes: 65536
+
+capabilities: []
+
+determinism:
+  mode: bit_exact
+
+time_model: pure
+
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+carry_state_side_effects_schema: null
+
+graph_ref_slots: []
