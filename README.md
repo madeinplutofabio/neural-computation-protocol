@@ -177,6 +177,28 @@ cargo run -p ncp-runtime --release --bin ncp-bench -- \
 
 ---
 
+## Try a two-Brick deterministic workflow
+
+For a working end-to-end example that composes two independently
+packaged WASM Bricks (no LLM, no network, no external service), see
+[`examples/graphs/lead-qualification/`](examples/graphs/lead-qualification/).
+
+```bash
+./target/release/ncp run \
+  examples/graphs/lead-qualification/graph.yaml \
+  --brick-dir examples/bricks \
+  --input examples/graphs/lead-qualification/samples/qualified_3_of_3.json
+```
+
+That graph's README documents 11 reproducible fixtures covering all
+three business outcomes (`qualified`, `not_qualified`,
+`needs_enrichment`) plus `Failure(INVALID_INPUT)` for invalid input.
+Each run produces identical business outputs when invoked with pinned
+artifacts; `examples/graphs/lead-qualification/replay-demo.sh` runs a
+visible repeatability check across three representative fixtures.
+
+---
+
 ## Use NCP from an MCP-compatible host
 
 Install the MCP adapter:
@@ -244,6 +266,7 @@ python -m pip install ncp-langgraph
 Minimal LangGraph integration:
 
 ```python
+from pathlib import Path
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -253,13 +276,17 @@ from ncp_langgraph import NCPNode
 
 class State(TypedDict, total=False):
     company_url: str
+    target_icp: str
     qualification: dict[str, Any]
     ncp_trace: dict[str, Any]
 
 
+# NCPNode.from_subprocess requires absolute paths for graph + brick_dir.
+# Resolve against the repository root (adjust if running from elsewhere).
+repo = Path.cwd()
 qualify_lead = NCPNode.from_subprocess(
-    graph="/abs/path/to/lead-qualification.yaml",
-    brick_dir="/abs/path/to/bricks",
+    graph=str(repo / "examples/graphs/lead-qualification/graph.yaml"),
+    brick_dir=str(repo / "examples/bricks"),
     output_key="qualification",
     timeout=30.0,
 )
@@ -270,7 +297,10 @@ builder.add_edge(START, "qualify_lead")
 builder.add_edge("qualify_lead", END)
 compiled = builder.compile()
 
-result = compiled.invoke({"company_url": "https://example.com"})
+result = compiled.invoke({
+    "company_url": "https://example.com",
+    "target_icp": "B2B SaaS selling to creators",
+})
 # result["qualification"] -- the NCP graph's output_json
 # result["ncp_trace"]     -- {"result_type", "trace_id", "trace_path"}
 ```

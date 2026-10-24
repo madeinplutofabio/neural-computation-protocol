@@ -154,14 +154,35 @@ IDs (unless pinned via `ExecuteOptions`); those vary across runs by
 design and are not part of the determinism contract. The determinism
 guarantee covers business-output fields only.
 
+## Repeatable replay check
+
+For a one-command demonstration that the deterministic business
+contract holds across repeat invocations, run:
+
+```bash
+./examples/graphs/lead-qualification/replay-demo.sh
+```
+
+The script invokes three representative fixtures twice each
+(`qualified_2_of_3.json`, `not_qualified_0_of_3.json`,
+`failure_bad_type.json`), projects each run's output to the stable
+business fields (excluding timestamps, latency, and generated trace
+IDs), and confirms the two projections match. Exit code 0 on success,
+1 on any mismatch or unexpected CLI status.
+
+Requires: `bash`, `jq`, and a pre-built `ncp` binary at
+`./target/release/ncp` (override via `NCP_BIN=/path/to/ncp`).
+
 ## See also
 
 - [`graph.yaml`](graph.yaml) — the 2-node graph manifest with the
   7-field edge mapping (excludes `company_url_normalized`)
 - [`samples/`](samples/) — the 11 reproducible fixtures
+- [`replay-demo.sh`](replay-demo.sh) — one-command repeatability check
 - [`../../bricks/company-profile-lookup/manifest.yaml`](../../bricks/company-profile-lookup/manifest.yaml)
 - [`../../bricks/icp-qualifier/manifest.yaml`](../../bricks/icp-qualifier/manifest.yaml)
 - [`../../bricks/icp-qualifier/SUPPORTED_ICP_VOCABULARY.md`](../../bricks/icp-qualifier/SUPPORTED_ICP_VOCABULARY.md)
 - Integration test suite: `runtime/tests/graph_lead_qualification.rs`
-  (15 tests covering all 11 fixtures, graph structure, determinism,
-  and brick-digest integrity rejection)
+  (16 tests covering all 11 fixtures, graph structure, determinism,
+  brick-digest integrity rejection, and edge-mapping contract
+  enforcement)
