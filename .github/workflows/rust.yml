@@ -102,6 +102,46 @@ jobs:
       - run: python3 examples/mcp/ci_smoke.py
 
   # ──────────────────────────────────────────────────────────────────────
+  # MCP SDK SMOKE JOB (issue #32): the same end-to-end stdio dialog that
+  # ci_smoke.py validates with raw JSON-RPC, driven here through the
+  # official MCP Python SDK (`mcp.ClientSession`). Catches regressions
+  # that only surface via the SDK path: framing changes, protocol-version
+  # negotiation drift, typed-model mismatches, and the rmcp
+  # graceful-shutdown panic from issue #25 (which fires AFTER the last
+  # response has been sent, so a dialog-only pass is NOT enough — the
+  # script also asserts clean subprocess exit after stdin close).
+  #
+  # SDK PIN: `mcp==1.27.0` is pinned so an SDK release does not fail this
+  # sentinel for reasons unrelated to NCP. Bump deliberately after
+  # verifying the new version locally against the current server.
+  #
+  # ADVISORY (`continue-on-error: true`) initially. Promote to a required
+  # check only after a few PRs prove stability, via the ruleset edit
+  # described in docs/BRANCH_PROTECTION.md. The existing mcp-smoke job
+  # (stdlib-only, no external deps) remains the required gate.
+  # ──────────────────────────────────────────────────────────────────────
+  mcp-sdk-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: Swatinem/rust-cache@v2
+        with: { key: mcp-sdk-smoke }
+      - name: Install pinned MCP Python SDK
+        run: python -m pip install "mcp==1.27.0"
+      - name: Build ncp-mcp-server release binary
+        run: cargo build -p ncp-mcp-server --release --locked
+      - name: Run SDK smoke
+        run: python examples/mcp/sdk_smoke.py
+
+  # ──────────────────────────────────────────────────────────────────────
   # LANGGRAPH TEST JOB: builds the ncp-mcp-server release binary, installs
   # the ncp-langgraph Python package with its [dev] extras (ruff, mypy,
   # pytest, build, twine), and runs the package-local gates:
