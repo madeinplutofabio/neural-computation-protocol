@@ -65,7 +65,7 @@ jobs:
             arch: x86_64
             ext: tar.gz
             bin: ncp
-          - os: macos-14
+          - os: macos-15
             os_label: macos
             arch: aarch64
             ext: tar.gz
