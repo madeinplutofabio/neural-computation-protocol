@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Bundled fixture graph for `python -m ncp_runtime.demo`. Single
+# echo node, no edges. Exercises brick resolution, invocation,
+# trace emission, and the SDK's end-to-end `.run()` lifecycle
+# without requiring any brick authoring from the adopter.
+#
+# The brick artifact (`echo/manifest.yaml` + `echo/echo.wasm`)
+# ships alongside this file as a byte-identical copy of the
+# repository's `examples/bricks/echo/` brick (brick_id
+# org.ncp-examples.echo v0.1.0). The declared digest + size in
+# the bundled manifest match the bundled .wasm byte-for-byte, so
+# the runtime's resolver digest-verification step succeeds under
+# the pinned runtime 0.3.6.
+#
+# `graph_version` and `synaptic_state_version` are synthetic
+# repository-local pins, not content-derived digests (same
+# pattern used by `examples/graphs/*/graph.yaml`).
+
+graph_id: org.ncp-runtime-sdk.demo-echo
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+nodes:
+  - node_id: echo
+    brick: { brick_id: org.ncp-examples.echo, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []
