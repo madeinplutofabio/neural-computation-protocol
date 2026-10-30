@@ -1,0 +1,122 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+
+[build-system]
+# Upper bound: hatchling >= 1.32 emits Metadata-Version 2.5
+# which current twine (6.2.0) + pkginfo (2.0) do not recognize
+# ("Invalid distribution metadata: '2.5' is not a valid metadata
+# version"), breaking `twine check` and the release ceremony.
+# Hatchling 1.25 through 1.31 emit Metadata-Version 2.4, which
+# both tools accept. Relax the upper bound when twine + pkginfo
+# ship 2.5 support.
+requires = ["hatchling>=1.25,<1.32"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ncp-runtime"
+dynamic = ["version"]
+description = "Python SDK for Neural Computation Protocol (NCP). Execute deterministic graphs using the NCP runtime."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Fabio Marcello Salvadori" },
+]
+keywords = [
+    "ncp",
+    "neural-computation-protocol",
+    "sdk",
+    "deterministic",
+    "wasm",
+    "agent",
+    "workflow",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "build",
+    "twine",
+]
+
+[project.urls]
+Homepage = "https://github.com/madeinplutofabio/neural-computation-protocol"
+Repository = "https://github.com/madeinplutofabio/neural-computation-protocol"
+Issues = "https://github.com/madeinplutofabio/neural-computation-protocol/issues"
+Changelog = "https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/python/ncp-runtime/CHANGELOG.md"
+Documentation = "https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/PYTHON_SDK.md"
+
+[tool.hatch.version]
+path = "src/ncp_runtime/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ncp_runtime"]
+# Wheel-only build artifacts generated at build time and NOT committed
+# to git. hatchling's `artifacts` directive overrides the default
+# gitignore + dotfile exclusions so these files land in the finished
+# wheel when they are present on disk. Scoped to the wheel target so
+# the sdist stays clean of generated binaries and provenance even if
+# the files exist locally. Absent files are silently skipped, so an
+# sdist build and the PR 2 fallback-wheel-contents test both succeed
+# even though no platform binary is committed to the repo. See
+# docs/PYTHON_SDK.md §11.
+artifacts = [
+    "src/ncp_runtime/_bundled/ncp",
+    "src/ncp_runtime/_bundled/ncp.exe",
+    "src/ncp_runtime/_bundled/.no_binary",
+    "src/ncp_runtime/_bundled/provenance.json",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/ncp_runtime",
+    "tests",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src"]
+explicit_package_bases = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
