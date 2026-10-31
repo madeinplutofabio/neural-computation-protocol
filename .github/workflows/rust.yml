@@ -290,6 +290,43 @@ jobs:
           python -m twine check dist/*
 
   # ──────────────────────────────────────────────────────────────────────
+  # python-sdk-example-test: the lead-qualification-vs-llm example's
+  # mocked offline test suite. All LLM adapter tests inject mock
+  # Anthropic clients; the NCP adapter tests patch the SDK's NCP class.
+  # No real ncp binary is spawned and no live Anthropic API call is
+  # made. ANTHROPIC_API_KEY is explicitly cleared at the job level +
+  # verified absent before pytest runs (defense in depth).
+  # ──────────────────────────────────────────────────────────────────────
+  python-sdk-example-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      # Explicitly clear any upstream value; this job never contacts
+      # the live Anthropic API. All LLM-side tests use mocks.
+      ANTHROPIC_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Verify no ANTHROPIC_API_KEY in environment
+        run: python -c "import os, sys; sys.exit(0 if not os.environ.get('ANTHROPIC_API_KEY') else 1)"
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+      - name: Install ncp-runtime SDK (editable, from checkout)
+        run: python -m pip install -e python/ncp-runtime/
+      - name: Install example dependencies
+        working-directory: examples/python-sdk/lead-qualification-vs-llm
+        run: python -m pip install -r requirements.txt
+      - name: Run example test suite (expect 169 pass, 11 skip pre-measurement)
+        working-directory: examples/python-sdk/lead-qualification-vs-llm
+        run: python -m pytest -q tests/
+
+  # ──────────────────────────────────────────────────────────────────────
   # WASM JOB: build & lint the brick crates for wasm32-unknown-unknown.
   # Brick crates are LIBRARY targets that can only compile to WASM.
   # If you find yourself moving these into the host matrix, STOP — they

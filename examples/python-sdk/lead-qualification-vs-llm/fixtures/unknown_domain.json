@@ -1,0 +1,171 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "unknown_domain",
+  "fixtures": [
+    {
+      "id": "lead-0031",
+      "input": {
+        "company_url": "https://acme-corp.com",
+        "target_icp": "b2b saas smb creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Valid hostname, not in catalog -> profile_found=false. ICP is fully interpretable+matches Example SaaS, but short-circuit precedes ICP interpretation."
+    },
+    {
+      "id": "lead-0032",
+      "input": {
+        "company_url": "https://widgetsco.io",
+        "target_icp": "manufacturing enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; ICP would qualify Factory Example, but domain is unknown -> short-circuit wins."
+    },
+    {
+      "id": "lead-0033",
+      "input": {
+        "company_url": "https://startup.dev",
+        "target_icp": "smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; ICP has industry uninterpretable. Short-circuit on profile_found=false precedes the ICP-interpretability check (per qualify() source order)."
+    },
+    {
+      "id": "lead-0034",
+      "input": {
+        "company_url": "https://techfirm.net",
+        "target_icp": "selling to teams of hobbyists",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; ICP fully uninterpretable. Both would independently produce needs_enrichment; precedence doesn't matter here but short-circuit still fires first."
+    },
+    {
+      "id": "lead-0035",
+      "input": {
+        "company_url": "https://www.alpha.io",
+        "target_icp": "retail smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "www strip test: normalizes to alpha.io, not in catalog. ICP matches Shop profile but domain is unknown."
+    },
+    {
+      "id": "lead-0036",
+      "input": {
+        "company_url": "brand.co",
+        "target_icp": "mid-market creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Bare domain form; valid DNS labels; not in catalog."
+    },
+    {
+      "id": "lead-0037",
+      "input": {
+        "company_url": "HTTPS://Beta.App",
+        "target_icp": "enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Mixed-case scheme+host -> normalizes to beta.app; not in catalog."
+    },
+    {
+      "id": "lead-0038",
+      "input": {
+        "company_url": "https://innovate.tech/products",
+        "target_icp": "b2b saas",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Path stripped during normalization; host innovate.tech not in catalog."
+    },
+    {
+      "id": "lead-0039",
+      "input": {
+        "company_url": "https://data-shop.com",
+        "target_icp": "retail smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Precedence stress: ICP would fully qualify Shop Example profile, but data-shop.com != shop.example.com -> short-circuit before ICP."
+    },
+    {
+      "id": "lead-0040",
+      "input": {
+        "company_url": "https://platform.dev",
+        "target_icp": "smb",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Minimal ICP (segment-only, 2 dims uninterpretable); unknown host -> short-circuit wins."
+    },
+    {
+      "id": "lead-0041",
+      "input": {
+        "company_url": "https://services.io/api?v=1#top",
+        "target_icp": "b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Path+query+fragment all stripped during normalization; host services.io not in catalog."
+    },
+    {
+      "id": "lead-0042",
+      "input": {
+        "company_url": "https://foobar.co.",
+        "target_icp": "manufacturing",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Trailing dot inside the URL string, stripped during normalization; host foobar.co not in catalog."
+    },
+    {
+      "id": "lead-0043",
+      "input": {
+        "company_url": "https://techflow.net",
+        "target_icp": "we want smb creators in saas b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; ICP tokens include saas and b2b but non-contiguously, so 'b2b saas' is NOT recognized; standalone b2b counts for audience only. Short-circuit on unknown domain fires regardless."
+    },
+    {
+      "id": "lead-0044",
+      "input": {
+        "company_url": "https://globalinc.io",
+        "target_icp": "retail enterprise b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; fully interpretable ICP; short-circuit wins."
+    },
+    {
+      "id": "lead-0045",
+      "input": {
+        "company_url": "https://maker.studio",
+        "target_icp": "b2b saas smb b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "unknown_domain",
+      "notes_for_reviewer": "Unknown host; ICP contains repeated b2b tokens (idempotent on recognized set). Short-circuit before ICP interpretation."
+    }
+  ]
+}

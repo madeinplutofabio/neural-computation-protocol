@@ -1,0 +1,8 @@
+# Local measurement outputs from compare.py (microsecond-timestamped
+# per-run files; NOT the canonical published/comparison.json, which
+# IS tracked when it exists).
+local/
+
+# Live-API verification logs (pre-merge check artifact, per
+# CONTRACT.md §13). Deliberately not published.
+verification/

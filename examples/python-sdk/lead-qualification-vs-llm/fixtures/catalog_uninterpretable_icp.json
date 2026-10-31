@@ -1,0 +1,105 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "catalog_uninterpretable_icp",
+  "fixtures": [
+    {
+      "id": "lead-0022",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "b2b smb creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Example SaaS; industry uninterpretable (standalone b2b without following saas does NOT match 'b2b saas'; no manufacturing/retail). Segment=[smb] interpretable, Audience=[b2b, creators] interpretable. Stresses b2b overlap: standalone b2b counts for audience, not industry."
+    },
+    {
+      "id": "lead-0023",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "b2b saas creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Example SaaS; segment uninterpretable (no smb/mid-market/enterprise). Industry=[b2b saas] interpretable, Audience=[b2b, creators] interpretable. Mirrors brick's specimen_5 test."
+    },
+    {
+      "id": "lead-0024",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "manufacturing smb",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Example SaaS; audience uninterpretable (no b2b/b2c/creators tokens). Industry=[manufacturing] interpretable, Segment=[smb] interpretable."
+    },
+    {
+      "id": "lead-0025",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "enterprise creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Factory Example; industry uninterpretable (no manufacturing/retail/'b2b saas'). Segment=[enterprise], Audience=[creators]."
+    },
+    {
+      "id": "lead-0026",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "manufacturing b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Factory Example; segment uninterpretable. Industry=[manufacturing], Audience=[b2b]. 'b2b' standalone (manufacturing precedes, saas does not follow) -> audience only, not industry."
+    },
+    {
+      "id": "lead-0027",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "manufacturing enterprise",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Factory Example; audience uninterpretable. Industry=[manufacturing], Segment=[enterprise]."
+    },
+    {
+      "id": "lead-0028",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Shop Example; industry uninterpretable. Segment=[smb], Audience=[b2c]."
+    },
+    {
+      "id": "lead-0029",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "retail b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Shop Example; segment uninterpretable. Industry=[retail], Audience=[b2c]."
+    },
+    {
+      "id": "lead-0030",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "retail smb",
+        "notes": null
+      },
+      "expected": { "business_outcome": "needs_enrichment" },
+      "category": "catalog_uninterpretable_icp",
+      "notes_for_reviewer": "Shop Example; audience uninterpretable. Industry=[retail], Segment=[smb]."
+    }
+  ]
+}
