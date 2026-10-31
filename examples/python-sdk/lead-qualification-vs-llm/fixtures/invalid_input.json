@@ -1,0 +1,61 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "invalid_input",
+  "fixtures": [
+    {
+      "id": "lead-0046",
+      "input": {
+        "company_url": "https://exämple.com",
+        "target_icp": "b2b saas smb creators",
+        "notes": null
+      },
+      "expected": { "validation": "invalid_input" },
+      "category": "invalid_input",
+      "notes_for_reviewer": "Non-ASCII hostname ('ä' = U+00E4, UTF-8 encodes to byte 0xC3 0xA4). Lookup brick's first-pass ASCII check triggers InputError::NonAsciiHost -> Failure(INVALID_INPUT)."
+    },
+    {
+      "id": "lead-0047",
+      "input": {
+        "company_url": "https://user@example.com",
+        "target_icp": "retail smb b2c",
+        "notes": null
+      },
+      "expected": { "validation": "invalid_input" },
+      "category": "invalid_input",
+      "notes_for_reviewer": "Userinfo (@) in authority. After scheme strip + extract_authority, authority.contains('@') -> InputError::UserinfoNotAllowed -> Failure(INVALID_INPUT)."
+    },
+    {
+      "id": "lead-0048",
+      "input": {
+        "company_url": "https://example.com:8080",
+        "target_icp": "manufacturing enterprise b2b",
+        "notes": null
+      },
+      "expected": { "validation": "invalid_input" },
+      "category": "invalid_input",
+      "notes_for_reviewer": "Port specification (:8080) in authority. After scheme strip + extract_authority, authority.contains(':') -> InputError::PortNotAllowed -> Failure(INVALID_INPUT)."
+    },
+    {
+      "id": "lead-0049",
+      "input": {
+        "company_url": "ftp://example.com",
+        "target_icp": "smb",
+        "notes": null
+      },
+      "expected": { "validation": "invalid_input" },
+      "category": "invalid_input",
+      "notes_for_reviewer": "ftp:// scheme (plain string, no escaping). detect_and_strip_scheme: not https:// or http://, but contains '://' -> InputError::UnsupportedScheme -> Failure(INVALID_INPUT)."
+    },
+    {
+      "id": "lead-0050",
+      "input": {
+        "company_url": "https://-startswith-hyphen.com",
+        "target_icp": "creators",
+        "notes": null
+      },
+      "expected": { "validation": "invalid_input" },
+      "category": "invalid_input",
+      "notes_for_reviewer": "Leading-hyphen DNS label. validate_hostname: first label '-startswith-hyphen' starts with '-' -> InputError::InvalidHost -> Failure(INVALID_INPUT)."
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "catalog_partial_match",
+  "fixtures": [
+    {
+      "id": "lead-0007",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "manufacturing smb creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Example SaaS, industry mismatch. recognized: ind=[manufacturing] (profile b2b saas: miss), seg=[smb] (hit), aud=[creators] (hit). matched=2."
+    },
+    {
+      "id": "lead-0008",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "b2b saas enterprise creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Example SaaS, segment mismatch. ind=[b2b saas] (hit), seg=[enterprise] (profile smb: miss), aud=[b2b, creators] (profile creators: hit). matched=2."
+    },
+    {
+      "id": "lead-0009",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "b2b saas smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Example SaaS, audience mismatch. ind=[b2b saas] (hit), seg=[smb] (hit), aud=[b2b, b2c] (profile creators: miss). matched=2."
+    },
+    {
+      "id": "lead-0010",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "retail enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Factory Example, industry mismatch. ind=[retail] (profile manufacturing: miss), seg=[enterprise] (hit), aud=[b2b] (hit). matched=2."
+    },
+    {
+      "id": "lead-0011",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "manufacturing smb b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Factory Example, segment mismatch. ind=[manufacturing] (hit), seg=[smb] (profile enterprise: miss), aud=[b2b] (hit). matched=2."
+    },
+    {
+      "id": "lead-0012",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "manufacturing enterprise b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Factory Example, audience mismatch. ind=[manufacturing] (hit), seg=[enterprise] (hit), aud=[b2c] (profile b2b: miss). matched=2."
+    },
+    {
+      "id": "lead-0013",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "b2b saas smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Shop Example, industry mismatch. ind=[b2b saas] (profile retail: miss), seg=[smb] (hit), aud=[b2b, b2c] (profile b2c: hit). matched=2."
+    },
+    {
+      "id": "lead-0014",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "retail enterprise b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Shop Example, segment mismatch. ind=[retail] (hit), seg=[enterprise] (profile smb: miss), aud=[b2c] (hit). matched=2."
+    },
+    {
+      "id": "lead-0015",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "retail smb b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_partial_match",
+      "notes_for_reviewer": "Shop Example, audience mismatch. ind=[retail] (hit), seg=[smb] (hit), aud=[b2b] (profile b2c: miss). matched=2."
+    }
+  ]
+}

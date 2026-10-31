@@ -1,0 +1,9 @@
+{
+  "model": "claude-haiku-5-5",
+  "pricing_tier": "short_context_up_to_100k_input_tokens",
+  "input_price_per_mtok": 0.10,
+  "output_price_per_mtok": 0.50,
+  "pricing_date": "2026-10-31",
+  "pricing_source_url": "https://docs.claude.com/en/docs/about-claude/models/overview",
+  "notes": "Haiku 5.5 has a separate higher tier for prompts exceeding 100,000 input tokens. This anchor applies to the short-context tier only; the lead-qualification prompt is approximately 8 KB (far below the 100K-token threshold), so every request in this example is billed at the short-context rate."
+}

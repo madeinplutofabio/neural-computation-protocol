@@ -1,0 +1,72 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "catalog_full_match",
+  "fixtures": [
+    {
+      "id": "lead-0001",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "b2b saas smb creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Example SaaS. All 3 dims match: industry=b2b saas (contiguous), segment=smb, audience=creators. matched=3; score=1.0."
+    },
+    {
+      "id": "lead-0002",
+      "input": {
+        "company_url": "https://www.example.com",
+        "target_icp": "creators smb b2b saas",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Example SaaS, www stripped by normalization. Reversed word order; b2b saas still contiguous at positions 2-3. Audience recognized = [b2b, creators] (overlap stress); profile=creators in set. matched=3."
+    },
+    {
+      "id": "lead-0003",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "manufacturing enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Factory Example. All 3 dims match: industry=manufacturing, segment=enterprise, audience=b2b. matched=3."
+    },
+    {
+      "id": "lead-0004",
+      "input": {
+        "company_url": "HTTPS://Factory.Example.Com./info",
+        "target_icp": "enterprise manufacturing creators b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Factory Example; URL normalization stress (mixed case + trailing dot + path all stripped). Audience recognized = [b2b, creators]; profile=b2b in set. matched=3."
+    },
+    {
+      "id": "lead-0005",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "retail smb b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Shop Example. All 3 dims match: industry=retail, segment=smb, audience=b2c. matched=3."
+    },
+    {
+      "id": "lead-0006",
+      "input": {
+        "company_url": "shop.example.com",
+        "target_icp": "smb retail enterprise b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "qualified" },
+      "category": "catalog_full_match",
+      "notes_for_reviewer": "Shop Example; bare-domain URL form. Segment recognized = [smb, enterprise] (overlap stress); profile=smb in set. matched=3."
+    }
+  ]
+}

@@ -1,0 +1,2037 @@
+{
+  "schema_version": "lead-qual-comparison-0.1",
+  "run": {
+    "timestamp_utc": "2026-10-31T16:17:25.434600Z",
+    "platform": {
+      "os": "Windows 10",
+      "python": "3.11.9",
+      "ci": false
+    },
+    "ncp_binary_version": null,
+    "supported_runtime_versions": [
+      "0.3.6"
+    ],
+    "ncp_runtime_sdk_version": "0.1.0",
+    "anthropic_sdk_version": "2.3.0",
+    "llm_model": "claude-haiku-5-5",
+    "llm_model_resolved": "claude-haiku-5-5",
+    "pricing_date": "2026-10-31",
+    "fixture_set_revision": "fixtures-rev-01",
+    "fixture_set_sha256": "12e4d5c61e5d3174365021a03fc47ed6dfe63422b50224e9e30b1c56d4dbb170",
+    "prompt_template_sha256": "05ddefdbfc9bc00a71926229573ca872461d4c8601589b6553fcfb4fea9c4d1d"
+  },
+  "per_case": [
+    {
+      "id": "lead-0001",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.67249995004386,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 861.2193999579176,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 5,
+        "model_cost_usd": 0.00032050000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0002",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.88580006081611,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1309.9454999901354,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 5,
+        "model_cost_usd": 0.00032070000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0003",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.50509995594621,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 745.3757000621408,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3186,
+        "tokens_out": 5,
+        "model_cost_usd": 0.00032110000000000005,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0004",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.84939996898174,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 737.7754000481218,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3197,
+        "tokens_out": 5,
+        "model_cost_usd": 0.0003222,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0005",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.02119994908571,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1108.27289998997,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 5,
+        "model_cost_usd": 0.0003206,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0006",
+      "category": "catalog_full_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.60829999577254,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 666.8784000212327,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0016",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 58.755400008521974,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 698.481300030835,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0017",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.47939999308437,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1296.2190998950973,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003215,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0018",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 50.10719993151724,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1207.5441000051796,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003215,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0019",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.66329992748797,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1135.4610999114811,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0020",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.231399967335165,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 884.8681000526994,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3186,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003221,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0021",
+      "category": "catalog_no_match",
+      "expected": {
+        "business_outcome": "not_qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.475599964149296,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 935.9509999630973,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3185,
+        "tokens_out": 7,
+        "model_cost_usd": 0.00032199999999999997,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0007",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 50.004699965938926,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 622.1256999997422,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003215,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0008",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.930499935522676,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 739.676000084728,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003217,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0009",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.08669998217374,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 732.9112000297755,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 7,
+        "model_cost_usd": 0.00032159999999999996,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0010",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.24690001644194,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 700.5184000590816,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0011",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.28539991285652,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 695.7402999978513,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3184,
+        "tokens_out": 5,
+        "model_cost_usd": 0.00032090000000000005,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0012",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.06950006261468,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 644.1348999505863,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3186,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003221,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0013",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 46.803100034594536,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 712.0870999060571,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3184,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003219,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0014",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.89180005900562,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 711.7519000312313,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0015",
+      "category": "catalog_partial_match",
+      "expected": {
+        "business_outcome": "qualified"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "qualified",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.381000058725476,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 734.2131000477821,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 7,
+        "model_cost_usd": 0.00032159999999999996,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0022",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.923399997875094,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 662.2518000658602,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3178,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003213,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0023",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.601799993775785,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 655.2040999522433,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3178,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003213,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0024",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 46.35329998563975,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 659.8130000056699,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3178,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003213,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0025",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.23289993125945,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 614.4999000243843,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003215,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0026",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.63309993036091,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 785.8443999430165,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003217,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0027",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.54009998962283,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 902.1722000325099,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003218,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0028",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 50.262499949894845,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 692.8284000605345,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3179,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003214,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0029",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 46.503999968990684,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 691.204100032337,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3179,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003214,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0030",
+      "category": "catalog_uninterpretable_icp",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.933499910868704,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "not_qualified",
+        "correct": false,
+        "observable": true,
+        "latency_ms": 749.8426999663934,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3178,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003213,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0046",
+      "category": "invalid_input",
+      "expected": {
+        "validation": "invalid_input"
+      },
+      "ncp": {
+        "runtime": "failure",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 50.10690004564822,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 661.5238999947906,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003217,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0047",
+      "category": "invalid_input",
+      "expected": {
+        "validation": "invalid_input"
+      },
+      "ncp": {
+        "runtime": "failure",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.67519990168512,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 926.6484000254422,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3180,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003215,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0048",
+      "category": "invalid_input",
+      "expected": {
+        "validation": "invalid_input"
+      },
+      "ncp": {
+        "runtime": "failure",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.31240004952997,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 760.5444999644533,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3186,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003221,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0049",
+      "category": "invalid_input",
+      "expected": {
+        "validation": "invalid_input"
+      },
+      "ncp": {
+        "runtime": "failure",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 51.98550003115088,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 642.9528999142349,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3175,
+        "tokens_out": 7,
+        "model_cost_usd": 0.000321,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0050",
+      "category": "invalid_input",
+      "expected": {
+        "validation": "invalid_input"
+      },
+      "ncp": {
+        "runtime": "failure",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.2793000517413,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": true,
+        "observable": true,
+        "latency_ms": 709.0008999221027,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 7,
+        "model_cost_usd": 0.00032159999999999996,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0031",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.089200001209974,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 770.7215999253094,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3184,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032290000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0032",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.53720003645867,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 812.0179999386892,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3187,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032320000000000005,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0033",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.04230004083365,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 714.3157999962568,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3178,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032230000000000003,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0034",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.70530001446605,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 661.0845000250265,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3185,
+        "tokens_out": 9,
+        "model_cost_usd": 0.000323,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0035",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.52109991386533,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 1039.1002000542358,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032270000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0036",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 49.44540001451969,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 668.8258000649512,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3176,
+        "tokens_out": 9,
+        "model_cost_usd": 0.0003221,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0037",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.30789992026985,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": false,
+        "observable": true,
+        "latency_ms": 736.6914000594988,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3184,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003219,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0038",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.92669997550547,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 737.1644000522792,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 9,
+        "model_cost_usd": 0.0003226,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0039",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.40580008365214,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 688.8079999480397,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3181,
+        "tokens_out": 9,
+        "model_cost_usd": 0.0003226,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0040",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.807800048962235,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 743.1717000436038,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3175,
+        "tokens_out": 9,
+        "model_cost_usd": 0.000322,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0041",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 50.88569992221892,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": "invalid_input",
+        "business": null,
+        "correct": false,
+        "observable": true,
+        "latency_ms": 677.0171999232844,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3182,
+        "tokens_out": 7,
+        "model_cost_usd": 0.0003217,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0042",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.05609991308302,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 759.0629999758676,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3179,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032240000000000003,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0043",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 48.26640000101179,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 672.2275000065565,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3185,
+        "tokens_out": 9,
+        "model_cost_usd": 0.000323,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0044",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 46.73689999617636,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 884.698599926196,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032280000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    },
+    {
+      "id": "lead-0045",
+      "category": "unknown_domain",
+      "expected": {
+        "business_outcome": "needs_enrichment"
+      },
+      "ncp": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 47.35540004912764,
+        "model_api_calls": 0,
+        "graph_invocations": 1,
+        "tokens_in": 0,
+        "tokens_out": 0,
+        "model_cost_usd": 0.0,
+        "llm_model_resolved": null,
+        "error": null
+      },
+      "llm": {
+        "runtime": "success",
+        "validation": null,
+        "business": "needs_enrichment",
+        "correct": true,
+        "observable": true,
+        "latency_ms": 908.3853999618441,
+        "model_api_calls": 1,
+        "graph_invocations": 0,
+        "tokens_in": 3183,
+        "tokens_out": 9,
+        "model_cost_usd": 0.00032280000000000004,
+        "llm_model_resolved": "claude-haiku-5-5",
+        "error": null
+      }
+    }
+  ],
+  "aggregates": {
+    "ncp": {
+      "accuracy_all_attempted": 1.0,
+      "accuracy_completed_only": 1.0,
+      "completion_rate": 1.0,
+      "latency_ms_p50": 48.381000058725476,
+      "latency_ms_p95": 50.88569992221892,
+      "total_model_api_calls": 0,
+      "total_graph_invocations": 50,
+      "total_tokens_in": 0,
+      "total_tokens_out": 0,
+      "total_model_cost_usd": 0.0,
+      "measured_subtotals": {
+        "cases_with_complete_usage_record": 50,
+        "cases_without_complete_usage_record": 0,
+        "partial_tokens_in": 0,
+        "partial_tokens_out": 0,
+        "partial_model_cost_usd": 0.0
+      }
+    },
+    "llm": {
+      "accuracy_all_attempted": 0.6,
+      "accuracy_completed_only": 0.6,
+      "completion_rate": 1.0,
+      "latency_ms_p50": 734.2131000477821,
+      "latency_ms_p95": 1207.5441000051796,
+      "total_model_api_calls": 50,
+      "total_graph_invocations": 0,
+      "total_tokens_in": 159094,
+      "total_tokens_out": 364,
+      "total_model_cost_usd": 0.016091400000000002,
+      "measured_subtotals": {
+        "cases_with_complete_usage_record": 50,
+        "cases_without_complete_usage_record": 0,
+        "partial_tokens_in": 159094,
+        "partial_tokens_out": 364,
+        "partial_model_cost_usd": 0.016091400000000002
+      }
+    }
+  },
+  "per_category": {
+    "catalog_full_match": {
+      "ncp": {
+        "total": 6,
+        "correct_all_attempted": 6,
+        "accuracy_all_attempted": 1.0,
+        "completed": 6,
+        "correct_completed": 6,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 6,
+        "correct_all_attempted": 5,
+        "accuracy_all_attempted": 0.8333333333333334,
+        "completed": 6,
+        "correct_completed": 5,
+        "accuracy_completed_only": 0.8333333333333334,
+        "completion_rate": 1.0
+      }
+    },
+    "catalog_no_match": {
+      "ncp": {
+        "total": 6,
+        "correct_all_attempted": 6,
+        "accuracy_all_attempted": 1.0,
+        "completed": 6,
+        "correct_completed": 6,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 6,
+        "correct_all_attempted": 6,
+        "accuracy_all_attempted": 1.0,
+        "completed": 6,
+        "correct_completed": 6,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      }
+    },
+    "catalog_partial_match": {
+      "ncp": {
+        "total": 9,
+        "correct_all_attempted": 9,
+        "accuracy_all_attempted": 1.0,
+        "completed": 9,
+        "correct_completed": 9,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 9,
+        "correct_all_attempted": 1,
+        "accuracy_all_attempted": 0.1111111111111111,
+        "completed": 9,
+        "correct_completed": 1,
+        "accuracy_completed_only": 0.1111111111111111,
+        "completion_rate": 1.0
+      }
+    },
+    "catalog_uninterpretable_icp": {
+      "ncp": {
+        "total": 9,
+        "correct_all_attempted": 9,
+        "accuracy_all_attempted": 1.0,
+        "completed": 9,
+        "correct_completed": 9,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 9,
+        "correct_all_attempted": 0,
+        "accuracy_all_attempted": 0.0,
+        "completed": 9,
+        "correct_completed": 0,
+        "accuracy_completed_only": 0.0,
+        "completion_rate": 1.0
+      }
+    },
+    "invalid_input": {
+      "ncp": {
+        "total": 5,
+        "correct_all_attempted": 5,
+        "accuracy_all_attempted": 1.0,
+        "completed": 5,
+        "correct_completed": 5,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 5,
+        "correct_all_attempted": 5,
+        "accuracy_all_attempted": 1.0,
+        "completed": 5,
+        "correct_completed": 5,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      }
+    },
+    "unknown_domain": {
+      "ncp": {
+        "total": 15,
+        "correct_all_attempted": 15,
+        "accuracy_all_attempted": 1.0,
+        "completed": 15,
+        "correct_completed": 15,
+        "accuracy_completed_only": 1.0,
+        "completion_rate": 1.0
+      },
+      "llm": {
+        "total": 15,
+        "correct_all_attempted": 13,
+        "accuracy_all_attempted": 0.8666666666666667,
+        "completed": 15,
+        "correct_completed": 13,
+        "accuracy_completed_only": 0.8666666666666667,
+        "completion_rate": 1.0
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+# examples/python-sdk/lead-qualification-vs-llm/requirements.txt
+#
+# Runtime deps for compare.py and the baseline LLM adapter.
+anthropic==2.3.0
+
+# Dev/test deps.
+pytest>=8.0,<9.0
+
+# The ncp-runtime Python SDK is NOT yet on PyPI (PR 3A.4-4 publishes
+# it). Install it from this repo's checkout BEFORE running compare.py
+# or any test in this directory. With the repo root as cwd:
+#
+#     pip install -e python/ncp-runtime/
+#
+# Or from this example directory:
+#
+#     pip install -e ../../../python/ncp-runtime/
+#
+# compare.py imports from ncp_runtime at module load; running it
+# without the SDK installed produces an ImportError at startup.

@@ -1,0 +1,72 @@
+{
+  "schema_version": "lead-qual-fixtures-0.1",
+  "category": "catalog_no_match",
+  "fixtures": [
+    {
+      "id": "lead-0016",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "manufacturing enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Example SaaS; all 3 dims interpretable, zero matches. recognized: [manufacturing], [enterprise], [b2b]. Profile (b2b saas / smb / creators) hits none. matched=0 -> not_qualified (no-fallback rule)."
+    },
+    {
+      "id": "lead-0017",
+      "input": {
+        "company_url": "https://example.com",
+        "target_icp": "retail mid-market b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Example SaaS; all 3 dims interpretable, zero matches. recognized: [retail], [mid-market], [b2c]. Hyphenated mid-market as single token. matched=0 -> not_qualified."
+    },
+    {
+      "id": "lead-0018",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "retail smb creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Factory Example; all 3 dims interpretable, zero matches. recognized: [retail], [smb], [creators]. Profile (manufacturing / enterprise / b2b) hits none. matched=0 -> not_qualified."
+    },
+    {
+      "id": "lead-0019",
+      "input": {
+        "company_url": "https://factory.example.com",
+        "target_icp": "retail mid-market b2c",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Factory Example; all 3 dims interpretable, zero matches. recognized: [retail], [mid-market], [b2c]. matched=0 -> not_qualified."
+    },
+    {
+      "id": "lead-0020",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "manufacturing enterprise b2b",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Shop Example; all 3 dims interpretable, zero matches. recognized: [manufacturing], [enterprise], [b2b]. Profile (retail / smb / b2c) hits none. matched=0 -> not_qualified."
+    },
+    {
+      "id": "lead-0021",
+      "input": {
+        "company_url": "https://shop.example.com",
+        "target_icp": "b2b saas mid-market creators",
+        "notes": null
+      },
+      "expected": { "business_outcome": "not_qualified" },
+      "category": "catalog_no_match",
+      "notes_for_reviewer": "Shop Example; all 3 dims interpretable, zero matches. recognized: [b2b saas], [mid-market], [b2b, creators] (overlap: standalone b2b from 'b2b saas' also recognized as audience). Profile audience=b2c not in {b2b, creators}. matched=0 -> not_qualified."
+    }
+  ]
+}
