@@ -35,7 +35,7 @@ Required checks bound in `rules[].parameters.required_status_checks[].context`:
 | `fmt` | `.github/workflows/rust.yml` — `fmt` job |
 | `clippy` | `.github/workflows/rust.yml` — `clippy` job |
 | `test (ubuntu-24.04)` | `.github/workflows/rust.yml` — `test` job, matrix `os: ubuntu-24.04` |
-| `test (macos-14)` | `.github/workflows/rust.yml` — `test` job, matrix `os: macos-14` |
+| `test (macos-15)` | `.github/workflows/rust.yml` — `test` job, matrix `os: macos-15` |
 | `test (windows-2022)` | `.github/workflows/rust.yml` — `test` job, matrix `os: windows-2022` |
 | `mcp-smoke` | `.github/workflows/rust.yml` — `mcp-smoke` job |
 | `wasm-build` | `.github/workflows/rust.yml` — `wasm-build` job |
