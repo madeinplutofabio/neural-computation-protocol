@@ -197,11 +197,14 @@ This section reflects the latest released state. Keep it honest and specific; up
 ### 3A.4 SDKs (only after packaging is stable)
 
 **Python SDK**
-- `pip install ncp` runtime wrapper + trace iterator
-- Brick helper functions (pack/digest/sign later)
+
+**Status:** Design frozen (PR 3A.4-1 #57), implementation shipped (PR 3A.4-2 #58), adoption example shipped (PR 3A.4-3 #59), platform-wheel packaging + OIDC Trusted Publishing workflow ready (PR 3A.4-4). v0.1.0 PyPI publication pending the RC → real-tag ceremony per [`docs/PUBLISHING.md`](PUBLISHING.md) "Python SDK publish (`ncp-runtime`)".
+
+- Deliverables: `pip install ncp-runtime` → synchronous `NCP().run(...)` entry point, strict trace iterator, exception hierarchy, bundled runtime binary on Linux x86-64 / macOS ARM64 / macOS x86-64 / Windows x86-64 + universal py3-none-any fallback.
+- Non-goals for v0.1.0 (per [`docs/PYTHON_SDK.md`](PYTHON_SDK.md) §13): no brick helpers, no process pooling, no async execution, no network at import or runtime.
 
 **TypeScript SDK**
-- `npm i @ncp/runtime` subprocess wrapper (avoid duplicating Wasmtime early)
+- `npm i @ncp/runtime` subprocess wrapper (avoid duplicating Wasmtime early). Separate planning cycle (3A.4-TS) opened after Python SDK publishes.
 - Async trace iteration
 
 ### 3A.5 Brick packs + reference graphs

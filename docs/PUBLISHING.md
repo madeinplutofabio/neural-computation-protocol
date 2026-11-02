@@ -946,3 +946,85 @@ release token rotation, no revoke discipline, no manual `twine upload`.
 This publishes **`ncp-langgraph` only**, to PyPI. No GitHub Release
 artifacts, no GHCR Docker image, no Zenodo archive. Matches the
 `ncp-mcp-server` adapter publish scope.
+
+---
+
+## Python SDK publish (`ncp-runtime`)
+
+Reference: workflow at [`.github/workflows/publish-sdk.yml`](../.github/workflows/publish-sdk.yml); frozen wheel-bundling strategy at [`docs/PYTHON_SDK.md`](PYTHON_SDK.md) §11.
+
+### Why a distinct flow
+
+`ncp-runtime` ships a **bundled runtime binary** per platform wheel. That makes it different from `ncp-langgraph` (pure Python) and from `ncp-mcp-server` (crate release). The publish ceremony is a cross-platform matrix: Linux x86-64 (manylinux_2_28), macOS ARM64, macOS x86-64 (cross), Windows x86-64, plus a universal `py3-none-any` fallback wheel for other platforms.
+
+### Tag pattern (LOCKED)
+
+- Release: `ncp-runtime-sdk-vX.Y.Z` → publishes to PyPI.
+- Release candidate: `ncp-runtime-sdk-vX.Y.Z-rc.N` → publishes to TestPyPI.
+
+Any other tag form fails fast in the `validate-tag` job and never reaches a publish job. The pattern is deliberately `ncp-runtime-sdk-v*` (not `ncp-runtime-v*`) to stay distinct from the Rust `ncp-runtime` crate's version tags.
+
+### Pending publisher configuration (one-time setup)
+
+Before the first tag push, configure Trusted Publishing on **both** PyPI and TestPyPI (project page → Publishing → Add a new pending publisher):
+
+| Field | Value |
+|---|---|
+| PyPI Project name | `ncp-runtime` |
+| Owner | `madeinplutofabio` |
+| Repository name | `neural-computation-protocol` |
+| Workflow filename | `publish-sdk.yml` |
+| Environment (PyPI) | `pypi` |
+| Environment (TestPyPI) | `testpypi` |
+
+Recommended GitHub environment protection rules (Settings → Environments):
+- `pypi`: require manual approval, so the real publish is a deliberate UI click after the RC rehearsal passes.
+- `testpypi`: no approval gate; RC tag pushes auto-publish.
+
+### Pre-flight sanity check (recommended before tagging)
+
+From a clean checkout of the exact commit to be released:
+
+1. `cargo build -p ncp-runtime --release --locked --bin ncp` — Rust side builds green with pinned 1.94.0 toolchain.
+2. `pip install -e python/ncp-runtime/[dev]` + `pytest` (with `NCP_RUNTIME` set) — all existing tests + the new `test_make_provenance.py`, `test_retag_wheel.py`, `test_wheel_contents.py` (incl. §11 platform/fallback assertions), and `test_wheel_selection.py` pass locally.
+3. Confirm `python/ncp-runtime/src/ncp_runtime/_version.py:__version__` matches the tag's `X.Y.Z` exactly.
+4. Update `python/ncp-runtime/CHANGELOG.md`: replace the `[X.Y.Z] - Unreleased` heading with `[X.Y.Z] - YYYY-MM-DD` (the actual publish date).
+
+### Release ceremony
+
+12 steps. Each step is deliberately explicit and gated.
+
+1. **Verify `_version.py` + `pyproject.toml` metadata agree.** The `preflight` job in the publish workflow asserts this against the tag's version. Any mismatch fails the ceremony before any wheel is built.
+2. **Push the RC tag.** `git tag ncp-runtime-sdk-vX.Y.Z-rc.N && git push origin ncp-runtime-sdk-vX.Y.Z-rc.N`. This triggers the full matrix build + TestPyPI publish.
+3. **Watch the matrix complete.** All five build jobs (Linux, macOS ARM64, macOS x86-64, Windows, fallback) must succeed. `verify-dists` then combines them, asserts every wheel's version equals the tag's, asserts the five required platform tags are all present, and runs `pip download --platform ...` to confirm pip selects the right wheel on each target.
+4. **TestPyPI publishes.** OIDC Trusted Publishing, no tokens. Verify the project page at <https://test.pypi.org/project/ncp-runtime/> lists the five wheels + the sdist.
+5. **Verify TestPyPI install on each supported platform.** On a clean Linux x86-64 / macOS ARM64 / macOS x86-64 / Windows x86-64 machine (or clean VMs):
+   ```bash
+   python -m venv /tmp/ncp-rc && /tmp/ncp-rc/bin/python -m pip install \
+     --index-url https://test.pypi.org/simple/ \
+     --extra-index-url https://pypi.org/simple/ \
+     ncp-runtime==X.Y.Z
+   /tmp/ncp-rc/bin/python -m ncp_runtime.demo
+   ```
+   Expect: `demo: result_type: Success`. No Rust toolchain installed; the bundled binary executes.
+6. **Verify the fallback wheel on an unsupported platform.** On any machine where none of the four platform wheels match (e.g. a Linux ARM64 host), `pip install ncp-runtime` from TestPyPI picks the `py3-none-any` fallback. `python -c "from ncp_runtime import NCP; NCP().run(...)"` without a separately installed runtime raises `NCPBinaryNotFoundError` with the Python-only-vs-generic distinction documented in [`docs/PYTHON_SDK.md`](PYTHON_SDK.md) §11.
+7. **Clean up the RC tag** (optional, cosmetic). `git tag -d ncp-runtime-sdk-vX.Y.Z-rc.N && git push --delete origin ncp-runtime-sdk-vX.Y.Z-rc.N`.
+8. **Push the real tag.** `git tag ncp-runtime-sdk-vX.Y.Z && git push origin ncp-runtime-sdk-vX.Y.Z`.
+9. **Approve the `pypi` environment gate.** GitHub shows a pending approval in the Actions tab. Click approve.
+10. **PyPI publishes.** Verify the project page at <https://pypi.org/project/ncp-runtime/> lists the five wheels + the sdist.
+11. **Verify PyPI install on each supported platform.** Same procedure as step 5, with `pip install ncp-runtime==X.Y.Z` (no `--index-url`). Golden path: `python -m ncp_runtime.demo` returns Success without any Rust/cargo on the box.
+12. **Governance closure (out-of-band).** Add `python-sdk-test (*)` and `python-sdk-example-test (*)` to the required-check set per [`docs/BRANCH_PROTECTION.md`](BRANCH_PROTECTION.md) "Planned additions after `ncp-runtime` v0.1.0 publishes". This is the final step that fully closes Phase 3A.4.
+
+### Ceremony fallback (degraded release)
+
+If any platform-wheel build fails during the ceremony and cannot be resolved in the same PR, publish the `py3-none-any` fallback wheel ONLY and open a follow-up v0.1.1 PR for the broken platform. This is a documented degraded-release contingency, **not** success for normal supported-platform installation.
+
+To publish the fallback alone: manually trigger the workflow with a modified `publish-sdk.yml` that `needs:` only `build-fallback` + `verify-dists` (as a scoped-down variant), OR disable the broken job's gate with a draft-PR branch that strips it from `needs:`.
+
+### TestPyPI distribution-filename immutability (CRITICAL)
+
+TestPyPI, like PyPI, refuses to accept a second upload with the same filename, even if the file content differs. Each RC tag increment (`rc.1`, `rc.2`, ...) must produce a distinct wheel filename. The `validate-tag` + wheel-version-parity checks already enforce this: an RC tag's `X.Y.Z` is extracted from the tag, and every wheel's filename contains that exact version string. Rerunning the same RC tag produces identical filenames → upload fails. Always bump `rc.N` for a new attempt; do not retry a failed upload with the same RC tag.
+
+### Scope
+
+This publishes **`ncp-runtime` only**, to PyPI. No GitHub Release artifacts, no GHCR Docker image, no Zenodo archive. The runtime binary is bundled inside each platform wheel; the Rust `ncp-runtime` crate release (crates.io) is a separate flow.

@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="ncp-runtime on crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=ncp-runtime" /></a>&nbsp;<a href="https://crates.io/crates/ncp-mcp-server"><img alt="ncp-mcp-server on crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=ncp-mcp-server" /></a>&nbsp;<a href="https://pypi.org/project/ncp-langgraph/"><img alt="ncp-langgraph on PyPI" src="https://img.shields.io/pypi/v/ncp-langgraph?logo=python&label=ncp-langgraph" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
+  <a href="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml"><img alt="CI" src="https://github.com/madeinplutofabio/neural-computation-protocol/actions/workflows/validate.yml/badge.svg" /></a>&nbsp;<a href="https://crates.io/crates/ncp-runtime"><img alt="ncp-runtime on crates.io" src="https://img.shields.io/crates/v/ncp-runtime?logo=rust&label=ncp-runtime" /></a>&nbsp;<a href="https://crates.io/crates/ncp-mcp-server"><img alt="ncp-mcp-server on crates.io" src="https://img.shields.io/crates/v/ncp-mcp-server?logo=rust&label=ncp-mcp-server" /></a>&nbsp;<a href="https://pypi.org/project/ncp-runtime/"><img alt="ncp-runtime on PyPI" src="https://img.shields.io/pypi/v/ncp-runtime?logo=python&label=ncp-runtime" /></a>&nbsp;<a href="https://pypi.org/project/ncp-langgraph/"><img alt="ncp-langgraph on PyPI" src="https://img.shields.io/pypi/v/ncp-langgraph?logo=python&label=ncp-langgraph" /></a>&nbsp;<a href="https://github.com/madeinplutofabio/neural-computation-protocol/releases"><img alt="Release" src="https://img.shields.io/github/v/release/madeinplutofabio/neural-computation-protocol?display_name=tag&include_prereleases" /></a>&nbsp;<a href="https://opensource.org/licenses/Apache-2.0"><img alt="License" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" /></a>
 </p>
 
 ---
@@ -27,7 +27,7 @@ NCP lets developers run those routine tasks as small, reusable programs instead.
 - **Get results faster.** Small computations can finish in microseconds instead of waiting for a model response.
 - **Get predictable results.** The same input and pinned code produce the same business outcome.
 
-NCP works alongside your existing agent stack through [MCP](#use-ncp-from-an-mcp-compatible-host) and [LangGraph](#use-ncp-from-langgraph-python).
+NCP works alongside your existing agent stack through [MCP](#use-ncp-from-an-mcp-compatible-host), [LangGraph](#use-ncp-from-langgraph-python), or the standalone [Python SDK](#use-ncp-from-python).
 
 ---
 
@@ -197,6 +197,45 @@ Minimal host config shape:
 Each `--graph` becomes one MCP tool. The host sends a `tools/call`; NCP runs the graph; the adapter returns `structuredContent` plus a text mirror; and, when `--trace-dir` is set, each call writes a `<trace_id>.jsonl` trace.
 
 For ready-to-customize examples, see [examples/mcp/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/mcp).
+
+---
+
+## Use NCP from Python
+
+If you're writing plain Python and want to call NCP graphs directly — no LangGraph, no MCP host — use the `ncp-runtime` Python SDK. It wraps the `ncp` runtime binary with a simple synchronous interface.
+
+Install:
+
+```bash
+python -m pip install ncp-runtime
+```
+
+On supported platforms (Linux x86-64, macOS ARM64/x86-64, Windows x86-64) the wheel bundles a matching `ncp` binary. On other platforms, install the runtime separately (`cargo install ncp-runtime --locked`) and the SDK will find it on `PATH`.
+
+```python
+from ncp_runtime import NCP
+
+ncp = NCP()
+result = ncp.run(
+    graph="examples/graphs/lead-qualification/graph.yaml",
+    brick_dir="examples/bricks",
+    inputs={
+        "company_url": "https://example.com",
+        "target_icp": "B2B SaaS selling to creators",
+    },
+)
+print(result.result_type)                 # "Success" / "LowConfidence" / "Failure"
+for terminal in result.terminals:
+    print(terminal.node_id, terminal.output)
+```
+
+Quick smoke after install:
+
+```bash
+python -m ncp_runtime.demo
+```
+
+For a measured side-by-side comparison between the NCP graph and an LLM baseline on the same lead-qualification workload, see [examples/python-sdk/lead-qualification-vs-llm/](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/python-sdk/lead-qualification-vs-llm/). For the full API contract (binary discovery, trace iterator, exception hierarchy), see [`docs/PYTHON_SDK.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/PYTHON_SDK.md).
 
 ---
 

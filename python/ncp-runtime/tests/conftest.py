@@ -43,6 +43,8 @@ from __future__ import annotations
 
 import importlib.resources
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -130,3 +132,35 @@ def ncp_binary() -> Path:
     if not path.is_file():
         pytest.fail(f"NCP_RUNTIME points to {path} but it's not a file")
     return path
+
+
+@pytest.fixture(scope="session")
+def built_artifacts(repo_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    """Build the base py3-none-any wheel + sdist once per test session.
+
+    Shared by ``test_wheel_contents.py`` (content assertions) and
+    ``test_wheel_selection.py`` (overlap resolution via pip). Uses
+    ``python -m build`` (PEP 517); hatchling + ``build`` are in the
+    dev extras, available after ``pip install -e ".[dev]"``.
+    """
+    build_dir = tmp_path_factory.mktemp("build")
+    pkg_dir = repo_root / "python" / "ncp-runtime"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--sdist",
+            "--outdir",
+            str(build_dir),
+            str(pkg_dir),
+        ],
+        check=True,
+        timeout=180,
+    )
+    wheels = list(build_dir.glob("*.whl"))
+    sdists = list(build_dir.glob("*.tar.gz"))
+    assert len(wheels) == 1, f"expected 1 wheel, got {wheels}"
+    assert len(sdists) == 1, f"expected 1 sdist, got {sdists}"
+    return {"wheel": wheels[0], "sdist": sdists[0]}

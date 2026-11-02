@@ -30,6 +30,7 @@ A session-scoped fixture builds the wheel + sdist once via
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -45,37 +46,6 @@ import pytest
 # artifact, not a text file the test can diff against.
 _EXPECTED_WASM_SIZE = 13846
 _EXPECTED_WASM_SHA256 = "b5cc1a32634ac05ba0d208b9961179fd8b1cc298c7afa913cb59f6018b512973"
-
-
-@pytest.fixture(scope="session")
-def built_artifacts(repo_root: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    """Build the wheel + sdist once per test session.
-
-    Uses ``python -m build`` (PEP 517). The build backend
-    (hatchling) and ``build`` itself are in the dev extras, so
-    they are available after ``pip install -e ".[dev]"``.
-    """
-    build_dir = tmp_path_factory.mktemp("build")
-    pkg_dir = repo_root / "python" / "ncp-runtime"
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "build",
-            "--wheel",
-            "--sdist",
-            "--outdir",
-            str(build_dir),
-            str(pkg_dir),
-        ],
-        check=True,
-        timeout=180,
-    )
-    wheels = list(build_dir.glob("*.whl"))
-    sdists = list(build_dir.glob("*.tar.gz"))
-    assert len(wheels) == 1, f"expected 1 wheel, got {wheels}"
-    assert len(sdists) == 1, f"expected 1 sdist, got {sdists}"
-    return {"wheel": wheels[0], "sdist": sdists[0]}
 
 
 @pytest.fixture(scope="session")
@@ -338,3 +308,192 @@ def test_wheel_install_demo_runs_from_fresh_venv(
     )
     assert "demo: result_type: Success" in result.stdout
     assert "{'message': 'hello'}" in result.stdout
+
+
+# ======================================================================
+# Section 4: Platform + fallback wheel bundled-content assertions
+#
+# Covers docs/PYTHON_SDK.md §11 wheel-content checks:
+#   - Platform wheel: _bundled/ncp[.exe] present; POSIX owner-execute
+#     bit set; _bundled/provenance.json parses with required keys.
+#   - Fallback wheel: _bundled/.no_binary marker present;
+#     binary_sha256 is null in provenance.json.
+#
+# Fixtures build each variant in an isolated copy of the source tree,
+# so no files are placed under src/ncp_runtime/_bundled/ in the real
+# checkout. The copy is a session-scoped tmp directory.
+# ======================================================================
+
+
+_BUNDLED_REQUIRED_KEYS = {
+    "sdk_version",
+    "runtime_source_commit",
+    "runtime_version",
+    "rust_toolchain",
+    "build_target_triple",
+    "wheel_platform_tag",
+    "binary_filename",
+    "binary_sha256",
+    "binary_size_bytes",
+    "build_timestamp_rfc3339",
+}
+
+
+def _ignore_patterns(_dir: str, names: list[str]) -> list[str]:
+    return [
+        n for n in names if n in ("__pycache__", ".pytest_cache", "dist", "build", ".mypy_cache")
+    ]
+
+
+def _copy_pkg_tree(repo_root: Path, dest: Path) -> Path:
+    import shutil as _shutil
+
+    pkg_src = repo_root / "python" / "ncp-runtime"
+    pkg_copy = dest / "pkg"
+    _shutil.copytree(pkg_src, pkg_copy, ignore=_ignore_patterns, symlinks=False)
+    return pkg_copy
+
+
+def _build_wheel(pkg_dir: Path, outdir: Path) -> Path:
+    subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--outdir", str(outdir), str(pkg_dir)],
+        check=True,
+        timeout=240,
+    )
+    wheels = list(outdir.glob("*.whl"))
+    assert len(wheels) == 1, f"expected 1 wheel, got {wheels}"
+    return wheels[0]
+
+
+@pytest.fixture(scope="session")
+def fallback_wheel(repo_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build a py3-none-any fallback wheel with .no_binary + fallback
+    provenance.json in an isolated copy of the source tree."""
+    build_root = tmp_path_factory.mktemp("fallback")
+    pkg_copy = _copy_pkg_tree(repo_root, build_root)
+    bundled = pkg_copy / "src" / "ncp_runtime" / "_bundled"
+    bundled.mkdir(parents=True, exist_ok=True)
+    (bundled / ".no_binary").write_bytes(b"")
+    subprocess.run(
+        [
+            sys.executable,
+            str(pkg_copy / "scripts" / "make_provenance.py"),
+            "fallback",
+            "--output",
+            str(bundled / "provenance.json"),
+            "--sdk-version",
+            "0.1.0",
+            "--runtime-version",
+            "0.3.6",
+            "--rust-toolchain",
+            "1.94.0",
+            "--note",
+            "Universal Python-only fallback wheel; install runtime separately.",
+            "--force",
+        ],
+        check=True,
+    )
+    return _build_wheel(pkg_copy, build_root / "dist")
+
+
+@pytest.fixture(scope="session")
+def platform_wheel(repo_root: Path, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Build a wheel with a bundled binary + platform-mode provenance
+    in an isolated copy of the source tree. The binary name and
+    file-mode bits match the host platform's bundle contract."""
+    build_root = tmp_path_factory.mktemp("platform")
+    pkg_copy = _copy_pkg_tree(repo_root, build_root)
+    bundled = pkg_copy / "src" / "ncp_runtime" / "_bundled"
+    bundled.mkdir(parents=True, exist_ok=True)
+    is_win = sys.platform == "win32"
+    ncp_name = "ncp.exe" if is_win else "ncp"
+    ncp_path = bundled / ncp_name
+    ncp_path.write_bytes(b"\x7fELFplatformtestbinarypayload")
+    if not is_win:
+        os.chmod(ncp_path, 0o755)
+    triple = "x86_64-pc-windows-msvc" if is_win else "x86_64-unknown-linux-gnu"
+    tag = "win_amd64" if is_win else "manylinux_2_28_x86_64"
+    subprocess.run(
+        [
+            sys.executable,
+            str(pkg_copy / "scripts" / "make_provenance.py"),
+            "platform",
+            "--output",
+            str(bundled / "provenance.json"),
+            "--sdk-version",
+            "0.1.0",
+            "--runtime-version",
+            "0.3.6",
+            "--rust-toolchain",
+            "1.94.0",
+            "--runtime-source-commit",
+            "0" * 40,
+            "--build-target-triple",
+            triple,
+            "--wheel-platform-tag",
+            tag,
+            "--binary-path",
+            str(ncp_path),
+            "--force",
+        ],
+        check=True,
+    )
+    return _build_wheel(pkg_copy, build_root / "dist")
+
+
+def test_fallback_wheel_has_no_binary_marker(fallback_wheel: Path) -> None:
+    with zipfile.ZipFile(fallback_wheel) as z:
+        names = set(z.namelist())
+    assert "ncp_runtime/_bundled/.no_binary" in names, (
+        "fallback wheel must ship _bundled/.no_binary; discovery.py reads "
+        "this marker to produce the Python-only distinction"
+    )
+    assert "ncp_runtime/_bundled/ncp" not in names
+    assert "ncp_runtime/_bundled/ncp.exe" not in names
+
+
+def test_fallback_wheel_provenance_has_null_binary_fields(
+    fallback_wheel: Path,
+) -> None:
+    with zipfile.ZipFile(fallback_wheel) as z:
+        prov = json.loads(z.read("ncp_runtime/_bundled/provenance.json"))
+    assert prov["binary_sha256"] is None
+    assert prov["binary_filename"] is None
+    assert prov["binary_size_bytes"] is None
+    assert prov["runtime_source_commit"] is None
+    assert prov["build_target_triple"] is None
+    assert prov["wheel_platform_tag"] == "any"
+    assert prov["sdk_version"] == "0.1.0"
+    assert "note" in prov
+
+
+def test_platform_wheel_includes_bundled_binary(platform_wheel: Path) -> None:
+    with zipfile.ZipFile(platform_wheel) as z:
+        names = set(z.namelist())
+    ncp_entries = [
+        n for n in names if n in ("ncp_runtime/_bundled/ncp", "ncp_runtime/_bundled/ncp.exe")
+    ]
+    assert len(ncp_entries) == 1, f"expected exactly one bundled binary, got {ncp_entries}"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX file-mode bits only")
+def test_platform_wheel_bundled_ncp_has_owner_execute(platform_wheel: Path) -> None:
+    """The 0755 bit on _bundled/ncp survives hatchling + the sdist
+    pipeline on POSIX hosts. Required so ``pip install`` extracts an
+    executable file."""
+    with zipfile.ZipFile(platform_wheel) as z:
+        info = z.getinfo("ncp_runtime/_bundled/ncp")
+    mode = (info.external_attr >> 16) & 0o777
+    assert mode & 0o100, f"_bundled/ncp lacks owner-execute bit; got mode {oct(mode)}"
+
+
+def test_platform_wheel_provenance_has_required_keys(
+    platform_wheel: Path,
+) -> None:
+    with zipfile.ZipFile(platform_wheel) as z:
+        prov = json.loads(z.read("ncp_runtime/_bundled/provenance.json"))
+    missing = _BUNDLED_REQUIRED_KEYS - set(prov.keys())
+    assert not missing, f"provenance.json missing keys: {missing}"
+    assert prov["binary_sha256"].startswith("sha256:")
+    assert isinstance(prov["binary_size_bytes"], int)
+    assert prov["binary_size_bytes"] > 0
