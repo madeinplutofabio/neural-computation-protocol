@@ -411,22 +411,74 @@ jobs:
         shell: bash
         run: cp target/release/ncp.exe python/ncp-runtime/src/ncp_runtime/_bundled/ncp.exe
       - name: Verify Windows binary depends only on system DLLs
-        shell: bash
+        shell: pwsh
         run: |
-          set -eu
-          # Use the VS cmdline tools pre-installed on windows-2022.
-          BIN="python/ncp-runtime/src/ncp_runtime/_bundled/ncp.exe"
-          OUT="$(cmd //c "dumpbin /dependents \"$BIN\"")"
-          echo "$OUT"
-          # System-only acceptance: only KERNEL32.dll, ADVAPI32.dll, bcrypt.dll,
-          # ntdll.dll, WS2_32.dll, api-ms-win-* virtual DLLs, VCRUNTIME*, msvcp*,
-          # ucrtbase*. If dumpbin reports any OTHER DLL, fail.
-          NONSYS="$(echo "$OUT" | grep -oE '[A-Za-z0-9_.-]+\.dll' | grep -viE '^(KERNEL32|ADVAPI32|BCRYPT|NTDLL|WS2_32|USER32|GDI32|CRYPT32|VCRUNTIME[0-9]*|MSVCP[0-9_]*|UCRTBASE|API-MS-WIN-.*)\.dll$' || true)"
-          if [ -n "$NONSYS" ]; then
-            echo "::error::Non-system DLL dependency detected:"
-            echo "$NONSYS"
+          $ErrorActionPreference = 'Stop'
+          $bin = "python\ncp-runtime\src\ncp_runtime\_bundled\ncp.exe"
+          # dumpbin is on PATH via the ilammy/msvc-dev-cmd@v1 step above.
+          $out = & dumpbin /dependents $bin 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output $out
+            Write-Error "dumpbin exited with code $LASTEXITCODE"
             exit 1
-          fi
+          }
+          Write-Output $out
+          # Parse the "Image has the following dependencies:" section only;
+          # dumpbin's Summary section lists additional library artifacts that
+          # are not runtime imports and must not be scanned.
+          $inDeps = $false
+          $dlls = @()
+          foreach ($line in $out) {
+            if ($line -match '^\s*Image has the following dependencies:') {
+              $inDeps = $true
+              continue
+            }
+            if ($inDeps) {
+              if ($line -match '^\s*Summary\s*$') { break }
+              if ($line -match '^\s*([A-Za-z0-9_.-]+\.dll)\s*$') {
+                $dlls += $Matches[1]
+              }
+            }
+          }
+          Write-Output "Imports found: $($dlls -join ', ')"
+          # A successful dumpbin run that yielded no dependency entries means
+          # the parser failed to recognise the section; the DLL safety check
+          # would be ineffective. Fail loudly instead of silently passing.
+          if ($dlls.Count -eq 0) {
+            Write-Error "No DLL dependencies parsed from dumpbin output"
+            exit 1
+          }
+          # System-only allowlist, case-insensitive. If dumpbin reports any
+          # OTHER DLL, fail with its name.
+          $allowlist = @(
+            '^KERNEL32\.dll$',
+            '^ADVAPI32\.dll$',
+            '^BCRYPT\.dll$',
+            '^BCRYPTPRIMITIVES\.dll$',
+            '^NTDLL\.dll$',
+            '^WS2_32\.dll$',
+            '^USER32\.dll$',
+            '^GDI32\.dll$',
+            '^CRYPT32\.dll$',
+            '^VCRUNTIME[0-9_]*\.dll$',
+            '^MSVCP[0-9_]*\.dll$',
+            '^UCRTBASE\.dll$',
+            '^API-MS-WIN-.*\.dll$'
+          )
+          $nonSys = @()
+          foreach ($dll in $dlls) {
+            $matched = $false
+            foreach ($pat in $allowlist) {
+              if ($dll -match $pat) { $matched = $true; break }
+            }
+            if (-not $matched) { $nonSys += $dll }
+          }
+          if ($nonSys.Count -gt 0) {
+            Write-Output "::error::Non-system DLL dependency detected:"
+            $nonSys | ForEach-Object { Write-Output $_ }
+            exit 1
+          }
+          Write-Output "All DLL dependencies are system DLLs."
       - name: Install Python build tooling
         run: python -m pip install --upgrade pip build twine
       - name: Generate platform provenance.json
