@@ -164,6 +164,30 @@ When a new workflow lands and you want to gate `main` on it:
 
 ---
 
+## Planned additions after `ncp-runtime` v0.1.0 publishes
+
+The `python-sdk-test` matrix job (from PR 3A.4-2) and the
+`python-sdk-example-test` matrix job (from PR 3A.4-3) have been
+running green in the required-check matrix for multiple PRs. They
+should be promoted to **required** once `ncp-runtime` v0.1.0 lands
+on PyPI (PR 3A.4-4 ceremony). Expected contexts, matrix-expanded:
+
+| Context (exact string) | Emitted by |
+|---|---|
+| `python-sdk-test (ubuntu-24.04)` | `.github/workflows/rust.yml` — `python-sdk-test` job |
+| `python-sdk-test (macos-15)` | `.github/workflows/rust.yml` — `python-sdk-test` job |
+| `python-sdk-test (windows-2022)` | `.github/workflows/rust.yml` — `python-sdk-test` job |
+| `python-sdk-example-test (ubuntu-24.04)` | `.github/workflows/rust.yml` — `python-sdk-example-test` job |
+| `python-sdk-example-test (macos-15)` | `.github/workflows/rust.yml` — `python-sdk-example-test` job |
+| `python-sdk-example-test (windows-2022)` | `.github/workflows/rust.yml` — `python-sdk-example-test` job |
+
+Add these via the "Adding new required checks" procedure above, in
+the governance-closure PR after the ceremony's PyPI step completes.
+The `publish-sdk.yml` workflow itself is **not** a candidate for a
+required check — it fires on tag push, not on PR runs.
+
+---
+
 ## Rollback (the panic button)
 
 If a PUT goes wrong — typo in a context string, schema rejection, PRs

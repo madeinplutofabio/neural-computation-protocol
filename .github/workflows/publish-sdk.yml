@@ -1,0 +1,648 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Publish ncp-runtime (Python SDK) to PyPI via OIDC Trusted Publishing.
+#
+# Triggered on tags matching the Phase 3A.4 locked pattern
+# `ncp-runtime-sdk-v*`. The `validate-tag` job enforces the exact tag
+# form and routes:
+#
+#   - `ncp-runtime-sdk-vX.Y.Z-rc.N` -> publish to TestPyPI (rehearsal)
+#   - `ncp-runtime-sdk-vX.Y.Z`      -> publish to real PyPI (canonical)
+#
+# Any other tag form fails fast in `validate-tag` and NEVER reaches
+# a publish job.
+#
+# No tokens. Uses PyPI Trusted Publishing via OIDC. Pending publishers
+# must be configured on PyPI and TestPyPI BEFORE the first tag push.
+#
+# Pending publisher settings:
+#
+#   PyPI (https://pypi.org/manage/account/publishing/)
+#     project name      : ncp-runtime
+#     owner             : madeinplutofabio
+#     repository name   : neural-computation-protocol
+#     workflow filename : publish-sdk.yml
+#     environment       : pypi
+#
+#   TestPyPI (https://test.pypi.org/manage/account/publishing/)
+#     project name      : ncp-runtime
+#     owner             : madeinplutofabio
+#     repository name   : neural-computation-protocol
+#     workflow filename : publish-sdk.yml
+#     environment       : testpypi
+#
+# Recommended GitHub environment protection rules:
+#   - `pypi`: require manual approval, so the real publish is a
+#     deliberate UI click after the RC rehearsal passes.
+#   - `testpypi`: no approval gate; RC tag pushes auto-publish.
+#
+# Platform-wheel matrix (per docs/PYTHON_SDK.md §11):
+#   - Linux x86-64: inside quay.io/pypa/manylinux_2_28_x86_64 container.
+#   - macOS ARM64: macos-14 (Apple Silicon runner); target 11.0.
+#   - macOS x86-64: macos-14 cross-build to x86_64-apple-darwin; target 10.13.
+#   - Windows x86-64: windows-2022; MSVC toolchain.
+#   - Universal fallback: py3-none-any; no bundled binary.
+#
+# Ceremony fallback: if any platform-wheel build fails during the
+# release ceremony and cannot be resolved in the same PR, publish the
+# `py3-none-any` fallback wheel ONLY and open a follow-up v0.1.1 PR.
+# This is a degraded release contingency, not success for normal
+# installation.
+
+name: Publish ncp-runtime
+
+on:
+  push:
+    tags:
+      - "ncp-runtime-sdk-v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-ncp-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RUST_TOOLCHAIN: "1.94.0"
+  SDK_VERSION: "0.1.0"
+  RUNTIME_VERSION: "0.3.6"
+
+jobs:
+  # ------------------------------------------------------------------
+  # Stage 1: tag validation + preflight (lint, type, full test suite)
+  # ------------------------------------------------------------------
+  validate-tag:
+    name: Validate publish tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      publish_target: ${{ steps.validate.outputs.publish_target }}
+      package_version: ${{ steps.validate.outputs.package_version }}
+    steps:
+      - id: validate
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" =~ ^ncp-runtime-sdk-v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+            echo "publish_target=testpypi" >> "$GITHUB_OUTPUT"
+            echo "package_version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$TAG" =~ ^ncp-runtime-sdk-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "publish_target=pypi" >> "$GITHUB_OUTPUT"
+            echo "package_version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "::error::Invalid ncp-runtime publish tag: $TAG"
+          echo "::error::Expected ncp-runtime-sdk-vX.Y.Z or ncp-runtime-sdk-vX.Y.Z-rc.N"
+          exit 1
+
+  preflight:
+    name: Preflight (lint, type, full tests)
+    needs: validate-tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build ncp runtime release binary
+        run: cargo build -p ncp-runtime --release --locked --bin ncp
+      - name: Install SDK with [dev] extras
+        working-directory: python/ncp-runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Verify SDK version pin
+        working-directory: python/ncp-runtime
+        env:
+          EXPECTED_SDK_VERSION: ${{ needs.validate-tag.outputs.package_version }}
+        run: |
+          python - <<'PYEOF'
+          import os
+          import importlib.metadata as md
+          import ncp_runtime
+          expected = os.environ["EXPECTED_SDK_VERSION"]
+          assert ncp_runtime.__version__ == expected, (
+              f"ncp_runtime.__version__ = {ncp_runtime.__version__!r}, "
+              f"tag expects {expected!r}"
+          )
+          assert md.version("ncp-runtime") == expected
+          print(f"SDK runtime + package metadata both at {expected}")
+          PYEOF
+      - name: ruff check
+        working-directory: python/ncp-runtime
+        run: python -m ruff check .
+      - name: ruff format --check
+        working-directory: python/ncp-runtime
+        run: python -m ruff format --check .
+      - name: mypy --strict src
+        working-directory: python/ncp-runtime
+        run: python -m mypy --strict src
+      - name: pytest (full suite with real ncp binary)
+        working-directory: python/ncp-runtime
+        env:
+          NCP_RUNTIME: ${{ github.workspace }}/target/release/ncp
+        run: python -m pytest
+
+  # ------------------------------------------------------------------
+  # Stage 2: platform-wheel matrix + fallback
+  # ------------------------------------------------------------------
+  build-linux:
+    name: Build Linux x86-64 wheel (manylinux_2_28)
+    needs: [validate-tag, preflight]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: quay.io/pypa/manylinux_2_28_x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mark workspace safe for git (container quirk)
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install Rust toolchain inside container
+        run: |
+          set -eu
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+            | sh -s -- -y --default-toolchain ${{ env.RUST_TOOLCHAIN }} --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Build ncp release binary
+        run: cargo build -p ncp-runtime --release --locked --bin ncp
+      - name: Place bundled binary + chmod 0755
+        run: |
+          set -eu
+          cp target/release/ncp python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+          chmod 0755 python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+      - name: Verify GLIBC baseline + collect DT_NEEDED
+        id: elf
+        run: |
+          set -eu
+          BIN="python/ncp-runtime/src/ncp_runtime/_bundled/ncp"
+          MAX_GLIBC="$(readelf -V "$BIN" | grep -oE 'GLIBC_[0-9]+(\.[0-9]+)?' | sort -V | tail -n 1 | sed 's/GLIBC_//')"
+          echo "max GLIBC = $MAX_GLIBC"
+          python3 - "$MAX_GLIBC" <<'PYEOF'
+          import sys
+          parts = sys.argv[1].split(".")
+          major, minor = int(parts[0]), (int(parts[1]) if len(parts) > 1 else 0)
+          if (major, minor) > (2, 28):
+              print(f"::error::GLIBC requirement {sys.argv[1]} exceeds manylinux_2_28 baseline (2.28)")
+              sys.exit(1)
+          PYEOF
+          # Collect DT_NEEDED entries for provenance.
+          DTS="$(readelf -d "$BIN" | awk '/NEEDED/ {gsub(/[\[\]]/, "", $NF); print $NF}')"
+          {
+            echo "dts<<DTSEOF"
+            echo "$DTS"
+            echo "DTSEOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Select Python 3.10 from manylinux image
+        run: echo "/opt/python/cp310-cp310/bin" >> "$GITHUB_PATH"
+      - name: Install Python build tooling
+        run: python -m pip install --upgrade pip build twine auditwheel
+      - name: Generate platform provenance.json
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          SRC_SHA="$(git rev-parse HEAD)"
+          DT_ARGS=""
+          while IFS= read -r lib; do
+            [ -n "$lib" ] && DT_ARGS="$DT_ARGS --linux-dt-needed $lib"
+          done <<EOF
+          ${{ steps.elf.outputs.dts }}
+          EOF
+          # shellcheck disable=SC2086
+          python scripts/make_provenance.py platform \
+            --output src/ncp_runtime/_bundled/provenance.json \
+            --sdk-version ${{ env.SDK_VERSION }} \
+            --runtime-version ${{ env.RUNTIME_VERSION }} \
+            --rust-toolchain ${{ env.RUST_TOOLCHAIN }} \
+            --runtime-source-commit "$SRC_SHA" \
+            --build-target-triple x86_64-unknown-linux-gnu \
+            --wheel-platform-tag manylinux_2_28_x86_64 \
+            --binary-path src/ncp_runtime/_bundled/ncp \
+            $DT_ARGS \
+            --force
+      - name: Build wheel
+        working-directory: python/ncp-runtime
+        run: |
+          rm -rf dist/
+          python -m build --wheel
+      - name: Retag wheel to manylinux_2_28_x86_64
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          WHEEL="$(ls dist/*.whl)"
+          python scripts/retag_wheel.py \
+            --wheel "$WHEEL" \
+            --platform-tag manylinux_2_28_x86_64 \
+            --outdir dist/ \
+            --replace
+      - name: auditwheel show (secondary cross-check)
+        working-directory: python/ncp-runtime
+        run: python -m auditwheel show dist/*.whl
+      - name: twine check
+        working-directory: python/ncp-runtime
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-linux-x86_64
+          path: python/ncp-runtime/dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-macos-arm64:
+    name: Build macOS ARM64 wheel
+    needs: [validate-tag, preflight]
+    runs-on: macos-14
+    timeout-minutes: 25
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          targets: aarch64-apple-darwin
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build ncp release binary (aarch64-apple-darwin)
+        run: cargo build -p ncp-runtime --release --locked --bin ncp --target aarch64-apple-darwin
+      - name: Place bundled binary + chmod 0755
+        run: |
+          set -eu
+          cp target/aarch64-apple-darwin/release/ncp python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+          chmod 0755 python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+      - name: Install Python build tooling
+        run: python -m pip install --upgrade pip build twine
+      - name: Generate platform provenance.json
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          SRC_SHA="$(git rev-parse HEAD)"
+          python scripts/make_provenance.py platform \
+            --output src/ncp_runtime/_bundled/provenance.json \
+            --sdk-version ${{ env.SDK_VERSION }} \
+            --runtime-version ${{ env.RUNTIME_VERSION }} \
+            --rust-toolchain ${{ env.RUST_TOOLCHAIN }} \
+            --runtime-source-commit "$SRC_SHA" \
+            --build-target-triple aarch64-apple-darwin \
+            --wheel-platform-tag macosx_11_0_arm64 \
+            --binary-path src/ncp_runtime/_bundled/ncp \
+            --force
+      - name: Build wheel
+        working-directory: python/ncp-runtime
+        run: |
+          rm -rf dist/
+          python -m build --wheel
+      - name: Retag wheel to macosx_11_0_arm64
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          WHEEL="$(ls dist/*.whl)"
+          python scripts/retag_wheel.py \
+            --wheel "$WHEEL" \
+            --platform-tag macosx_11_0_arm64 \
+            --outdir dist/ \
+            --replace
+      - name: twine check
+        working-directory: python/ncp-runtime
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos-arm64
+          path: python/ncp-runtime/dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-macos-x86_64:
+    name: Build macOS x86-64 wheel (cross)
+    needs: [validate-tag, preflight]
+    runs-on: macos-14
+    timeout-minutes: 25
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "10.13"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+          targets: x86_64-apple-darwin
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build ncp release binary (x86_64-apple-darwin, cross)
+        run: cargo build -p ncp-runtime --release --locked --bin ncp --target x86_64-apple-darwin
+      - name: Place bundled binary + chmod 0755
+        run: |
+          set -eu
+          cp target/x86_64-apple-darwin/release/ncp python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+          chmod 0755 python/ncp-runtime/src/ncp_runtime/_bundled/ncp
+      - name: Install Python build tooling
+        run: python -m pip install --upgrade pip build twine
+      - name: Generate platform provenance.json
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          SRC_SHA="$(git rev-parse HEAD)"
+          python scripts/make_provenance.py platform \
+            --output src/ncp_runtime/_bundled/provenance.json \
+            --sdk-version ${{ env.SDK_VERSION }} \
+            --runtime-version ${{ env.RUNTIME_VERSION }} \
+            --rust-toolchain ${{ env.RUST_TOOLCHAIN }} \
+            --runtime-source-commit "$SRC_SHA" \
+            --build-target-triple x86_64-apple-darwin \
+            --wheel-platform-tag macosx_10_13_x86_64 \
+            --binary-path src/ncp_runtime/_bundled/ncp \
+            --force
+      - name: Build wheel
+        working-directory: python/ncp-runtime
+        run: |
+          rm -rf dist/
+          python -m build --wheel
+      - name: Retag wheel to macosx_10_13_x86_64
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          WHEEL="$(ls dist/*.whl)"
+          python scripts/retag_wheel.py \
+            --wheel "$WHEEL" \
+            --platform-tag macosx_10_13_x86_64 \
+            --outdir dist/ \
+            --replace
+      - name: twine check
+        working-directory: python/ncp-runtime
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-macos-x86_64
+          path: python/ncp-runtime/dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-windows:
+    name: Build Windows x86-64 wheel
+    needs: [validate-tag, preflight]
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build ncp release binary
+        run: cargo build -p ncp-runtime --release --locked --bin ncp
+      - name: Place bundled binary
+        shell: bash
+        run: cp target/release/ncp.exe python/ncp-runtime/src/ncp_runtime/_bundled/ncp.exe
+      - name: Verify Windows binary depends only on system DLLs
+        shell: bash
+        run: |
+          set -eu
+          # Use the VS cmdline tools pre-installed on windows-2022.
+          BIN="python/ncp-runtime/src/ncp_runtime/_bundled/ncp.exe"
+          OUT="$(cmd //c "dumpbin /dependents \"$BIN\"")"
+          echo "$OUT"
+          # System-only acceptance: only KERNEL32.dll, ADVAPI32.dll, bcrypt.dll,
+          # ntdll.dll, WS2_32.dll, api-ms-win-* virtual DLLs, VCRUNTIME*, msvcp*,
+          # ucrtbase*. If dumpbin reports any OTHER DLL, fail.
+          NONSYS="$(echo "$OUT" | grep -oE '[A-Za-z0-9_.-]+\.dll' | grep -viE '^(KERNEL32|ADVAPI32|BCRYPT|NTDLL|WS2_32|USER32|GDI32|CRYPT32|VCRUNTIME[0-9]*|MSVCP[0-9_]*|UCRTBASE|API-MS-WIN-.*)\.dll$' || true)"
+          if [ -n "$NONSYS" ]; then
+            echo "::error::Non-system DLL dependency detected:"
+            echo "$NONSYS"
+            exit 1
+          fi
+      - name: Install Python build tooling
+        run: python -m pip install --upgrade pip build twine
+      - name: Generate platform provenance.json
+        working-directory: python/ncp-runtime
+        shell: bash
+        run: |
+          set -eu
+          SRC_SHA="$(git rev-parse HEAD)"
+          python scripts/make_provenance.py platform \
+            --output src/ncp_runtime/_bundled/provenance.json \
+            --sdk-version ${{ env.SDK_VERSION }} \
+            --runtime-version ${{ env.RUNTIME_VERSION }} \
+            --rust-toolchain ${{ env.RUST_TOOLCHAIN }} \
+            --runtime-source-commit "$SRC_SHA" \
+            --build-target-triple x86_64-pc-windows-msvc \
+            --wheel-platform-tag win_amd64 \
+            --binary-path src/ncp_runtime/_bundled/ncp.exe \
+            --force
+      - name: Build wheel
+        working-directory: python/ncp-runtime
+        shell: bash
+        run: |
+          rm -rf dist/
+          python -m build --wheel
+      - name: Retag wheel to win_amd64
+        working-directory: python/ncp-runtime
+        shell: bash
+        run: |
+          set -eu
+          WHEEL="$(ls dist/*.whl)"
+          python scripts/retag_wheel.py \
+            --wheel "$WHEEL" \
+            --platform-tag win_amd64 \
+            --outdir dist/ \
+            --replace
+      - name: twine check
+        working-directory: python/ncp-runtime
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-windows-x86_64
+          path: python/ncp-runtime/dist/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-fallback:
+    name: Build universal py3-none-any fallback wheel
+    needs: [validate-tag, preflight]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install Python build tooling
+        run: python -m pip install --upgrade pip build twine
+      - name: Mark fallback + write fallback provenance
+        working-directory: python/ncp-runtime
+        run: |
+          set -eu
+          : > src/ncp_runtime/_bundled/.no_binary
+          python scripts/make_provenance.py fallback \
+            --output src/ncp_runtime/_bundled/provenance.json \
+            --sdk-version ${{ env.SDK_VERSION }} \
+            --runtime-version ${{ env.RUNTIME_VERSION }} \
+            --rust-toolchain ${{ env.RUST_TOOLCHAIN }} \
+            --note "Universal Python-only fallback wheel. Install the ncp runtime separately (cargo install ncp-runtime --locked, or a prebuilt binary from the release page) and pass binary= to NCP(), OR install a platform wheel of ncp-runtime on a supported platform." \
+            --force
+      - name: Build wheel + sdist
+        working-directory: python/ncp-runtime
+        run: |
+          rm -rf dist/
+          python -m build
+      - name: twine check
+        working-directory: python/ncp-runtime
+        run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-fallback
+          path: |
+            python/ncp-runtime/dist/*.whl
+            python/ncp-runtime/dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # Stage 3: aggregate dists + verify wheel/version parity + selection
+  # ------------------------------------------------------------------
+  verify-dists:
+    name: Verify combined dist/ (version parity + wheel selection)
+    needs:
+      - validate-tag
+      - build-linux
+      - build-macos-arm64
+      - build-macos-x86_64
+      - build-windows
+      - build-fallback
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Combine into dist/
+        run: |
+          set -eu
+          mkdir -p dist
+          find artifacts -type f \( -name "*.whl" -o -name "*.tar.gz" \) -print0 \
+            | xargs -0 -I{} cp -v {} dist/
+          echo "Combined dist/ contents:"
+          ls -l dist/
+      - name: Verify every wheel's version equals the tag's package version
+        env:
+          EXPECTED: ${{ needs.validate-tag.outputs.package_version }}
+        run: |
+          set -eu
+          for wheel in dist/*.whl; do
+            fname="$(basename "$wheel")"
+            version="$(echo "$fname" | awk -F'-' '{print $2}')"
+            if [ "$version" != "$EXPECTED" ]; then
+              echo "::error::Wheel $fname has version $version; tag expects $EXPECTED"
+              exit 1
+            fi
+          done
+          echo "all wheels at $EXPECTED"
+      - name: Verify expected tag set (4 platform wheels + fallback + sdist)
+        run: |
+          set -eu
+          REQUIRED_SUFFIXES=(
+            "-py3-none-manylinux_2_28_x86_64.whl"
+            "-py3-none-macosx_11_0_arm64.whl"
+            "-py3-none-macosx_10_13_x86_64.whl"
+            "-py3-none-win_amd64.whl"
+            "-py3-none-any.whl"
+          )
+          for suffix in "${REQUIRED_SUFFIXES[@]}"; do
+            if ! ls dist/*"$suffix" >/dev/null 2>&1; then
+              echo "::error::Missing required wheel ending in $suffix"
+              exit 1
+            fi
+          done
+          echo "all required wheel tags present"
+      - name: Verify pip selection on each target platform
+        run: |
+          set -eu
+          mkdir -p /tmp/sel
+          for target in \
+              "manylinux_2_28_x86_64|-manylinux_2_28_x86_64.whl" \
+              "macosx_11_0_arm64|-macosx_11_0_arm64.whl" \
+              "macosx_10_13_x86_64|-macosx_10_13_x86_64.whl" \
+              "win_amd64|-win_amd64.whl" \
+              "linux_aarch64|-any.whl"; do
+            IFS='|' read -r plat expected <<< "$target"
+            out="/tmp/sel/$plat"
+            rm -rf "$out"
+            mkdir -p "$out"
+            python -m pip download --no-deps --no-index \
+              --find-links dist/ --dest "$out" \
+              --platform "$plat" --python-version 3.10 \
+              --implementation py --abi none \
+              --only-binary ":all:" ncp-runtime
+            picked="$(ls "$out"/*.whl)"
+            if [[ "$(basename "$picked")" != *"$expected" ]]; then
+              echo "::error::pip picked $(basename "$picked") for --platform $plat; expected a wheel ending in $expected"
+              exit 1
+            fi
+            echo "ok: --platform $plat -> $(basename "$picked")"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  # ------------------------------------------------------------------
+  # Stage 4: publish (OIDC Trusted Publishing)
+  # ------------------------------------------------------------------
+  publish-testpypi:
+    name: Publish to TestPyPI (RC)
+    needs: [validate-tag, verify-dists]
+    if: needs.validate-tag.outputs.publish_target == 'testpypi'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/ncp-runtime/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: false
+          print-hash: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [validate-tag, verify-dists]
+    if: needs.validate-tag.outputs.publish_target == 'pypi'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ncp-runtime/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: false
+          print-hash: true
