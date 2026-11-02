@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Rust `ncp-runtime` crate, `ncp-mcp-server`, and `ncp-langgraph`;
 bumps reflect SDK API or behavior changes only.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-02
 
 First public release. Publishes the Python SDK for the Neural
 Computation Protocol runtime to PyPI.
