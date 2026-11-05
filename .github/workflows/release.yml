@@ -105,7 +105,7 @@ jobs:
           cp -r examples/bricks "$STAGE/examples/"
           cp LICENSE NOTICE README.md "$STAGE/"
           echo "--- $STAGE contents ---"
-          find "$STAGE" -type f | head -50
+          find "$STAGE" -type f | sed -n '1,50p'
           echo "STAGE=$STAGE" >> "$GITHUB_ENV"
 
       - name: Pack tar.gz (Unix)
