@@ -60,7 +60,7 @@ def test_generic_workflow_round_trip(home: Path, dist: Path) -> None:
         brick_dir=BRICKS_DIR,
         name="example.generic-echo",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         description="D4 generic echo fixture",
         out=out,
     )
@@ -90,7 +90,7 @@ def test_generic_workflow_side_by_side_versions(home: Path, dist: Path) -> None:
             brick_dir=BRICKS_DIR,
             name="example.generic-echo",
             version=ver,
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=dist / f"example.generic-echo-{ver}.tar.gz",
         )
         install(pack["path"], sha256=pack["sha256"], binary=NCP_BIN_ENV)

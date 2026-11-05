@@ -59,7 +59,7 @@ def _install_lead_qual(dist: Path, *, version: str = "0.1.0") -> dict:
         brick_dir=BRICKS_DIR,
         name="org.ncp-examples.lead-qualification",
         version=version,
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=dist / f"lead-qualification-{version}.tar.gz",
     )
     return install(pack["path"], sha256=pack["sha256"], binary=NCP_BIN_ENV)

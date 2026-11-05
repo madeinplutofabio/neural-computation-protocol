@@ -70,7 +70,7 @@ def test_package_lead_qualification_round_trip(out_dir: Path) -> None:
         brick_dir=BRICKS_DIR,
         name="org.ncp-examples.lead-qualification",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         description="test package",
         out=out,
     )
@@ -138,7 +138,7 @@ def test_extracted_archive_executes_on_real_runtime(out_dir: Path) -> None:
         brick_dir=BRICKS_DIR,
         name="org.ncp-examples.lead-qualification",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=out,
     )
     extract = out_dir / "extracted"
@@ -167,7 +167,7 @@ def test_package_rejects_missing_graph(out_dir: Path, tmp_path: Path) -> None:
             brick_dir=BRICKS_DIR,
             name="org.test.x",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -179,7 +179,7 @@ def test_package_rejects_missing_brick_dir(out_dir: Path, tmp_path: Path) -> Non
             brick_dir=tmp_path / "nonexistent",
             name="org.test.x",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -202,7 +202,7 @@ def test_package_rejects_brick_map(tmp_path: Path, out_dir: Path) -> None:
             brick_dir=BRICKS_DIR,
             name="org.test.x",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -223,7 +223,7 @@ def test_package_rejects_short_name_collision(tmp_path: Path, out_dir: Path) -> 
             brick_dir=BRICKS_DIR,
             name="org.test.collision",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -247,7 +247,7 @@ def test_package_rejects_digest_mismatch(tmp_path: Path, out_dir: Path) -> None:
             brick_dir=staged,
             name="org.ncp-examples.lead-qualification",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "tampered.tar.gz",
         )
 
@@ -269,7 +269,7 @@ def test_package_rejects_node_version_constraint_mismatch(tmp_path: Path, out_di
             brick_dir=BRICKS_DIR,
             name="org.test.bad-version",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -291,7 +291,7 @@ def test_package_rejects_unsupported_version_comparator(tmp_path: Path, out_dir:
             brick_dir=BRICKS_DIR,
             name="org.test.bad-syntax",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -310,7 +310,7 @@ def test_package_rejects_prerelease_constraint(tmp_path: Path, out_dir: Path) ->
             brick_dir=BRICKS_DIR,
             name="org.test.prerelease",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -382,7 +382,7 @@ def test_package_rejects_absolute_artifact_path(tmp_path: Path, out_dir: Path) -
             brick_dir=staged,
             name="org.test.abs-path",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -405,7 +405,7 @@ def test_package_rejects_parent_traversal_schema_path(tmp_path: Path, out_dir: P
             brick_dir=staged,
             name="org.test.traversal",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -438,7 +438,7 @@ def test_package_rejects_symlink_wasm(tmp_path: Path, out_dir: Path) -> None:
             brick_dir=staged,
             name="org.test.symlink",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -467,7 +467,7 @@ def test_wasm_selection_lone_wasm_without_path_field(tmp_path: Path, out_dir: Pa
         brick_dir=staged,
         name="org.test.lone-wasm",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=out,
     )
     assert out.is_file()
@@ -492,7 +492,7 @@ def test_wasm_selection_ambiguous_falls_back_to_short_name(tmp_path: Path, out_d
         brick_dir=staged,
         name="org.test.fallback",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=out,
     )
     assert out.is_file()
@@ -519,7 +519,7 @@ def test_wasm_selection_ambiguous_without_match_rejected(tmp_path: Path, out_dir
             brick_dir=staged,
             name="org.test.ambig",
             version="0.1.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out_dir / "x.tar.gz",
         )
 
@@ -534,7 +534,7 @@ def test_package_preserves_prior_output_on_failure(tmp_path: Path, out_dir: Path
         brick_dir=BRICKS_DIR,
         name="org.ncp-examples.lead-qualification",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=out,
     )
     original_sha = result["sha256"]
@@ -546,7 +546,7 @@ def test_package_preserves_prior_output_on_failure(tmp_path: Path, out_dir: Path
             brick_dir=tmp_path / "does-not-exist",
             name="org.ncp-examples.lead-qualification",
             version="0.2.0",
-            runtime_compatibility=">=0.3.6,<0.4.0",
+            runtime_compatibility=">=0.4.0,<0.5.0",
             out=out,
         )
 
@@ -573,7 +573,7 @@ def test_package_independent_author_graph_no_name_hardcoding(tmp_path: Path, out
         brick_dir=BRICKS_DIR,
         name="com.indie-vendor.hello",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=out,
     )
     assert out.is_file()

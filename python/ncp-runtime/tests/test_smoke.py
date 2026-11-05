@@ -48,11 +48,12 @@ def test_supported_runtime_versions_shape() -> None:
 
 
 def test_supported_runtime_versions_exact_pin() -> None:
-    """SDK v0.1.0 ships with an exact pin to runtime 0.3.6 per
-    design doc §4.2.
+    """SDK v0.4.0 ships with an exact pin to runtime 0.4.0 per
+    design doc §4.2 and the coordinated-release policy in
+    ``docs/COMPATIBILITY.md``.
 
     Tuple equality rather than ``in`` membership: a future
-    expansion of the supported set (e.g., adding ``0.3.7``) must
+    expansion of the supported set (e.g., adding ``0.4.1``) must
     update this test deliberately, which forces the maintainer to
     re-read the version-compat contract and confirm the expansion
     is authorized. ``in`` membership would silently accept any
@@ -60,7 +61,7 @@ def test_supported_runtime_versions_exact_pin() -> None:
     """
     import ncp_runtime
 
-    assert ncp_runtime.SUPPORTED_RUNTIME_VERSIONS == ("0.3.6",)
+    assert ncp_runtime.SUPPORTED_RUNTIME_VERSIONS == ("0.4.0",)
 
 
 def test_all_names_match_module_attributes() -> None:

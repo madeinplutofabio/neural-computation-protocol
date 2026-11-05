@@ -604,7 +604,7 @@ The adapter depends on `ncp-runtime` via:
 
 ```toml
 [dependencies]
-ncp-runtime = { version = "0.3.6", path = "../../runtime" }
+ncp-runtime = { version = "0.4.0", path = "../../runtime" }
 ```
 
 **Both fields are intentional.** During workspace development, Cargo
@@ -618,7 +618,7 @@ published crates, since the path doesn't exist on consumer machines).
 
 - **Path only** (`{ path = "../../runtime" }`). Cannot publish — Cargo
   rejects path-only deps in published crates.
-- **Version only** (`"0.3.6"`). Loses local-runtime testing during
+- **Version only** (`"0.4.0"`). Loses local-runtime testing during
   development; every adapter change has to test against a published
   runtime version, defeating workspace ergonomics.
 - **Path during dev, swap to version at publish time.** Forces a

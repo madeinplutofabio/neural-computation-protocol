@@ -473,7 +473,7 @@ def test_ncp_binary_version_is_not_substituted_from_sdk_constant():
     )
     assert comparison["run"]["ncp_binary_version"] is None
     assert isinstance(comparison["run"]["supported_runtime_versions"], list)
-    assert "0.3.6" in comparison["run"]["supported_runtime_versions"]
+    assert "0.4.0" in comparison["run"]["supported_runtime_versions"]
 
 
 def test_llm_model_resolved_set_from_first_response(monkeypatch):

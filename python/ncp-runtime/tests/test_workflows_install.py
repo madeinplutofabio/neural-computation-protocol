@@ -66,7 +66,7 @@ def _pack_lead_qual(dist: Path, *, version: str = "0.1.0") -> dict:
         brick_dir=BRICKS_DIR,
         name="org.ncp-examples.lead-qualification",
         version=version,
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         description="lead qualification v" + version,
         out=out,
     )
@@ -742,7 +742,7 @@ def test_install_rejects_tampered_brick_despite_matching_outer_sha(
         brick_dir=staged,
         name="org.ncp-examples.lead-qualification",
         version="0.1.0",
-        runtime_compatibility=">=0.3.6,<0.4.0",
+        runtime_compatibility=">=0.4.0,<0.5.0",
         out=good_out,
     )
 

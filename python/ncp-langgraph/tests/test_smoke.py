@@ -31,7 +31,7 @@ def test_package_imports() -> None:
 
 
 def test_version_matches_package_release() -> None:
-    """``__version__`` matches the locked v0.1.0 package release string
+    """``__version__`` matches the locked v0.4.0 package release string
     AND matches the installed package metadata version.
 
     Regression sentinel that catches drift between the three version
@@ -44,7 +44,7 @@ def test_version_matches_package_release() -> None:
     """
     import importlib.metadata as md
 
-    assert ncp_langgraph.__version__ == "0.1.0"
+    assert ncp_langgraph.__version__ == "0.4.0"
     assert md.version("ncp-langgraph") == ncp_langgraph.__version__
 
 
