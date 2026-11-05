@@ -77,6 +77,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 import urllib.error
@@ -315,7 +316,11 @@ def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
     try:
-        if os.name == "nt":
+        # NOTE: use `sys.platform == "win32"` (not `os.name == "nt"`) so
+        # mypy's platform narrowing sees this branch as Windows-only and
+        # does not type-check `ctypes.windll` on Linux/macOS, where
+        # `ctypes` has no `windll` attribute.
+        if sys.platform == "win32":
             # On Windows, os.kill(pid, 0) raises on non-existent pids.
             # Use psutil-free probing via OpenProcess through ctypes.
             import ctypes
