@@ -10,8 +10,9 @@ so the version string has exactly one authoritative location and no
 circular-import risk arises from the public package surface importing
 from internal modules that also need the version.
 
-PR F bumps this from ``"0.1.0.dev0"`` to ``"0.1.0"`` as part of the
-publish ceremony (mirrors the bump in ``pyproject.toml``).
+Starting with NCP 0.4.0, this adapter advances together with the
+other maintained implementation packages as a coordinated release
+cohort (see ``docs/COMPATIBILITY.md``).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.4.0"

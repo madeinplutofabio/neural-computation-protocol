@@ -319,8 +319,8 @@ Pricing is tied to a specific date; a change in Anthropic's prices after that da
   "run": {
     "timestamp_utc": "...",
     "platform": { "os": "...", "python": "...", "ci": false },
-    "ncp_binary_version": "0.3.6",
-    "ncp_runtime_sdk_version": "0.1.0",
+    "ncp_binary_version": "0.4.0",
+    "ncp_runtime_sdk_version": "0.4.0",
     "llm_model": "claude-haiku-5-5",
     "llm_model_resolved": "claude-haiku-5-5-20261001",
     "pricing_date": "2026-10-30",

@@ -58,7 +58,7 @@ def _runtime_info_record() -> dict[str, Any]:
     return {
         "trace_schema_version": _SCHEMA_VERSION,
         "type": "runtime_info",
-        "runtime_version": "0.3.6",
+        "runtime_version": "0.4.0",
         "wasmtime_version": "26.0.0",
         "timestamp": "2026-10-28T00:00:00Z",
     }
@@ -216,7 +216,7 @@ def test_runtime_info_record_happy_path(tmp_path: Path) -> None:
     rec = records[0]
     assert isinstance(rec, RuntimeInfoRecord)
     assert rec.trace_schema_version == _SCHEMA_VERSION
-    assert rec.runtime_version == "0.3.6"
+    assert rec.runtime_version == "0.4.0"
     assert rec.wasmtime_version == "26.0.0"
     assert rec.timestamp == "2026-10-28T00:00:00Z"
 

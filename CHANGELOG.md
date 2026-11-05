@@ -11,6 +11,59 @@ All notable changes to the NCP specification and its reference tooling
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Brick versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html). NCP protocol versions follow the versioning policy in the spec (v0.2.x patch-compatible, breaking changes require v0.3.0).
 
+## [0.4.0] - 2026-11-05
+
+NCP 0.4.0 is the first **coordinated release** of the project. From
+this version on, the four maintained implementation packages (Rust
+`ncp-runtime`, Python `ncp-runtime` SDK, `ncp-mcp-server`,
+`ncp-langgraph`) advance together as one NCP release cohort. The
+protocol specification, the workflow archive schema, and the brick
+crates stay on their own cadence.
+
+### Changed
+
+- **Rust `ncp-runtime`**: version `0.3.6` -> `0.4.0`. No code change
+  versus `0.3.6`; the bump is the coordinated-release alignment.
+- **`ncp-mcp-server`**: version `0.1.0` -> `0.4.0`; `ncp-runtime`
+  dependency bumped to `0.4.0`. No code change versus `0.1.0`.
+- **Python SDK `ncp-runtime`**: version `0.1.0` -> `0.4.0`.
+  `SUPPORTED_RUNTIME_VERSIONS` tightened from `("0.3.6",)` to
+  `("0.4.0",)`.
+- **`ncp-langgraph`**: version `0.1.0` -> `0.4.0`. No code change
+  versus `0.1.0`.
+- **`.github/workflows/publish-sdk.yml`**: hardcoded `SDK_VERSION`
+  and `RUNTIME_VERSION` bumped to `0.4.0`.
+- **`README.md`**: trimmed to a business-first introduction + one
+  runnable quick-start; component-version matrix moved to
+  `docs/COMPATIBILITY.md`.
+- **`examples/workflows/README.md`**: "signed manifests" wording
+  corrected to "manifests containing committed artifact digests"
+  (archive integrity is verified against SHA-256 digests; signature
+  trust is a separate hardening track).
+
+### Added
+
+- **`docs/COMPATIBILITY.md`** (new): version matrix for the
+  coordinated 0.4.0 cohort, workflow archive compatibility rules,
+  statement of what stays independent (protocol spec, archive
+  schema, brick crates), and the criteria for 1.0.0.
+
+### Unchanged
+
+- Protocol specification stays at [v0.2.3](spec/ncp-v0.2.3.md).
+  Brick `ncp_protocol_range` pins (`>=0.2.0 <0.3.0`) stay intact.
+- Workflow archive schema stays at `ncp-workflow-0.1`.
+- Reference brick crates (`bricks/*`) stay at their own
+  `0.1.0` versions. A brick is a separately versioned computation.
+
+### Compatibility note for existing workflow archives
+
+A workflow archive authored before NCP 0.4.0 and pinned
+`runtime_compatibility: ">=0.3.6,<0.4.0"` cannot be installed
+against the 0.4.0 runtime. That is the intended behavior; see
+[`docs/COMPATIBILITY.md`](docs/COMPATIBILITY.md) for the two
+supported paths forward.
+
 ## [0.3.6] — 2026-05-27
 
 ### Added

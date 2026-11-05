@@ -10,9 +10,60 @@ All notable changes to `ncp-runtime` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-`ncp-runtime` (this Python SDK) is versioned independently from the
-Rust `ncp-runtime` crate, `ncp-mcp-server`, and `ncp-langgraph`;
-bumps reflect SDK API or behavior changes only.
+Starting with 0.4.0, this SDK advances together with the other
+maintained NCP implementation packages as a coordinated release
+cohort. See [`docs/COMPATIBILITY.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/COMPATIBILITY.md)
+for the version matrix.
+
+## [0.4.0] - 2026-11-05
+
+First coordinated NCP release. This SDK release ships the workflow
+consumption and distribution subpackage, and aligns its version
+number with the Rust `ncp-runtime` crate, `ncp-mcp-server`, and
+`ncp-langgraph` under the coordinated-release policy.
+
+### Added
+
+- **`ncp_runtime.workflows`**: new subpackage for packaging,
+  installing, listing, resolving, inspecting and removing NCP
+  workflow archives. Exposes a Python API and a `python -m
+  ncp_runtime.workflows` command-line interface with subcommands
+  `package`, `install`, `list`, `show`, `resolve`, `remove`,
+  `mcp-config`.
+- **`NCP.run_workflow(name, inputs, *, version=None, ...)`**:
+  invoke an installed workflow by identity rather than by file
+  paths. Resolves to an installed `(name, version)` under
+  `$NCP_WORKFLOW_HOME` (default `~/.ncp/workflows/`), then
+  delegates to `NCP.run()` unchanged.
+- **Workflow archive format `ncp-workflow-0.1`**: self-contained
+  `<name>-<version>.tar.gz` carrying `workflow.json`, the graph,
+  every referenced brick's manifest, WASM and schemas. Install is
+  SHA-256-verified before extraction, safe-extracted (no
+  traversal, no symlinks, no duplicates), and atomically published
+  into `$NCP_WORKFLOW_HOME`.
+- **MCP integration without server changes**: `python -m
+  ncp_runtime.workflows mcp-config` prints the exact `--graph` and
+  `--brick-dir` arguments (or an `mcpServers` snippet) for an
+  installed workflow; `ncp-mcp-server` is unchanged.
+- **New error subclasses**: `NCPWorkflowError`,
+  `NCPWorkflowNotInstalledError`,
+  `NCPWorkflowAmbiguousVersionError`, `NCPWorkflowDigestError`,
+  `NCPWorkflowRuntimeIncompatibleError`.
+- **Optional extra**: `pip install 'ncp-runtime[workflows]'`
+  installs `pyyaml` for workflow metadata parsing.
+
+### Changed
+
+- **`SUPPORTED_RUNTIME_VERSIONS`**: tightened from `("0.3.6",)` to
+  `("0.4.0",)`. Bundled wheels now ship the 0.4.0 runtime binary.
+- Package version `0.1.0` -> `0.4.0` as part of the coordinated
+  NCP release cohort. No breaking API change relative to 0.1.0
+  beyond the runtime-version pin.
+
+### Documentation
+
+- README trimmed to point at the top-level NCP README and the new
+  `docs/COMPATIBILITY.md`.
 
 ## [0.1.0] - 2026-11-02
 

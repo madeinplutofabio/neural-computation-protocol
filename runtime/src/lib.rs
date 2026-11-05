@@ -7,7 +7,7 @@
 //! Most users start with the `ncp` CLI:
 //!
 //! ```text
-//! cargo install ncp-runtime --version 0.3.6 --locked
+//! cargo install ncp-runtime --version 0.4.0 --locked
 //! ncp --version
 //! ```
 //!

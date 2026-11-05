@@ -610,7 +610,7 @@ def test_run_real_subprocess_timeout_kills_parent_and_descendant(
     pid_file = tmp_path / "pids.txt"
     binary = _write_slow_binary_with_descendant(tmp_path, pid_file)
 
-    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.3.6")
+    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.4.0")
 
     ncp = NCP(binary=binary, timeout=2.0)
 
@@ -667,7 +667,7 @@ def test_run_real_subprocess_overflow_raises(
     """
     binary = _write_overflow_binary(tmp_path, 20_000_000)
 
-    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.3.6")
+    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.4.0")
 
     ncp = NCP(binary=binary, timeout=30.0)
     with pytest.raises(NCPSubprocessError) as excinfo:
@@ -726,7 +726,7 @@ def _patch_run_mocked(monkeypatch: pytest.MonkeyPatch, **fake_kwargs: Any) -> No
     """Install the mocked-subprocess scaffolding for Section 7.
 
     Patches:
-      * ``check_runtime_version`` -> no-op returning "0.3.6".
+      * ``check_runtime_version`` -> no-op returning "0.4.0".
       * ``_terminate_tree`` / ``_signal_tree_terminate`` ->
         deterministic no-ops that mark the fake process as killed.
         REQUIRED on Windows: the real ``_terminate_tree`` calls
@@ -740,7 +740,7 @@ def _patch_run_mocked(monkeypatch: pytest.MonkeyPatch, **fake_kwargs: Any) -> No
     categorization code paths. Real OS process termination is
     tested in Section 6.
     """
-    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.3.6")
+    monkeypatch.setattr("ncp_runtime.runner.check_runtime_version", lambda _p: "0.4.0")
 
     def fake_terminate(proc: Any) -> None:
         if proc.returncode is None:

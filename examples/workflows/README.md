@@ -1,8 +1,8 @@
-# NCP workflow consumption & distribution (Phase 3A.5-2)
+# NCP workflow consumption & distribution
 
-This directory holds the worked example and CI fixture for the Phase 3A.5-2
-workflow-consumption mechanism. The mechanism makes an NCP computation —
-graph + referenced bricks + manifests — portable and installable *by
+This directory holds the worked example and CI fixture for the
+workflow-consumption mechanism. The mechanism makes an NCP computation
+(graph + referenced bricks + manifests) portable and installable *by
 name and version*, from Python, the MCP server, and the LangGraph adapter,
 without a repo clone, a Rust toolchain, or any manual YAML/WASM wrangling.
 
@@ -26,9 +26,10 @@ brick_dir=)` respectively. `mcp-config` just emits the right args, and
 ## Producer walkthrough — publish your own workflow
 
 A developer has written their own graph. The brick artifacts they
-reference already exist and already have signed manifests (brick-author
-tooling is a separate concern, out of scope here). They run the SDK's
-packager against their graph + brick-dir:
+reference already exist and their manifests already contain
+committed artifact digests (brick-author tooling is a separate
+concern, out of scope here). They run the SDK's packager against
+their graph + brick-dir:
 
 ```bash
 pip install 'ncp-runtime[workflows]'
@@ -38,7 +39,7 @@ python -m ncp_runtime.workflows package \
   --brick-dir    ./bricks \
   --name         com.my-vendor.my-workflow \
   --version      0.1.0 \
-  --runtime-compat ">=0.3.6,<0.4.0" \
+  --runtime-compat ">=0.4.0,<0.5.0" \
   --out          my-workflow-0.1.0.tar.gz
 ```
 

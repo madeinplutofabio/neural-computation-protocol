@@ -10,8 +10,8 @@ jobs (platform mode) and the fallback-wheel build job (fallback mode).
 Platform mode (one platform wheel):
   python scripts/make_provenance.py platform \
     --output src/ncp_runtime/_bundled/provenance.json \
-    --sdk-version 0.1.0 \
-    --runtime-version 0.3.6 \
+    --sdk-version 0.4.0 \
+    --runtime-version 0.4.0 \
     --rust-toolchain 1.94.0 \
     --runtime-source-commit <40-hex-sha-from-git-rev-parse-HEAD> \
     --build-target-triple x86_64-unknown-linux-gnu \
@@ -22,8 +22,8 @@ Platform mode (one platform wheel):
 Fallback mode (py3-none-any wheel, no bundled binary):
   python scripts/make_provenance.py fallback \
     --output src/ncp_runtime/_bundled/provenance.json \
-    --sdk-version 0.1.0 \
-    --runtime-version 0.3.6 \
+    --sdk-version 0.4.0 \
+    --runtime-version 0.4.0 \
     --rust-toolchain 1.94.0 \
     --note "Universal Python-only fallback wheel; see docs/PYTHON_SDK.md §11."
 

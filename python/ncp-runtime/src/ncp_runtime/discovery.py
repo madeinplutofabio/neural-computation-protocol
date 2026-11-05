@@ -49,7 +49,7 @@ _BINARY_NAME = "ncp.exe" if sys.platform == "win32" else "ncp"
 _NO_BINARY_MARKER = ".no_binary"
 
 # Version-probe hardening. The expected output is ~20 bytes
-# (`ncp 0.3.6\n`); 4 KiB is ample headroom and tightly bounds the
+# (`ncp 0.4.0\n`); 4 KiB is ample headroom and tightly bounds the
 # damage a misbehaving binary can do between spawn and timeout.
 _VERSION_PROBE_CAP = 4096
 _VERSION_PROBE_TIMEOUT = 5.0
@@ -241,7 +241,7 @@ def check_runtime_version(binary_path: Path) -> str:
         rest is drained to a bit-bucket AND flagged as overflow.
         Overflow is a terminal failure: a binary that writes more
         than the cap is not trusted even if its retained prefix
-        looks like `ncp 0.3.6`.
+        looks like `ncp 0.4.0`.
       * After the subprocess exits, the reader thread is joined
         and `is_alive()` checked before captured output is read.
         Reader I/O failures are tracked separately and rejected

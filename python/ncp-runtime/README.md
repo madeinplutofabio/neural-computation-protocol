@@ -69,7 +69,7 @@ cargo install ncp-runtime --locked
 Pin to a specific version for reproducibility:
 
 ```bash
-python -m pip install ncp-runtime==0.1.0
+python -m pip install ncp-runtime==0.4.0
 ```
 
 After install, verify end-to-end with the bundled smoke:
@@ -83,7 +83,7 @@ Resolves the `ncp` binary, runs a tiny bundled graph, and prints `result_type` p
 ## Requirements
 
 - Python 3.10+
-- Compatible `ncp` runtime binary. v0.1.0 of this SDK pins `SUPPORTED_RUNTIME_VERSIONS = ("0.3.6",)`.
+- Compatible `ncp` runtime binary. v0.4.0 of this SDK pins `SUPPORTED_RUNTIME_VERSIONS = ("0.4.0",)`. See [docs/COMPATIBILITY.md](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/COMPATIBILITY.md) for the coordinated-release matrix.
 - No runtime Python dependencies.
 
 ## v0.1.0 scope and limitations (honest)

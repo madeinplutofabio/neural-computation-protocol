@@ -12,7 +12,7 @@
 # org.ncp-examples.echo v0.1.0). The declared digest + size in
 # the bundled manifest match the bundled .wasm byte-for-byte, so
 # the runtime's resolver digest-verification step succeeds under
-# the pinned runtime 0.3.6.
+# the pinned runtime 0.4.0.
 #
 # `graph_version` and `synaptic_state_version` are synthetic
 # repository-local pins, not content-derived digests (same

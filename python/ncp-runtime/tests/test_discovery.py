@@ -203,9 +203,9 @@ def _patch_popen(monkeypatch: pytest.MonkeyPatch, **popen_kwargs: Any) -> None:
 def test_check_runtime_version_accepts_pinned(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """``ncp 0.3.6\\n`` on stdout with exit 0 returns ``"0.3.6"``."""
-    _patch_popen(monkeypatch, stdout_bytes=b"ncp 0.3.6\n", exit_code=0)
-    assert check_runtime_version(tmp_path / "ncp") == "0.3.6"
+    """``ncp 0.4.0\\n`` on stdout with exit 0 returns ``"0.4.0"``."""
+    _patch_popen(monkeypatch, stdout_bytes=b"ncp 0.4.0\n", exit_code=0)
+    assert check_runtime_version(tmp_path / "ncp") == "0.4.0"
 
 
 def test_check_runtime_version_rejects_wrong_version(
@@ -221,7 +221,7 @@ def test_check_runtime_version_rejects_wrong_version(
         check_runtime_version(tmp_path / "ncp")
     message = str(excinfo.value)
     assert "'9.9.9'" in message
-    assert "0.3.6" in message
+    assert "0.4.0" in message
 
 
 @pytest.mark.parametrize(
@@ -229,8 +229,8 @@ def test_check_runtime_version_rejects_wrong_version(
     [
         (b"", "empty"),
         (b"ncp\n", "single-token"),
-        (b"ncp 0.3.6 extra\n", "three-tokens"),
-        (b"not-ncp 0.3.6\n", "wrong-first-token"),
+        (b"ncp 0.4.0 extra\n", "three-tokens"),
+        (b"not-ncp 0.4.0\n", "wrong-first-token"),
         (b"garbage output here\n", "garbage"),
     ],
 )
@@ -259,7 +259,7 @@ def test_check_runtime_version_rejects_nonzero_exit(
     ``NCPRuntimeVersionError`` even when stdout parses cleanly --
     nonzero takes precedence over parse success.
     """
-    _patch_popen(monkeypatch, stdout_bytes=b"ncp 0.3.6\n", exit_code=2)
+    _patch_popen(monkeypatch, stdout_bytes=b"ncp 0.4.0\n", exit_code=2)
     with pytest.raises(NCPRuntimeVersionError) as excinfo:
         check_runtime_version(tmp_path / "ncp")
     assert "exited with code 2" in str(excinfo.value)
@@ -273,7 +273,7 @@ def test_check_runtime_version_rejects_overflow(
     EVEN if the retained prefix would parse cleanly. 5010 bytes =
     10 bytes of valid prefix + 5000 bytes of filler.
     """
-    overflow_bytes = b"ncp 0.3.6\n" + b"x" * 5000
+    overflow_bytes = b"ncp 0.4.0\n" + b"x" * 5000
     _patch_popen(monkeypatch, stdout_bytes=overflow_bytes, exit_code=0)
     with pytest.raises(NCPRuntimeVersionError) as excinfo:
         check_runtime_version(tmp_path / "ncp")
@@ -359,9 +359,9 @@ def test_check_runtime_version_with_real_fixture_returns_pinned(
     ncp_binary: Path,
 ) -> None:
     """Running ``check_runtime_version`` against the real pinned
-    binary returns ``"0.3.6"`` -- end-to-end confirmation that the
+    binary returns ``"0.4.0"`` -- end-to-end confirmation that the
     Rust runtime's clap-formatted ``--version`` output passes the
     SDK's parse + supported-set gate.
     """
-    assert check_runtime_version(ncp_binary) == "0.3.6"
-    assert "0.3.6" in SUPPORTED_RUNTIME_VERSIONS
+    assert check_runtime_version(ncp_binary) == "0.4.0"
+    assert "0.4.0" in SUPPORTED_RUNTIME_VERSIONS

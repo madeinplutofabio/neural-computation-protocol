@@ -44,7 +44,7 @@ _RUNTIME_INFO_LINE = (
         {
             "trace_schema_version": "ncp-trace-0.1",
             "type": "runtime_info",
-            "runtime_version": "0.3.6",
+            "runtime_version": "0.4.0",
             "wasmtime_version": "26.0.0",
             "timestamp": "2026-10-28T00:00:00Z",
         }
@@ -208,7 +208,7 @@ def test_trace_iterator_yields_runtime_info_record(
         records = list(result.trace())
         assert len(records) == 1
         assert isinstance(records[0], RuntimeInfoRecord)
-        assert records[0].runtime_version == "0.3.6"
+        assert records[0].runtime_version == "0.4.0"
     finally:
         result.cleanup()
 

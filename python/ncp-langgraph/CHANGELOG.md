@@ -10,8 +10,31 @@ All notable changes to `ncp-langgraph` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-`ncp-langgraph` is versioned independently from `ncp-runtime` and
-`ncp-mcp-server`; bumps reflect adapter API or behavior changes only.
+Starting with 0.4.0, this adapter advances together with the other
+maintained NCP implementation packages as a coordinated release
+cohort. See [`docs/COMPATIBILITY.md`](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/COMPATIBILITY.md).
+
+## [0.4.0] - 2026-11-05
+
+First coordinated NCP release.
+
+### Changed
+
+- Package version `0.1.0` -> `0.4.0` to align with the coordinated
+  NCP 0.4.0 release cohort. No adapter API or behavior change
+  versus `0.1.0`; the revalidation that the adapter still
+  interoperates with the 0.4.0 runtime and the 0.4.0
+  `ncp-mcp-server` is the deliberate signal carried by the bump.
+- `clientInfo.version` sent in the MCP `initialize` frame follows
+  `__version__` and now reports `0.4.0`.
+
+### Unchanged
+
+- `NCPNode`, `call_ncp_graph`, `RunnerResult`, the exception
+  hierarchy, state input/output semantics, and the subprocess
+  runner: all unchanged versus 0.1.0.
+- Still requires `ncp-mcp-server` on `PATH` (now v0.4.x) and
+  `langgraph >= 1.0.0, < 2.0.0`.
 
 ## [0.1.0] - 2026-05-29
 
