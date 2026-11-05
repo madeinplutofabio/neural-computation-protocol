@@ -406,6 +406,39 @@ class NCP:
             except OSError:
                 pass
 
+    def run_workflow(
+        self,
+        name: str,
+        inputs: dict[str, Any],
+        *,
+        version: str | None = None,
+        brick_map: str | Path | None = None,
+        max_steps: int | None = None,
+    ) -> Result:
+        """Run an installed workflow by (name, version).
+
+        Resolves the installed workflow via the workflows resolver and
+        delegates to self.run(). The returned `Result` contract is exactly
+        the one `self.run()` produces — same `result_type`, `terminals`,
+        and `trace_path` semantics.
+
+        version=None requires that exactly one version be installed under
+        that name; ambiguity raises NCPWorkflowAmbiguousVersionError.
+        """
+        # Lazy import: the SDK's core run() path must not depend on pyyaml
+        # (which the workflows resolver pulls in). Users who do not install
+        # the `workflows` extra still get a working NCP().run().
+        from ncp_runtime.workflows.install import resolve
+
+        graph, brick_dir = resolve(name, version=version)
+        return self.run(
+            graph=graph,
+            brick_dir=brick_dir,
+            inputs=inputs,
+            brick_map=brick_map,
+            max_steps=max_steps,
+        )
+
     def _run_subprocess(
         self,
         *,

@@ -221,6 +221,14 @@ Reference graphs:
 - tool safety gateway
 - lead qualification
 
+**3A.5-2 (implemented locally; not yet merged or released):** workflow
+consumption & distribution mechanism — package / install / list / show /
+resolve / remove / `NCP.run_workflow` / `mcp-config`; `ncp-langgraph`
+adapter unchanged; three-host demo against one installed workflow. See
+[examples/workflows/README.md](../examples/workflows/README.md). This
+line will move to "shipped" only once the PR merges and the CI matrix
+is green.
+
 ### 3A exit criteria
 
 - Tag `v0.4.0`
