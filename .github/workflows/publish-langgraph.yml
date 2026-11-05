@@ -100,14 +100,20 @@ jobs:
 
       - name: Verify runtime/package metadata version parity
         working-directory: python/ncp-langgraph
+        env:
+          EXPECTED_VERSION: ${{ needs.validate-tag.outputs.package_version }}
         run: |
           python - <<'PYEOF'
           import importlib.metadata as md
+          import os
           import ncp_langgraph
 
-          assert ncp_langgraph.__version__ == "0.1.0"
+          expected = os.environ["EXPECTED_VERSION"]
+          assert ncp_langgraph.__version__ == expected, (
+              f"__version__ {ncp_langgraph.__version__!r} != tag-derived {expected!r}"
+          )
           assert md.version("ncp-langgraph") == ncp_langgraph.__version__
-          print("runtime and package metadata versions match")
+          print(f"runtime and package metadata versions match: {expected}")
           PYEOF
 
       - name: ruff check
