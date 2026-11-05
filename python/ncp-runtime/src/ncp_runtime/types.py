@@ -104,6 +104,38 @@ class NCPTraceSchemaError(NCPSDKError):
     """
 
 
+class NCPWorkflowError(NCPSDKError):
+    """Base class for workflow-consumption failures (packaging,
+    installation, resolution). Specific subclasses are added as those
+    deliveries land.
+    """
+
+
+class NCPWorkflowNotInstalledError(NCPWorkflowError):
+    """Raised when run_workflow/resolve/show/remove target a (name, version)
+    that is not installed under NCP_WORKFLOW_HOME.
+    """
+
+
+class NCPWorkflowAmbiguousVersionError(NCPWorkflowError):
+    """Raised when run_workflow/resolve is called without version= and more
+    than one version of that name is installed.
+    """
+
+
+class NCPWorkflowDigestError(NCPWorkflowError):
+    """Raised when an archive's actual sha256 does not match the external
+    --sha256 argument, or when a brick manifest's committed digest does
+    not match the on-disk WASM at install time.
+    """
+
+
+class NCPWorkflowRuntimeIncompatibleError(NCPWorkflowError):
+    """Raised when the resolved runtime binary's version does not satisfy
+    the workflow's declared runtime_compatibility constraint.
+    """
+
+
 # --- Terminal values ---------------------------------------------------
 
 

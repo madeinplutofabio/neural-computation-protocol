@@ -56,6 +56,9 @@ dev = [
     "build",
     "twine",
 ]
+workflows = [
+    "pyyaml>=6.0,<7",
+]
 
 [project.urls]
 Homepage = "https://github.com/madeinplutofabio/neural-computation-protocol"
