@@ -48,7 +48,7 @@ The runtime itself adds little overhead. A single-step graph using a trivial WAS
 
 These are reproducible synthetic benchmarks, not guaranteed production results. Actual savings depend on how much work can be handled reliably without an LLM, the complexity of the work, and the models being replaced.
 
-[Full benchmark results and methodology](BENCHMARK.md) | [Cost model](COST_MODEL.md) | [Lead-qualification comparison](examples/python-sdk/lead-qualification-vs-llm/)
+[Full benchmark results and methodology](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) | [Cost model](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md) | [Lead-qualification comparison](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/python-sdk/lead-qualification-vs-llm)
 
 ## Build once. Package once. Reuse across AI agents.
 
@@ -72,7 +72,7 @@ The Python SDK bundles the NCP runtime binary on supported platforms. Workflow c
 
 The MCP server and LangGraph adapter are separate integrations, installed only when needed. NCP doesn't require a central workflow registry, an account, or a hosted NCP service.
 
-[See the complete workflow packaging and installation walkthrough](examples/workflows/README.md)
+[See the complete workflow packaging and installation walkthrough](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/workflows/README.md)
 
 ## Why NCP?
 
@@ -112,7 +112,7 @@ The result:
 - Easier distribution and deliberate version updates.
 - Sandboxed execution with traceable outcomes.
 
-A working [two-Brick lead-qualification example](examples/graphs/lead-qualification/) demonstrates the approach with 11 reproducible input fixtures.
+A working [two-Brick lead-qualification example](https://github.com/madeinplutofabio/neural-computation-protocol/tree/main/examples/graphs/lead-qualification) demonstrates the approach with 11 reproducible input fixtures.
 
 ## Why not just use Python?
 
@@ -211,7 +211,7 @@ For LangGraph, resolve the installed workflow and use its paths with `NCPNode.fr
 
 The MCP server and LangGraph adapter require separate installation, but neither needs a separate implementation of the workflow's business logic.
 
-**[Complete producer and consumer walkthrough](examples/workflows/README.md)**
+**[Complete producer and consumer walkthrough](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/workflows/README.md)**
 
 ## Security and execution boundaries
 
@@ -223,23 +223,23 @@ Workflow packaging and installation validate referenced artifacts and their comm
 
 **Important:** SHA-256 verification establishes integrity against an expected digest, not the identity or trustworthiness of the publisher. WebAssembly sandboxing reduces the capabilities exposed to a Brick; it is not a guarantee that arbitrary third-party code is safe. Security also depends on the runtime, surrounding integrations, and deployment environment.
 
-See [SECURITY.md](SECURITY.md) for the security model and reporting instructions.
+See [SECURITY.md](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/SECURITY.md) for the security model and reporting instructions.
 
 ## Documentation
 
 | Guide | What you'll find |
 |---|---|
-| [Workflow packaging and consumption](examples/workflows/README.md) | Package, distribute, install, manage, and run workflows |
-| [Python SDK](docs/PYTHON_SDK.md) | Python execution API, results, traces, and errors |
-| [MCP adapter](docs/MCP_ADAPTER.md) | Expose NCP graphs to MCP-compatible hosts |
-| [LangGraph adapter](docs/LANGGRAPH_ADAPTER.md) | Use NCP as LangGraph nodes |
-| [Installation](docs/INSTALL.md) | Runtime and platform installation options |
-| [Benchmarks](BENCHMARK.md) | Measurement methodology, latency and throughput results |
-| [Cost model](COST_MODEL.md) | Estimate token and inference-cost savings |
-| [Protocol specification](spec/ncp-v0.2.3.md) | Normative NCP execution and graph contract |
-| [Compatibility and versioning](docs/COMPATIBILITY.md) | NCP release cohort, supported versions, and migration rules |
-| [Roadmap](docs/ROADMAP.md) | Development milestones and future work |
-| [Adoption guide](docs/ADOPTION_GUIDE.md) | Choosing and integrating suitable workloads |
+| [Workflow packaging and consumption](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/workflows/README.md) | Package, distribute, install, manage, and run workflows |
+| [Python SDK](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/PYTHON_SDK.md) | Python execution API, results, traces, and errors |
+| [MCP adapter](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/MCP_ADAPTER.md) | Expose NCP graphs to MCP-compatible hosts |
+| [LangGraph adapter](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/LANGGRAPH_ADAPTER.md) | Use NCP as LangGraph nodes |
+| [Installation](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/INSTALL.md) | Runtime and platform installation options |
+| [Benchmarks](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/BENCHMARK.md) | Measurement methodology, latency and throughput results |
+| [Cost model](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/COST_MODEL.md) | Estimate token and inference-cost savings |
+| [Protocol specification](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/spec/ncp-v0.2.3.md) | Normative NCP execution and graph contract |
+| [Compatibility and versioning](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/COMPATIBILITY.md) | NCP release cohort, supported versions, and migration rules |
+| [Roadmap](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ROADMAP.md) | Development milestones and future work |
+| [Adoption guide](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/docs/ADOPTION_GUIDE.md) | Choosing and integrating suitable workloads |
 
 ## Repository layout
 
@@ -263,9 +263,9 @@ NCP is open source under the Apache 2.0 license.
 
 Issues, contributions, and discussions are welcome on [GitHub](https://github.com/madeinplutofabio/neural-computation-protocol).
 
-Start with [CONTRIBUTING.md](CONTRIBUTING.md). All commits require a [Developer Certificate of Origin](https://developercertificate.org/) sign-off using `git commit -s`.
+Start with [CONTRIBUTING.md](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/CONTRIBUTING.md). All commits require a [Developer Certificate of Origin](https://developercertificate.org/) sign-off using `git commit -s`.
 
-Security-sensitive reports should follow [SECURITY.md](SECURITY.md).
+Security-sensitive reports should follow [SECURITY.md](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/SECURITY.md).
 
 ## License
 
