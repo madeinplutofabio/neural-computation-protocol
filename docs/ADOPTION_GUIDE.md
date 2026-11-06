@@ -13,9 +13,22 @@ This guide is written for:
 
 > NCP in one sentence: **Compose sandboxed WASM “Bricks” into deterministic graphs, and route only the hard cases to an LLM.**
 
+## Choose your path
+
+Pick the shortest route for what you actually want to do.
+
+**(A) Install and run an existing workflow.** Someone already published a versioned `.tar.gz` NCP workflow and you want to use it. No Rust toolchain, no repo clone. Install the Python SDK (which bundles the `ncp` runtime binary on supported platforms) and the workflow archive; then call `NCP().run_workflow(name, inputs, version)`. Start with the [workflow consumer walkthrough](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/workflows/README.md).
+
+**(B) Author your own workflow.** Copy the [basic-classifier starter](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/starters/basic-classifier/README.md), edit one `classify()` function in Rust, run one build command, and distribute the resulting `.tar.gz`. The WebAssembly ABI boilerplate is clearly marked “do not edit” so your first customization touches a single file.
+
+**(C) Develop or embed the NCP runtime itself.** Continue reading this guide. The sections below cover installing and running the Rust CLI, exposing graphs over MCP, embedding the runtime in a Rust service, and benchmarking. You'll need Rust 1.94+ and access to the example files, either through a repository clone or a release archive.
+
 ---
 
-## 0) Prereqs
+## 0) Prereqs (for Path C — develop or embed the runtime)
+
+Paths A and B have lighter prereqs and are documented in their own guides linked above.
+
 - Rust 1.94+
 - A Linux environment is ideal for tighter latency tails (benchmarks are better on Linux)
 - No external services required

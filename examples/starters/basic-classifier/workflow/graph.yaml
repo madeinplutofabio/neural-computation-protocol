@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Starter workflow graph: one node, one brick, no edges.
+#
+# When publishing under your own identity, change the two occurrences of
+# `com.example.basic-classifier` below to your own ID (one as graph_id,
+# one as the node's brick.brick_id). A single find-and-replace in this
+# file does both. See the starter README, "Publish your own".
+#
+# graph_version / synaptic_state_version are synthetic repository-local
+# pins, not content-derived digests. The current runtime accepts any
+# sha256-formatted string here.
+
+graph_id: com.example.basic-classifier
+graph_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+synaptic_state_version: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+
+nodes:
+  - node_id: classify
+    brick: { brick_id: com.example.basic-classifier, version_or_range: "=0.1.0" }
+    bindings:
+      graph_ref_slot_values: {}
+
+edges: []

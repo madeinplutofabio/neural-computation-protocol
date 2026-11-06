@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BasicClassifierInput",
+  "description": "Input for the starter classifier: a ticket text.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text"],
+  "properties": {
+    "text": {
+      "type": "string",
+      "description": "The ticket or message text to classify."
+    }
+  }
+}
