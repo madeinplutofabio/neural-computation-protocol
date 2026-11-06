@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# wasm32 link flags for the starter brick. Identical to the pattern used by
+# the reference bricks in this repo. You should not need to edit this file.
+#
+# --export-memory      makes the linear memory visible to the runtime host
+# --export-table       makes the function table visible to the runtime host
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "link-arg=--export-memory", "-C", "link-arg=--export-table"]

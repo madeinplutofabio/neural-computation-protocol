@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Starter brick manifest TEMPLATE.
+#
+# The build script stamps a copy of this file as manifest.yaml alongside
+# the compiled basic-classifier.wasm. It replaces exactly two tokens:
+#   sha256:PLACEHOLDER  ->  sha256:<actual digest of the built wasm>
+#   size_bytes: 0       ->  size_bytes: <actual byte size of the built wasm>
+# Everything else is passed through byte-for-byte.
+#
+# When publishing under your own identity, change `brick_id` below (see the
+# starter README, "Publish your own").
+
+brick_id: com.example.basic-classifier
+version: 0.1.0
+ncp_protocol_range: ">=0.2.0 <0.3.0"
+required_runtime_features: []
+status: active
+artifact:
+  format: wasm
+  entrypoint: invoke
+  digest: sha256:PLACEHOLDER
+  size_bytes: 0
+schemas:
+  input: schemas/input.schema.json
+  output: schemas/output.schema.json
+  carry_state: null
+limits:
+  # max_ms is metadata; the current runtime does not enforce a wall-clock
+  # deadline (CPU fuel metering is scaffolded but off by default).
+  max_ms: 50
+  max_mem_mb: 16
+  max_output_bytes: 65536
+  max_input_bytes: 65536
+capabilities: []
+determinism:
+  mode: bit_exact
+time_model: pure
+carry_state_class: none
+carry_state_transport: inline
+carry_state_max_bytes: 0
+carry_state_side_effects_schema: null
+graph_ref_slots: []

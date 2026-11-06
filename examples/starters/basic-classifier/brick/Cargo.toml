@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# NCP starter: basic-classifier brick.
+#
+# This crate is a nested workspace root (see the empty [workspace] table at the
+# bottom). That keeps it OUTSIDE the main NCP workspace, so a developer can
+# `cp -r` the starter folder out of this repo and still build it standalone
+# with just `cargo build --release --target wasm32-unknown-unknown --locked`.
+#
+# When customizing classification rules, edit only src/lib.rs.
+#
+# When publishing under your own identity, update the brick ID in the
+# manifest, graph, and both build scripts, as explained in the starter README.
+# You do not need to rename this crate or its WASM artifact.
+
+[package]
+name = "basic-classifier"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+rust-version = "1.94"
+description = "NCP starter: keyword-based ticket classifier. CHANGE THIS when you copy."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Minimal CBOR codec used by the brick's envelope/result encoding.
+# Same version pin as the reference bricks in this repo (bricks/classifier-stub).
+minicbor = { version = "0.25", default-features = false, features = ["alloc"] }
+
+[profile.release]
+# Same release profile the NCP workspace uses for brick crates.
+panic = "abort"
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1
+
+# Nested workspace root: makes this crate self-contained so `cp -r` outside
+# the NCP repo still works. Do NOT add this crate to the top-level NCP
+# workspace's members list.
+[workspace]

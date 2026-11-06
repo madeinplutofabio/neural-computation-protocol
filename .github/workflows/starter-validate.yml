@@ -1,0 +1,289 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Fabio Marcello Salvadori
+#
+# Validates the examples/starters/basic-classifier starter end-to-end.
+#
+# Two jobs:
+#   - basic-classifier (matrix on 3 OSes): proves the developer journey
+#     (build + round-trip + copy-and-rename + classify() customization).
+#   - clean-consumer (Linux-only): proves the consumer journey using the
+#     PUBLISHED ncp-runtime 0.4.0 wheel + the archive produced by the
+#     Linux developer job, run from OUTSIDE the repo.
+#
+# Safety:
+#   - permissions: contents: read at the workflow top level
+#   - no `secrets.*` references anywhere in this file
+#   - no `pull_request_target` (fork PRs run with a read-only token)
+#   - ANTHROPIC_API_KEY explicitly cleared + asserted absent
+#   - no Swatinem cache (keeps PR runs disposable)
+
+name: Validate starters
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: starter-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  basic-classifier:
+    name: basic-classifier (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2022]
+    env:
+      ANTHROPIC_API_KEY: ""
+      # matrix.os is unambiguously available at job scope; this selects
+      # ncp.exe on Windows and ncp on Linux/macOS.
+      NCP_RUNTIME_BINARY: ${{ github.workspace }}/target/release/ncp${{ matrix.os == 'windows-2022' && '.exe' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.94.0"
+          targets: wasm32-unknown-unknown
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Confirm no secrets leak into env
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${ANTHROPIC_API_KEY:-}"
+          echo "ok: ANTHROPIC_API_KEY is empty"
+
+      - name: Build runtime binary (passed explicitly to NCP(binary=...))
+        run: cargo build -p ncp-runtime --release --locked
+
+      - name: Install SDK (editable) + pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e 'python/ncp-runtime[workflows]'
+          python -m pip install pytest
+
+      - name: Native cargo test on the starter brick
+        working-directory: examples/starters/basic-classifier/brick
+        run: cargo test --locked
+
+      # ==================================================================
+      # Journey 1: in-tree build + round-trip
+      # ==================================================================
+      - name: Starter build (Unix)
+        if: matrix.os != 'windows-2022'
+        working-directory: examples/starters/basic-classifier
+        run: bash scripts/build.sh
+
+      - name: Starter build (Windows)
+        if: matrix.os == 'windows-2022'
+        working-directory: examples/starters/basic-classifier
+        shell: pwsh
+        run: scripts\build.ps1
+
+      - name: Round-trip (install + run_workflow, both paths)
+        working-directory: examples/starters/basic-classifier
+        run: python -m pytest tests/test_round_trip.py -q
+
+      # ==================================================================
+      # Journey 2: copy-and-rename (namespace-only)
+      # ==================================================================
+      - name: Copy-and-rename journey (Unix)
+        if: matrix.os != 'windows-2022'
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTSIDE="$RUNNER_TEMP/starter-rename-copy"
+          cp -r examples/starters/basic-classifier "$OUTSIDE"
+          cd "$OUTSIDE"
+          python tests/copy_rename.py com.acme.basic-classifier
+          bash scripts/build.sh
+          python -m pytest tests/test_round_trip.py -q
+
+      - name: Copy-and-rename journey (Windows)
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $outside = Join-Path $env:RUNNER_TEMP "starter-rename-copy"
+          Copy-Item -Recurse examples/starters/basic-classifier $outside
+          Set-Location $outside
+          python tests/copy_rename.py com.acme.basic-classifier
+          if ($LASTEXITCODE -ne 0) { throw "copy_rename failed ($LASTEXITCODE)" }
+          pwsh scripts\build.ps1
+          if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed ($LASTEXITCODE)" }
+          python -m pytest tests/test_round_trip.py -q
+          if ($LASTEXITCODE -ne 0) { throw "pytest failed ($LASTEXITCODE)" }
+
+      # ==================================================================
+      # Journey 3: customize classify() and observe new behavior.
+      # The whole adoption promise. Adds `urgent` as a billing keyword
+      # (does not break any shipped unit test), rebuilds, asserts the
+      # new routing. Fresh copy so this does not interfere with earlier
+      # journeys.
+      # ==================================================================
+      - name: Customize-and-rebuild journey (Unix)
+        if: matrix.os != 'windows-2022'
+        env:
+          NCP_WORKFLOW_HOME: ${{ runner.temp }}/customize-home
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTSIDE="$RUNNER_TEMP/starter-customize-copy"
+          cp -r examples/starters/basic-classifier "$OUTSIDE"
+          cd "$OUTSIDE"
+          # Add one keyword to the shipped billing rule. No other change.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("brick/src/lib.rs")
+          t = p.read_text(encoding="utf-8")
+          before = 'lower.contains("refund") || lower.contains("invoice") || lower.contains("billing")'
+          after  = 'lower.contains("refund") || lower.contains("invoice") || lower.contains("billing") || lower.contains("urgent")'
+          if before not in t:
+              raise SystemExit("customize probe: unexpected lib.rs shape; the starter has drifted")
+          p.write_text(t.replace(before, after, 1), encoding="utf-8")
+          PY
+          bash scripts/build.sh
+          # Assert the new keyword now routes to billing (was 'general' before).
+          python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          from ncp_runtime import NCP
+          from ncp_runtime.workflows import install
+          binary = Path(os.environ["NCP_RUNTIME_BINARY"])
+          archive = Path("dist/basic-classifier-0.1.0.tar.gz")
+          install(archive, sha256=hashlib.sha256(archive.read_bytes()).hexdigest(), binary=binary)
+          r = NCP(binary=binary).run_workflow(
+              "com.example.basic-classifier",
+              inputs={"text": "this is urgent"},
+              version="0.1.0",
+          )
+          assert r.result_type == "Success", r.result_type
+          assert r.terminals[0].output == {"category": "billing"}, r.terminals[0].output
+          print("customize-and-rebuild: OK (urgent -> billing)")
+          PY
+
+      - name: Customize-and-rebuild journey (Windows)
+        if: matrix.os == 'windows-2022'
+        env:
+          NCP_WORKFLOW_HOME: ${{ runner.temp }}\customize-home
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $outside = Join-Path $env:RUNNER_TEMP "starter-customize-copy"
+          Copy-Item -Recurse examples/starters/basic-classifier $outside
+          Set-Location $outside
+          python - @"
+          from pathlib import Path
+          p = Path('brick/src/lib.rs')
+          t = p.read_text(encoding='utf-8')
+          before = 'lower.contains(\"refund\") || lower.contains(\"invoice\") || lower.contains(\"billing\")'
+          after  = 'lower.contains(\"refund\") || lower.contains(\"invoice\") || lower.contains(\"billing\") || lower.contains(\"urgent\")'
+          if before not in t:
+              raise SystemExit('customize probe: unexpected lib.rs shape; the starter has drifted')
+          p.write_text(t.replace(before, after, 1), encoding='utf-8')
+          "@
+          if ($LASTEXITCODE -ne 0) { throw "customize probe failed ($LASTEXITCODE)" }
+          pwsh scripts\build.ps1
+          if ($LASTEXITCODE -ne 0) { throw "rebuild failed ($LASTEXITCODE)" }
+          python - @"
+          import hashlib, os
+          from pathlib import Path
+          from ncp_runtime import NCP
+          from ncp_runtime.workflows import install
+          binary = Path(os.environ['NCP_RUNTIME_BINARY'])
+          archive = Path('dist/basic-classifier-0.1.0.tar.gz')
+          install(archive, sha256=hashlib.sha256(archive.read_bytes()).hexdigest(), binary=binary)
+          r = NCP(binary=binary).run_workflow(
+              'com.example.basic-classifier',
+              inputs={'text': 'this is urgent'},
+              version='0.1.0',
+          )
+          assert r.result_type == 'Success', r.result_type
+          assert r.terminals[0].output == {'category': 'billing'}, r.terminals[0].output
+          print('customize-and-rebuild: OK (urgent -> billing)')
+          "@
+          if ($LASTEXITCODE -ne 0) { throw "assertion failed ($LASTEXITCODE)" }
+
+      # ==================================================================
+      # Upload the in-tree Linux archive for the clean-consumer job below.
+      # Linux only, from the in-tree build path (journey 1's output). Not
+      # the customize or rename copy.
+      # ==================================================================
+      - name: Upload archive for clean-consumer smoke
+        if: matrix.os == 'ubuntu-24.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: basic-classifier-archive-ubuntu-24.04
+          path: examples/starters/basic-classifier/dist/basic-classifier-0.1.0.tar.gz
+          retention-days: 1
+
+  clean-consumer:
+    name: clean-consumer smoke (ubuntu-24.04, published wheel)
+    runs-on: ubuntu-24.04
+    needs: basic-classifier
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      ANTHROPIC_API_KEY: ""
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Confirm no secrets leak into env
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${ANTHROPIC_API_KEY:-}"
+          echo "ok: ANTHROPIC_API_KEY is empty"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: basic-classifier-archive-ubuntu-24.04
+          path: /tmp/incoming
+
+      - name: Install the PUBLISHED ncp-runtime 0.4.0 wheel (no source, no Rust)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/consumer
+          /tmp/consumer/bin/pip install --upgrade pip
+          /tmp/consumer/bin/pip install 'ncp-runtime[workflows]==0.4.0'
+
+      - name: Install archive from OUTSIDE the repo and run_workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/consumer-work
+          cp /tmp/incoming/basic-classifier-0.1.0.tar.gz /tmp/consumer-work/
+          cd /tmp/consumer-work
+          /tmp/consumer/bin/python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from ncp_runtime import NCP
+          from ncp_runtime.workflows import install
+
+          archive = Path("basic-classifier-0.1.0.tar.gz")
+          install(archive, sha256=hashlib.sha256(archive.read_bytes()).hexdigest())
+          r = NCP().run_workflow(
+              "com.example.basic-classifier",
+              inputs={"text": "I need a refund"},
+              version="0.1.0",
+          )
+          assert r.result_type == "Success", r.result_type
+          assert r.terminals[0].output == {"category": "billing"}, r.terminals[0].output
+          print("clean-consumer smoke: OK")
+          PY

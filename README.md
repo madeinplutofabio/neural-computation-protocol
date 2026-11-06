@@ -74,6 +74,14 @@ The MCP server and LangGraph adapter are separate integrations, installed only w
 
 [See the complete workflow packaging and installation walkthrough](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/workflows/README.md)
 
+## Build your first NCP workflow
+
+The `examples/starters/basic-classifier/` directory is a ready-made Rust/WASM Brick plus its graph, manifest, schemas, and build scripts. Copy it, edit one `classify()` function, run one build command, and you get a self-contained, versioned `.tar.gz` workflow archive another developer can install and run with the Python SDK (or route through MCP or LangGraph).
+
+No protocol knowledge, no manifest wrangling, no WASM ABI familiarity required for the first build. The WebAssembly boilerplate is clearly marked "do not edit" and you only touch the business-logic function.
+
+[Open the basic-classifier starter](https://github.com/madeinplutofabio/neural-computation-protocol/blob/main/examples/starters/basic-classifier/README.md)
+
 ## Why NCP?
 
 - **Lower AI costs.** Avoid unnecessary language-model calls for routine work. Fewer calls mean fewer tokens billed.

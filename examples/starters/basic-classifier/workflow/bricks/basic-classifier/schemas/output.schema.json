@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BasicClassifierOutput",
+  "description": "Output for the starter classifier: one of three categories.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["category"],
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": ["billing", "support", "general"],
+      "description": "The routing category inferred from the text."
+    }
+  }
+}
